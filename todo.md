@@ -57,15 +57,27 @@ Legend: `[ ]` pending · `[x]` done · `[!]` needs user input/credentials before
       status filter on `/dashboard/inventory` for now)
 
 ## Phase 3 — Sprint 3: Financial & Supplier (roadmap.md Sprint 3)
-- [ ] DB migrations: chart_of_accounts, journal_entries, journal_entry_details, daily_financial_summary, accounts_receivable/payable
-- [ ] Journal entries API + P&L calculation service
-- [ ] Financial dashboard UI (tabs: Ringkasan, Penjualan, Keuangan)
-- [ ] Daily summary + cash position endpoints
-- [ ] DB migrations: suppliers, purchase_orders, po_items, purchase_invoices, purchase_payments
-- [ ] Supplier CRUD API + UI
-- [ ] Purchase order create/approve/receive flow (with inventory increase on receipt)
-- [ ] Tax report calculation (PPN/PPh) — informational only, not filed anywhere
-- [ ] Integration test: transaction → journal entry → P&L accuracy
+- [x] DB migrations: chart_of_accounts, journal_entries, journal_entry_details, daily_financial_summary,
+      accounts_receivable/payable (landed in Phase 1's migration batch, 005_financial.sql)
+- [ ] Journal entries API — schema exists, no route/UI writes to it yet; daily-summary/p-and-l are
+      computed live from invoices instead (see note below), so nothing currently populates
+      chart_of_accounts/journal_entries
+- [x] Financial dashboard UI (`/dashboard/financial`: KPI cards, sales breakdown, cash position)
+- [x] Daily summary (`/api/reports/daily-summary`), P&L (`/api/reports/p-and-l`), and cash position
+      (`/api/reports/cash-position`) endpoints — computed live from invoices/invoice_items/
+      payment_transactions rather than read from daily_financial_summary, since nothing populates
+      that table yet (needs a nightly job — Phase 2 scheduling infra, out of scope for now)
+- [x] DB migrations: suppliers, purchase_orders, po_items, purchase_invoices, purchase_payments
+      (004_purchasing.sql)
+- [x] Supplier CRUD API (`/api/suppliers`, `/api/suppliers/:id`) + list/add UI (`/dashboard/suppliers`)
+- [x] Purchase order create/submit/approve/receive flow (`/api/purchase-orders/...`), inventory
+      increased via `update_inventory()` on receipt — sequential calls rather than one atomic SQL
+      function like invoices, since a partial failure here just needs a manual re-run (documented
+      in the route's comment)
+- [ ] Purchase order UI (list/create/receive screens) — API exists, no dashboard pages yet
+- [ ] Tax report calculation (PPN/PPh) — not started
+- [ ] Integration test: transaction → journal entry → P&L accuracy — no journal entries are written
+      yet (see above), so this can't be meaningfully tested until that's wired up
 
 ## Phase 4 — Sprint 4: Multi-outlet, Admin & Payment Gateways (roadmap.md Sprint 4)
 - [ ] Master Admin dashboard + sidebar (design-system.md §6)

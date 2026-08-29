@@ -72,6 +72,49 @@ export const productSchema = z.object({
 
 export type ProductInput = z.infer<typeof productSchema>
 
+export const supplierSchema = z.object({
+  name: z.string().min(1, 'Nama supplier wajib diisi'),
+  contact_person: z.string().optional(),
+  phone: z.string().optional(),
+  email: z.string().email().optional().or(z.literal('')),
+  address: z.string().optional(),
+  payment_terms: z.number().int().nonnegative().optional(),
+  bank_account_name: z.string().optional(),
+  bank_account_number: z.string().optional(),
+  bank_name: z.string().optional(),
+})
+
+export type SupplierInput = z.infer<typeof supplierSchema>
+
+export const purchaseOrderItemSchema = z.object({
+  product_id: z.string().uuid(),
+  quantity: z.number().int().positive(),
+  unit_cost: z.number().nonnegative(),
+})
+
+export const createPurchaseOrderSchema = z.object({
+  outlet_id: z.string().uuid(),
+  supplier_id: z.string().uuid(),
+  items: z.array(purchaseOrderItemSchema).min(1, 'PO harus memiliki minimal 1 item'),
+  requested_delivery_date: z.string().optional(),
+  notes: z.string().optional(),
+})
+
+export type CreatePurchaseOrderInput = z.infer<typeof createPurchaseOrderSchema>
+
+export const receivePurchaseOrderSchema = z.object({
+  items: z.array(
+    z.object({
+      po_item_id: z.string().uuid(),
+      quantity_received: z.number().int().nonnegative(),
+    })
+  ),
+  delivery_date: z.string().optional(),
+  notes: z.string().optional(),
+})
+
+export type ReceivePurchaseOrderInput = z.infer<typeof receivePurchaseOrderSchema>
+
 /** Runs a Zod schema and returns a `{ valid, data?, errors? }` shape that
  * matches the `validateXInput` helpers referenced throughout prd.md's API
  * route examples. */

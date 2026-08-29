@@ -239,7 +239,7 @@ export type PurchaseOrder = {
   order_date: string
   requested_delivery_date: string | null
   actual_delivery_date: string | null
-  status: 'draft' | 'ordered' | 'partial_received' | 'received' | 'cancelled'
+  status: 'draft' | 'pending_approval' | 'ordered' | 'partial_received' | 'received' | 'cancelled'
   subtotal: number | null
   tax_amount: number | null
   total: number | null
@@ -248,6 +248,19 @@ export type PurchaseOrder = {
   notes: string | null
   created_at: string
   updated_at: string
+}
+
+export type PurchaseOrderItem = {
+  id: string
+  po_id: string
+  product_id: string
+  quantity_ordered: number
+  quantity_received: number
+  quantity_remaining: number
+  unit_cost: number
+  subtotal: number
+  line_notes: string | null
+  created_at: string
 }
 
 export type DailyFinancialSummary = {
@@ -374,6 +387,7 @@ export type Database = {
       virtual_accounts: Table<VirtualAccount>
       suppliers: Table<Supplier>
       purchase_orders: Table<PurchaseOrder>
+      po_items: Table<PurchaseOrderItem>
       daily_financial_summary: Table<DailyFinancialSummary>
       audit_log: Table<AuditLogEntry>
       system_alerts: Table<SystemAlert>

@@ -11,7 +11,7 @@ create table purchase_orders (
   order_date date not null default current_date,
   requested_delivery_date date,
   actual_delivery_date date,
-  status varchar(50) not null default 'draft', -- 'draft', 'ordered', 'partial_received', 'received', 'cancelled'
+  status varchar(50) not null default 'draft', -- 'draft', 'pending_approval', 'ordered', 'partial_received', 'received', 'cancelled'
   subtotal decimal(15,2),
   tax_amount decimal(15,2),
   total decimal(15,2),
