@@ -37,7 +37,7 @@ const NAV_ITEMS: NavItem[] = [
       { label: 'Stok Barang', href: '/dashboard/inventory' },
       { label: 'Kategori Produk', href: '/dashboard/inventory/products' },
       { label: 'Stocktake', href: '/dashboard/inventory/stocktake' },
-      { label: 'Stok Rendah', href: '/dashboard/inventory/low-stock' },
+      { label: 'Stok Rendah', href: '/dashboard/inventory?status=low_stock' },
     ],
   },
   {

@@ -34,17 +34,27 @@ Legend: `[ ]` pending · `[x]` done · `[!]` needs user input/credentials before
 - [x] `npm run build` passes clean (TypeScript strict, no errors)
 
 ## Phase 2 — Sprint 2: POS & Inventory (roadmap.md Sprint 2)
-- [ ] DB migrations: products, product_categories, inventory, inventory_ledger, stocktakes
-- [ ] POS layout (mobile + desktop) per design-system.md §4
-- [ ] Product search + barcode input, shopping cart state (Zustand `posStore`)
-- [ ] Invoice creation API (`/api/invoices`) with inventory lock + deduction + journal entry stub
-- [ ] Payment method selection UI: cash / e-wallet (mock QR) / bank transfer (mock VA)
-- [ ] Cash payment flow with change calculation
-- [ ] Receipt generation (screen + print-friendly view)
-- [ ] Inventory API: list, get, adjust; low-stock alert view
-- [ ] Inventory dashboard UI (stock table, filters, alerts)
-- [ ] Real-time inventory sync via Supabase Realtime channel
-- [ ] E2E test: full POS transaction (scan → pay → receipt), void flow
+- [x] DB migrations: products, product_categories, inventory, inventory_ledger, stocktakes (already
+      landed in Phase 1's migration batch, 002_products_inventory.sql)
+- [x] POS layout (desktop 2-column; mobile falls back to stacked via the same grid) per design-system.md §4
+- [x] Product search + barcode input, shopping cart state (Zustand `posStore`)
+- [x] Invoice creation API (`/api/invoices`) — atomic via `create_invoice()` SQL function
+      (012_create_invoice_function.sql), not the sequential-REST-calls sketch in prd.md, which had
+      no rollback path if inventory deduction failed after the invoice row was written
+- [x] Payment method selection UI: cash / e-wallet (mock QR) / bank transfer (mock VA), backed by
+      `/api/payments/initiate` + a demo-only `/api/payments/:id/simulate-success` endpoint standing
+      in for the real webhook until Doku/Bank credentials exist
+- [x] Real webhook handlers scaffolded (`/api/payments/webhook/{doku,bank}`) with HMAC signature
+      verification — return 501 until `DOKU_SECRET_KEY`/`BANK_VA_SECRET` are set
+- [x] Cash payment flow with change calculation
+- [x] Receipt generation (screen + print-friendly `window.print()`; no PDF/storage yet)
+- [x] Invoice void flow (`void_invoice()` SQL function + `/api/invoices/:id/void`, manager+ only, 24h window)
+- [x] Inventory API: list (`/api/inventory/:outletId`, with search/barcode/status filters), adjust; low-stock via `alert_status`
+- [x] Inventory dashboard UI (stock table, search, status filter, stock/retail value totals)
+- [ ] Real-time inventory sync via Supabase Realtime channel — not wired up yet, table just refetches on filter change
+- [ ] E2E test: full POS transaction (scan → pay → receipt), void flow — Playwright not set up yet
+- [!] Sidebar's "Stok Rendah" link points at `/dashboard/inventory/low-stock`, not yet built (use the
+      status filter on `/dashboard/inventory` for now)
 
 ## Phase 3 — Sprint 3: Financial & Supplier (roadmap.md Sprint 3)
 - [ ] DB migrations: chart_of_accounts, journal_entries, journal_entry_details, daily_financial_summary, accounts_receivable/payable

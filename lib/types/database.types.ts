@@ -396,14 +396,31 @@ export type Database = {
         }
         Returns: { company_id: string; outlet_id: string }[]
       }
+      create_invoice: {
+        Args: {
+          p_outlet_id: string
+          p_cashier_id: string
+          p_items: { product_id: string; quantity: number; discount?: number }[]
+          p_payment_method: string
+          p_customer_name?: string | null
+          p_customer_phone?: string | null
+          p_discount_amount?: number
+          p_discount_reason?: string | null
+        }
+        Returns: { invoice_id: string; invoice_number: string; total: number; payment_status: string }[]
+      }
+      void_invoice: {
+        Args: { p_invoice_id: string; p_voided_by: string; p_reason: string }
+        Returns: { voided_at: string; stock_returned: number }[]
+      }
       update_inventory: {
         Args: {
           p_outlet_id: string
           p_product_id: string
           p_quantity_change: number
           p_movement_type: string
-          p_reference_id: string
           p_recorded_by: string
+          p_reference_id?: string | null
           p_reference_type?: string
           p_unit_cost?: number
           p_notes?: string

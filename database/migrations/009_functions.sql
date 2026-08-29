@@ -9,8 +9,8 @@ create or replace function update_inventory(
   p_product_id uuid,
   p_quantity_change int,
   p_movement_type varchar,
-  p_reference_id uuid,
   p_recorded_by uuid,
+  p_reference_id uuid default null,
   p_reference_type varchar default null,
   p_unit_cost decimal default null,
   p_notes text default null
