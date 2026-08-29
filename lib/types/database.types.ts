@@ -322,6 +322,27 @@ export type SystemAlert = {
   updated_at: string
 }
 
+export type BulkAdminOperation = {
+  id: string
+  company_id: string
+  admin_id: string
+  operation_type: string
+  outlets_affected: string[]
+  operation_description: string | null
+  parameters: Record<string, unknown> | null
+  scheduled_for: string | null
+  status: string
+  execution_start_time: string | null
+  execution_end_time: string | null
+  success_count: number | null
+  failed_count: number | null
+  error_log: Record<string, unknown> | null
+  rollback_available: boolean
+  rolled_back_at: string | null
+  created_at: string
+  updated_at: string
+}
+
 // ---- reporting views ----
 
 export type LowStockAlertView = {
@@ -391,6 +412,7 @@ export type Database = {
       daily_financial_summary: Table<DailyFinancialSummary>
       audit_log: Table<AuditLogEntry>
       system_alerts: Table<SystemAlert>
+      bulk_admin_operations: Table<BulkAdminOperation>
     }
     Views: {
       v_low_stock_alerts: View<LowStockAlertView>

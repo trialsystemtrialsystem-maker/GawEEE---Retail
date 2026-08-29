@@ -32,7 +32,8 @@ export function SupplierList() {
   }, [])
 
   useEffect(() => {
-    load()
+    const timeout = setTimeout(load, 0)
+    return () => clearTimeout(timeout)
   }, [load])
 
   async function handleCreate(e: React.FormEvent) {

@@ -30,7 +30,6 @@ export function POSScreen({ outletId, cashierName }: { outletId: string; cashier
 
   const items = usePosStore((s) => s.items)
   const paymentMethod = usePosStore((s) => s.paymentMethod)
-  const total = usePosStore((s) => s.total())
   const clearCart = usePosStore((s) => s.clearCart)
 
   async function handleCheckout() {

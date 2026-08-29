@@ -80,15 +80,21 @@ Legend: `[ ]` pending · `[x]` done · `[!]` needs user input/credentials before
       yet (see above), so this can't be meaningfully tested until that's wired up
 
 ## Phase 4 — Sprint 4: Multi-outlet, Admin & Payment Gateways (roadmap.md Sprint 4)
-- [ ] Master Admin dashboard + sidebar (design-system.md §6)
-- [ ] Bulk operations API (price update, scheduled execution) + audit logging
-- [ ] User management API/UI (add/edit/deactivate, reset password)
-- [ ] Company-wide audit log viewer
-- [!] Doku Pay integration — **needs real/sandbox merchant ID + secret key from user**; build against mock interface now, swap in when credentials provided
-- [!] Bank Virtual Account integration — **needs bank/aggregator sandbox API key**; same mock-first approach
-- [ ] Webhook handlers (`/api/payments/webhook/doku`, `/bank`) with signature verification
-- [ ] RLS policies for all tables (cashier / outlet_manager / master_admin) per prd.md §6.1
-- [ ] Error handling, loading states, UI polish pass
+- [x] Master Admin dashboard + sidebar (design-system.md §6) — outlet performance leaderboard,
+      users, bulk operations, audit log, each gated to `role === 'master_admin'`
+- [x] Bulk operations API (price update) + audit logging — **executes immediately**, not scheduled:
+      no cron/queue infra exists yet, so `scheduled_for` from the PRD spec isn't honored
+- [x] User management API/UI (invite via Supabase Admin API, deactivate, reset password)
+- [x] Company-wide audit log viewer
+- [!] Doku Pay integration — **needs real/sandbox merchant ID + secret key from user**; webhook
+      handler is scaffolded with HMAC verification and returns 501 until `DOKU_SECRET_KEY` is set
+- [!] Bank Virtual Account integration — **needs bank/aggregator sandbox API key**; same
+      scaffolded-and-501-until-configured approach as Doku
+- [x] Webhook handlers (`/api/payments/webhook/doku`, `/bank`) with HMAC signature verification
+- [x] RLS policies for all tables (cashier / outlet_manager / master_admin) per prd.md §6.1 —
+      landed in Phase 1 (010_rls_policies.sql)
+- [ ] Error handling, loading states, UI polish pass — basic states exist per-component, no
+      dedicated pass yet (no toast/notification system, no global error boundary)
 
 ## Phase 5 — QA, Deploy & Launch Prep
 - [ ] Full unit + integration + E2E suite green, coverage ≥ 80%
