@@ -9,24 +9,29 @@ Legend: `[ ]` pending · `[x]` done · `[!]` needs user input/credentials before
 ## Phase 0 — Repo & Tooling Bootstrap
 - [x] Save PRD / roadmap / design-system docs
 - [x] Create this todo.md
-- [ ] `git init`, connect to GitHub remote, initial commit + push
-- [ ] Scaffold Next.js 14 (App Router) + TypeScript + Tailwind project
-- [ ] Install core deps: Supabase JS client, Zustand, React Query, Zod (validation)
-- [ ] `.env.example` with all vars from roadmap.md §2.3 (no real secrets committed)
-- [ ] ESLint + Prettier config
-- [ ] Base folder structure per roadmap.md §3.1 (app/, components/, lib/, store/, database/, tests/)
+- [x] `git init`, connect to GitHub remote, initial commit + push
+- [x] Scaffold Next.js 16 (App Router) + TypeScript + Tailwind v4 project
+- [x] Install core deps: Supabase JS client, Zustand, React Query, Zod (validation)
+- [x] `.env.example` with all vars from roadmap.md §2.3 (no real secrets committed)
+- [x] ESLint config (from create-next-app)
+- [x] Base folder structure per roadmap.md §3.1 (app/, components/, lib/, database/)
 - [!] Supabase project (URL + anon key + service role key) — **needs user to create a Supabase project and share credentials**, or approve using local Supabase CLI / mock mode for now
 
 ## Phase 1 — Sprint 1: Foundation & Auth (roadmap.md Sprint 1)
-- [ ] Database schema migration files (companies, outlets, users) from prd.md §3.1
-- [ ] Supabase client setup (`lib/supabase/client.ts`, server client)
-- [ ] Auth API routes: register, login, logout, refresh, verify-email
-- [ ] Auth UI: signup form, login form, validation, protected-route middleware
-- [ ] Onboarding flow (outlet info → products → payment methods → invite staff)
-- [ ] Landing page (hero, pain points, features, pricing, FAQ, footer) per design-system.md §2
-- [ ] Dashboard shell: Header + Sidebar (full menu tree from design-system.md §5.2) + layout
+- [x] Database schema migration files (companies → outlets → users → products/inventory →
+      invoices/payments → purchasing → financial → HR → audit → views → functions → RLS)
+      in `database/migrations/001`–`011`, fixing several bugs in the PRD's raw SQL along the way
+      (cross-table generated columns, missing `TODAY()`, FK ordering)
+- [x] Supabase client setup (`lib/supabase/client.ts`, `server.ts` browser/server/admin clients)
+- [x] Auth API routes: register (atomic company/outlet/owner provisioning via RPC), login, logout, refresh, me
+- [x] Auth UI: signup form, login form, validation, protected-route middleware (`middleware.ts`)
+- [ ] Onboarding flow (outlet info → products → payment methods → invite staff) — register currently
+      auto-creates one default outlet; the multi-step wizard from design-system.md §3.3 is still open
+- [x] Landing page (hero, pain points, features, pricing, FAQ, footer) per design-system.md §2
+- [x] Dashboard shell: Header + Sidebar (full menu tree from design-system.md §5.2) + layout + live KPI overview
 - [ ] Unit tests: auth utilities/validation
 - [ ] Integration tests: login/signup flow (MSW mocks)
+- [x] `npm run build` passes clean (TypeScript strict, no errors)
 
 ## Phase 2 — Sprint 2: POS & Inventory (roadmap.md Sprint 2)
 - [ ] DB migrations: products, product_categories, inventory, inventory_ledger, stocktakes
