@@ -1,0 +1,415 @@
+// Hand-written types for the Phase 1 schema (database/migrations/001-011).
+// Once a real Supabase project exists, replace this file with the generated
+// one: `supabase gen types typescript --project-id <id> > lib/types/database.types.ts`
+// The shape (Tables/Views/Functions with Row/Insert/Update/Relationships)
+// matches that generator's output so callers don't need to change.
+
+export type UserRole = 'master_admin' | 'outlet_manager' | 'cashier' | 'staff'
+export type PaymentMethod = 'cash' | 'e_wallet' | 'bank_transfer' | 'card'
+export type PaymentStatus = 'pending' | 'processing' | 'settled' | 'failed' | 'refunded'
+export type InvoicePaymentStatus = 'pending' | 'partial' | 'paid'
+export type InvoiceOrderStatus = 'draft' | 'completed' | 'voided'
+
+export type Company = {
+  id: string
+  name: string
+  tier: 'starter' | 'professional' | 'enterprise'
+  subscription_status: 'active' | 'trial' | 'suspended'
+  subscription_start_date: string
+  subscription_end_date: string | null
+  billing_email: string
+  billing_phone: string | null
+  industry: string | null
+  country_code: string
+  currency: string
+  tax_id: string | null
+  tax_rate: number
+  logo_url: string | null
+  brand_color: string
+  brand_secondary_color: string
+  timezone: string
+  settings: Record<string, unknown>
+  metadata: Record<string, unknown>
+  created_at: string
+  updated_at: string
+  deleted_at: string | null
+}
+
+export type Outlet = {
+  id: string
+  company_id: string
+  name: string
+  address: string
+  city: string
+  province: string | null
+  postal_code: string | null
+  phone: string | null
+  manager_id: string | null
+  bank_account_name: string | null
+  bank_account_number: string | null
+  bank_name: string | null
+  tax_id: string | null
+  business_hours: Record<string, { open: string; close: string }> | null
+  status: 'active' | 'inactive' | 'closed'
+  opening_cash: number
+  target_daily_revenue: number | null
+  settings: Record<string, unknown>
+  created_at: string
+  updated_at: string
+  deleted_at: string | null
+}
+
+export type AppUser = {
+  id: string
+  company_id: string
+  outlet_id: string | null
+  email: string
+  full_name: string
+  phone: string | null
+  role: UserRole
+  permissions: string[]
+  status: 'active' | 'inactive' | 'suspended'
+  last_login_at: string | null
+  password_changed_at: string | null
+  created_at: string
+  updated_at: string
+  deleted_at: string | null
+}
+
+export type ProductCategory = {
+  id: string
+  company_id: string
+  name: string
+  description: string | null
+  sort_order: number | null
+  status: string
+  created_at: string
+}
+
+export type Product = {
+  id: string
+  company_id: string
+  category_id: string | null
+  sku: string
+  barcode: string | null
+  name: string
+  description: string | null
+  brand: string | null
+  manufacturer: string | null
+  purchase_price: number
+  selling_price: number
+  unit_type: string
+  conversion_factor: number
+  base_unit: string | null
+  markup_percentage: number | null
+  tax_rate: number | null
+  reorder_level: number
+  reorder_quantity: number
+  shelf_life_days: number | null
+  supplier_id: string | null
+  is_active: boolean
+  image_url: string | null
+  created_at: string
+  updated_at: string
+  deleted_at: string | null
+}
+
+export type Inventory = {
+  id: string
+  outlet_id: string
+  product_id: string
+  quantity_on_hand: number
+  quantity_reserved: number
+  quantity_available: number
+  last_count_date: string | null
+  reorder_level: number | null
+  alert_status: 'normal' | 'low_stock' | 'overstock' | 'out_of_stock' | 'expired'
+  created_at: string
+  updated_at: string
+}
+
+export type InventoryLedgerEntry = {
+  id: string
+  outlet_id: string
+  product_id: string
+  movement_type: string
+  quantity_change: number
+  unit_cost: number | null
+  reference_type: string | null
+  reference_id: string | null
+  recorded_by: string
+  notes: string | null
+  batch_number: string | null
+  expiry_date: string | null
+  created_at: string
+}
+
+export type Invoice = {
+  id: string
+  outlet_id: string
+  invoice_number: string
+  customer_name: string | null
+  customer_phone: string | null
+  cashier_id: string
+  subtotal: number
+  discount_amount: number
+  discount_type: 'fixed' | 'percentage' | null
+  discount_reason: string | null
+  discount_approved_by: string | null
+  tax_amount: number
+  total: number
+  payment_status: InvoicePaymentStatus
+  order_status: InvoiceOrderStatus
+  notes: string | null
+  created_at: string
+  updated_at: string
+  voided_at: string | null
+  voided_by: string | null
+  void_reason: string | null
+}
+
+export type InvoiceItem = {
+  id: string
+  invoice_id: string
+  product_id: string
+  quantity: number
+  unit_price: number
+  item_discount: number
+  subtotal: number
+  cost_of_goods_sold: number | null
+  created_at: string
+}
+
+export type PaymentTransaction = {
+  id: string
+  invoice_id: string
+  payment_method: PaymentMethod
+  payment_provider: string | null
+  amount: number
+  status: PaymentStatus
+  payment_gateway_reference_id: string | null
+  payment_date: string | null
+  settlement_date: string | null
+  settlement_amount: number | null
+  gateway_fee: number | null
+  notes: string | null
+  created_at: string
+  updated_at: string
+  metadata: Record<string, unknown>
+}
+
+export type VirtualAccount = {
+  id: string
+  invoice_id: string
+  va_number: string
+  bank: string
+  amount_expected: number
+  status: 'active' | 'paid' | 'expired' | 'cancelled'
+  expires_at: string
+  created_at: string
+}
+
+export type Supplier = {
+  id: string
+  company_id: string
+  name: string
+  contact_person: string | null
+  phone: string | null
+  email: string | null
+  address: string | null
+  city: string | null
+  payment_terms: number | null
+  bank_account_name: string | null
+  bank_account_number: string | null
+  bank_name: string | null
+  tax_id: string | null
+  status: 'active' | 'inactive'
+  rating: number | null
+  is_preferred: boolean
+  created_at: string
+  updated_at: string
+  deleted_at: string | null
+}
+
+export type PurchaseOrder = {
+  id: string
+  outlet_id: string
+  supplier_id: string
+  po_number: string
+  order_date: string
+  requested_delivery_date: string | null
+  actual_delivery_date: string | null
+  status: 'draft' | 'ordered' | 'partial_received' | 'received' | 'cancelled'
+  subtotal: number | null
+  tax_amount: number | null
+  total: number | null
+  created_by: string
+  approved_by: string | null
+  notes: string | null
+  created_at: string
+  updated_at: string
+}
+
+export type DailyFinancialSummary = {
+  id: string
+  outlet_id: string
+  summary_date: string
+  total_sales: number
+  total_discount: number
+  total_tax_collected: number | null
+  total_cash_received: number | null
+  total_e_wallet_received: number | null
+  total_bank_transfer_pending: number | null
+  total_invoices: number | null
+  total_items_sold: number | null
+  unique_customers: number | null
+  cash_on_hand_opening: number | null
+  cash_on_hand_closing: number | null
+  cash_variance: number | null
+  cost_of_goods_sold: number | null
+  gross_profit: number | null
+  gross_profit_margin: number | null
+  operating_expenses: number | null
+  net_profit: number | null
+  created_at: string
+  updated_at: string
+}
+
+export type AuditLogEntry = {
+  id: string
+  user_id: string
+  company_id: string
+  outlet_id: string | null
+  action_type: string
+  entity_type: string
+  entity_id: string
+  old_values: Record<string, unknown> | null
+  new_values: Record<string, unknown> | null
+  ip_address: string | null
+  user_agent: string | null
+  reason_for_action: string | null
+  status: string | null
+  error_message: string | null
+  created_at: string
+}
+
+export type SystemAlert = {
+  id: string
+  outlet_id: string
+  alert_type: string
+  severity: 'info' | 'warning' | 'critical'
+  title: string
+  description: string | null
+  reference_entity_type: string | null
+  reference_entity_id: string | null
+  is_resolved: boolean
+  resolved_at: string | null
+  resolved_by: string | null
+  created_at: string
+  updated_at: string
+}
+
+// ---- reporting views ----
+
+export type LowStockAlertView = {
+  outlet_id: string
+  product_id: string
+  name: string
+  sku: string
+  quantity_on_hand: number
+  reorder_level: number
+  reorder_quantity: number
+  shortage_qty: number
+  alert_status: string
+}
+
+export type DailySalesSummaryView = {
+  outlet_id: string
+  sale_date: string
+  transaction_count: number
+  unique_customers: number
+  items_sold: number
+  sales_before_discount: number
+  total_discounts: number
+  tax_collected: number
+  total_sales: number
+  cogs: number
+  gross_profit: number
+  gross_margin_percent: number | null
+}
+
+export type InventoryValuationView = {
+  outlet_id: string
+  product_id: string
+  name: string
+  sku: string
+  quantity_on_hand: number
+  quantity_reserved: number
+  quantity_available: number
+  purchase_price: number
+  selling_price: number
+  cost_value: number
+  retail_value: number
+  potential_profit: number
+}
+
+// Helper so every table entry gets a consistent shape without repeating
+// `Insert`/`Update`/`Relationships` boilerplate.
+type Table<Row> = { Row: Row; Insert: Partial<Row>; Update: Partial<Row>; Relationships: [] }
+type View<Row> = { Row: Row; Relationships: [] }
+
+export type Database = {
+  public: {
+    Tables: {
+      companies: Table<Company>
+      outlets: Table<Outlet>
+      users: Table<AppUser>
+      product_categories: Table<ProductCategory>
+      products: Table<Product>
+      inventory: Table<Inventory>
+      inventory_ledger: Table<InventoryLedgerEntry>
+      invoices: Table<Invoice>
+      invoice_items: Table<InvoiceItem>
+      payment_transactions: Table<PaymentTransaction>
+      virtual_accounts: Table<VirtualAccount>
+      suppliers: Table<Supplier>
+      purchase_orders: Table<PurchaseOrder>
+      daily_financial_summary: Table<DailyFinancialSummary>
+      audit_log: Table<AuditLogEntry>
+      system_alerts: Table<SystemAlert>
+    }
+    Views: {
+      v_low_stock_alerts: View<LowStockAlertView>
+      v_daily_sales_summary: View<DailySalesSummaryView>
+      v_inventory_valuation: View<InventoryValuationView>
+    }
+    Functions: {
+      provision_company_and_owner: {
+        Args: {
+          p_user_id: string
+          p_email: string
+          p_full_name: string
+          p_phone: string
+          p_company_name: string
+          p_tier: string
+          p_industry: string
+        }
+        Returns: { company_id: string; outlet_id: string }[]
+      }
+      update_inventory: {
+        Args: {
+          p_outlet_id: string
+          p_product_id: string
+          p_quantity_change: number
+          p_movement_type: string
+          p_reference_id: string
+          p_recorded_by: string
+          p_reference_type?: string
+          p_unit_cost?: number
+          p_notes?: string
+        }
+        Returns: { new_quantity_on_hand: number }[]
+      }
+    }
+  }
+}

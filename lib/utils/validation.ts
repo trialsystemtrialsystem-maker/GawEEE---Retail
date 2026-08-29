@@ -1,0 +1,84 @@
+import { z } from 'zod'
+
+export const signUpSchema = z
+  .object({
+    company_name: z.string().min(2, 'Nama toko minimal 2 karakter'),
+    email: z.string().email('Email tidak valid'),
+    password: z
+      .string()
+      .min(8, 'Password minimal 8 karakter')
+      .regex(/[A-Z]/, 'Password harus mengandung huruf besar')
+      .regex(/[0-9]/, 'Password harus mengandung angka'),
+    confirm_password: z.string(),
+    phone: z.string().min(8, 'Nomor telepon tidak valid'),
+    industry: z.enum(['frozen_food', 'minimarket', 'bakery', 'kelontong', 'other']),
+    outlet_count: z.enum(['single', 'multi']),
+  })
+  .refine((data) => data.password === data.confirm_password, {
+    message: 'Password tidak cocok',
+    path: ['confirm_password'],
+  })
+
+export type SignUpInput = z.infer<typeof signUpSchema>
+
+export const loginSchema = z.object({
+  email: z.string().email('Email tidak valid'),
+  password: z.string().min(1, 'Password wajib diisi'),
+  remember_me: z.boolean().optional(),
+})
+
+export type LoginInput = z.infer<typeof loginSchema>
+
+export const invoiceItemSchema = z.object({
+  product_id: z.string().uuid(),
+  quantity: z.number().int().positive(),
+  discount: z.number().min(0).optional(),
+})
+
+export const createInvoiceSchema = z.object({
+  outlet_id: z.string().uuid(),
+  customer_name: z.string().optional(),
+  customer_phone: z.string().optional(),
+  items: z.array(invoiceItemSchema).min(1, 'Keranjang tidak boleh kosong'),
+  discount_amount: z.number().min(0).default(0),
+  discount_reason: z.string().optional(),
+  payment_method: z.enum(['cash', 'e_wallet', 'bank_transfer', 'card']),
+})
+
+export type CreateInvoiceInput = z.infer<typeof createInvoiceSchema>
+
+export const inventoryAdjustSchema = z.object({
+  outlet_id: z.string().uuid(),
+  product_id: z.string().uuid(),
+  quantity_change: z.number().int().refine((n) => n !== 0, 'Perubahan tidak boleh 0'),
+  reason: z.string().min(3, 'Alasan wajib diisi'),
+  reference: z.string().optional(),
+})
+
+export type InventoryAdjustInput = z.infer<typeof inventoryAdjustSchema>
+
+export const productSchema = z.object({
+  sku: z.string().min(1),
+  name: z.string().min(1),
+  category_id: z.string().uuid().optional(),
+  barcode: z.string().optional(),
+  purchase_price: z.number().nonnegative(),
+  selling_price: z.number().nonnegative(),
+  unit_type: z.string().min(1),
+  reorder_level: z.number().int().nonnegative(),
+  reorder_quantity: z.number().int().nonnegative(),
+  supplier_id: z.string().uuid().optional(),
+})
+
+export type ProductInput = z.infer<typeof productSchema>
+
+/** Runs a Zod schema and returns a `{ valid, data?, errors? }` shape that
+ * matches the `validateXInput` helpers referenced throughout prd.md's API
+ * route examples. */
+export function validate<T>(schema: z.ZodType<T>, input: unknown) {
+  const result = schema.safeParse(input)
+  if (result.success) {
+    return { valid: true as const, data: result.data }
+  }
+  return { valid: false as const, errors: result.error.flatten() }
+}
