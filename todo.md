@@ -97,9 +97,14 @@ Legend: `[ ]` pending · `[x]` done · `[!]` needs user input/credentials before
       dedicated pass yet (no toast/notification system, no global error boundary)
 
 ## Phase 5 — QA, Deploy & Launch Prep
-- [ ] Full unit + integration + E2E suite green, coverage ≥ 80%
-- [ ] `docker-compose.yml` for local Postgres/Redis/Mailhog
-- [ ] GitHub Actions CI (lint, test, build) — safe to add now
+- [ ] Full unit + integration + E2E suite green, coverage ≥ 80% (unit tests exist for utils only;
+      no integration/E2E suite yet)
+- [!] Local dev database — roadmap.md's plain `docker-compose.yml` (bare `postgres:15-alpine`) won't
+      actually work with this schema: migrations reference `auth.users` and RLS policies call
+      `auth.uid()`, both provided by Supabase's auth stack, not vanilla Postgres. Local dev needs the
+      **Supabase CLI** (`supabase init && supabase start`) instead, which runs the full stack
+      (Postgres + GoTrue auth + PostgREST) locally via Docker — not yet set up, needs Docker Desktop
+- [x] GitHub Actions CI (lint, test, build) — added, runs on push/PR to main/develop
 - [!] GitHub Actions CD (deploy to staging/production) — **needs Vercel project + secrets (VERCEL_TOKEN, org/project IDs) and confirmation before wiring auto-deploy**
 - [!] Production Supabase project + domain + Sentry/DataDog — **needs accounts/credentials from user**
 - [!] Beta customer onboarding, load testing against real infra, security pentest — **operational/business steps, not code tasks; flag when engineering side is ready**
