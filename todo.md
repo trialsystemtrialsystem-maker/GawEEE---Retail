@@ -284,6 +284,17 @@ This closes out Phase 7 (all 6 modules from the reference mockups shipped, adapt
 domain). Follow-ons intentionally deferred (noted inline above): auto-posting journal entries from
 sales/purchasing, quick-PIN wiring into the POS cashier switcher, real WhatsApp/push notification
 delivery.
+- [x] Found + fixed a real pre-existing bug while smoke-testing 7.6's new Hak Akses page (which reuses
+      `GET /api/admin/users`): PostgREST couldn't resolve the `outlets(name)` embed because two FKs
+      exist between `users`/`outlets` (`users.outlet_id` and `outlets.manager_id`), causing every call
+      to 500. This silently broke Master Admin → Users the whole time, not just the new page. Fixed via
+      explicit FK disambiguation (`outlets!users_outlet_id_fkey(name)`). Verified live via Playwright
+      against the demo account: 500 → 200 with correct data.
+- [x] Verified all 6 new Phase 7 modules against the live dev server + demo account via Playwright: no
+      page crashes (all return 200, no console/page errors) either way — pages whose tables don't exist
+      yet (everything except Accounting, which reuses Phase 1 schema) show a graceful empty/error state
+      from the API's `handleDatabaseError`, not a broken page, confirming the app stays stable until the
+      user runs migrations 013-018.
 
 ## Notes on scope
 This todo tracks the **engineering deliverables** of the PRD (a working Next.js + Supabase codebase
