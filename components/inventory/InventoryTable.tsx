@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { formatCurrency } from '@/lib/utils/formatting'
+import { getProductIcon } from '@/lib/utils/productIcon'
 import { Input } from '@/components/ui/Input'
 import { Alert } from '@/components/ui/Alert'
 
@@ -10,6 +11,7 @@ interface InventoryRow {
   product_id: string
   sku: string
   name: string
+  category_name?: string | null
   quantity_on_hand: number
   quantity_available: number
   cost_value: number
@@ -119,7 +121,17 @@ export function InventoryTable({ outletId }: { outletId: string }) {
                 const statusInfo = STATUS_LABEL[row.status] ?? { label: row.status, className: 'text-gray-500' }
                 return (
                   <tr key={row.product_id} className="hover:bg-gray-50">
-                    <td className="px-4 py-2 text-gray-900">{row.name}</td>
+                    <td className="px-4 py-2 text-gray-900">
+                      <span className="flex items-center gap-2">
+                        <span
+                          aria-hidden
+                          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-blue-50 text-sm"
+                        >
+                          {getProductIcon({ name: row.name, categoryName: row.category_name })}
+                        </span>
+                        {row.name}
+                      </span>
+                    </td>
                     <td className="px-4 py-2 text-gray-500">{row.sku}</td>
                     <td className="px-4 py-2 text-right text-gray-700">{row.quantity_available}</td>
                     <td className="px-4 py-2 text-right text-gray-700">{formatCurrency(row.cost_value)}</td>

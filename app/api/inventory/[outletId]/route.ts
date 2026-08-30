@@ -23,7 +23,7 @@ export async function GET(request: NextRequest, ctx: RouteContext<'/api/inventor
 
   let query = auth.supabase
     .from('inventory')
-    .select('product_id, quantity_on_hand, quantity_reserved, quantity_available, alert_status, products(name, sku, barcode, category_id, purchase_price, selling_price)')
+    .select('product_id, quantity_on_hand, quantity_reserved, quantity_available, alert_status, products(name, sku, barcode, category_id, purchase_price, selling_price, product_categories(name))')
     .eq('outlet_id', outletId)
 
   if (statusFilter) {
@@ -53,6 +53,7 @@ export async function GET(request: NextRequest, ctx: RouteContext<'/api/inventor
       category_id: string | null
       purchase_price: number
       selling_price: number
+      product_categories: { name: string } | null
     } | null
   }
 
@@ -72,6 +73,7 @@ export async function GET(request: NextRequest, ctx: RouteContext<'/api/inventor
     sku: r.products?.sku,
     barcode: r.products?.barcode,
     name: r.products?.name,
+    category_name: r.products?.product_categories?.name ?? null,
     unit_price: r.products?.selling_price ?? 0,
     quantity_on_hand: r.quantity_on_hand,
     quantity_reserved: r.quantity_reserved,

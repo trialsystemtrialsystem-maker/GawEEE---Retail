@@ -1,40 +1,43 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import { usePosStore } from '@/store/posStore'
 import { formatCurrency } from '@/lib/utils/formatting'
+import { getProductIcon } from '@/lib/utils/productIcon'
 
 interface InventoryItem {
   product_id: string
   name: string
   sku: string
   barcode: string | null
+  category_name: string | null
   unit_price: number
   quantity_available: number
 }
 
 export function ProductSearch({ outletId }: { outletId: string }) {
   const [query, setQuery] = useState('')
-  const [results, setResults] = useState<InventoryItem[]>([])
-  const [isSearching, setIsSearching] = useState(false)
+  const [allProducts, setAllProducts] = useState<InventoryItem[]>([])
+  const [isLoading, setIsLoading] = useState(true)
   const [notFound, setNotFound] = useState<string | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const addItem = usePosStore((s) => s.addItem)
 
-  async function search(term: string) {
-    if (!term.trim()) {
-      setResults([])
-      return
-    }
-    setIsSearching(true)
+  const loadAll = useCallback(async () => {
+    setIsLoading(true)
     try {
-      const res = await fetch(`/api/inventory/${outletId}?search=${encodeURIComponent(term)}`)
+      const res = await fetch(`/api/inventory/${outletId}`)
       const data = await res.json()
-      setResults(data.inventory ?? [])
+      setAllProducts(data.inventory ?? [])
     } finally {
-      setIsSearching(false)
+      setIsLoading(false)
     }
-  }
+  }, [outletId])
+
+  useEffect(() => {
+    const timeout = setTimeout(loadAll, 0)
+    return () => clearTimeout(timeout)
+  }, [loadAll])
 
   async function handleBarcodeEnter() {
     if (!query.trim()) return
@@ -44,8 +47,6 @@ export function ProductSearch({ outletId }: { outletId: string }) {
     const match: InventoryItem | undefined = data.inventory?.[0]
     if (match) {
       handleAdd(match)
-      setQuery('')
-      setResults([])
     } else {
       setNotFound(`Barcode "${query}" tidak ditemukan`)
     }
@@ -54,12 +55,16 @@ export function ProductSearch({ outletId }: { outletId: string }) {
   function handleAdd(item: InventoryItem) {
     addItem({ product_id: item.product_id, name: item.name, sku: item.sku, unit_price: item.unit_price })
     setQuery('')
-    setResults([])
+    setNotFound(null)
     inputRef.current?.focus()
+    loadAll() // refresh so stock counts on the grid reflect the new cart draw-down risk at a glance
   }
 
+  const needle = query.trim().toLowerCase()
+  const visibleProducts = needle ? allProducts.filter((p) => p.name.toLowerCase().includes(needle)) : allProducts
+
   return (
-    <div className="space-y-2">
+    <div className="space-y-3">
       <div className="relative">
         <input
           ref={inputRef}
@@ -68,7 +73,6 @@ export function ProductSearch({ outletId }: { outletId: string }) {
           onChange={(e) => {
             setQuery(e.target.value)
             setNotFound(null)
-            search(e.target.value)
           }}
           onKeyDown={(e) => {
             if (e.key === 'Enter') handleBarcodeEnter()
@@ -77,34 +81,44 @@ export function ProductSearch({ outletId }: { outletId: string }) {
           autoFocus
           className="w-full rounded-md border border-gray-200 px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
-        {isSearching && (
-          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">Mencari…</span>
-        )}
       </div>
 
       {notFound && <p className="text-sm text-red-500">{notFound}</p>}
 
-      {results.length > 0 && (
-        <ul className="max-h-64 divide-y divide-gray-100 overflow-y-auto rounded-md border border-gray-200 bg-white">
-          {results.map((item) => (
-            <li key={item.product_id}>
+      {isLoading ? (
+        <p className="py-8 text-center text-sm text-gray-400">Memuat produk…</p>
+      ) : visibleProducts.length === 0 ? (
+        <p className="py-8 text-center text-sm text-gray-400">Produk tidak ditemukan</p>
+      ) : (
+        <div className="grid max-h-[32rem] grid-cols-2 gap-3 overflow-y-auto pr-1 sm:grid-cols-3 lg:grid-cols-4">
+          {visibleProducts.map((item) => {
+            const outOfStock = item.quantity_available <= 0
+            return (
               <button
+                key={item.product_id}
                 type="button"
                 onClick={() => handleAdd(item)}
-                disabled={item.quantity_available <= 0}
-                className="flex w-full items-center justify-between px-4 py-2 text-left text-sm hover:bg-gray-50 disabled:opacity-40"
+                disabled={outOfStock}
+                className="flex flex-col items-center gap-2 rounded-lg border border-gray-200 bg-white p-3 text-center transition hover:border-blue-400 hover:shadow-md disabled:opacity-40 disabled:hover:border-gray-200 disabled:hover:shadow-none"
               >
-                <span>
-                  <span className="font-medium text-gray-900">{item.name}</span>{' '}
-                  <span className="text-gray-400">({item.sku})</span>
-                </span>
-                <span className="text-gray-600">
-                  {formatCurrency(item.unit_price)} · stok {item.quantity_available}
+                <div className="w-full">
+                  <p className="line-clamp-2 text-sm font-medium text-gray-900">{item.name}</p>
+                  <p className="mt-0.5 text-xs text-gray-500">{formatCurrency(item.unit_price)}</p>
+                  <p className={`text-xs ${outOfStock ? 'text-red-500' : 'text-gray-400'}`}>
+                    {outOfStock ? 'Stok habis' : `Stok ${item.quantity_available}`}
+                  </p>
+                </div>
+                {/* Category symbol, anchored at the bottom of the tile */}
+                <span
+                  aria-hidden
+                  className="mt-1 flex h-10 w-10 items-center justify-center rounded-full bg-blue-50 text-xl"
+                >
+                  {getProductIcon({ name: item.name, categoryName: item.category_name })}
                 </span>
               </button>
-            </li>
-          ))}
-        </ul>
+            )
+          })}
+        </div>
       )}
     </div>
   )

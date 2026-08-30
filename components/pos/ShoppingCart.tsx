@@ -2,6 +2,7 @@
 
 import { usePosStore } from '@/store/posStore'
 import { formatCurrency } from '@/lib/utils/formatting'
+import { getProductIcon } from '@/lib/utils/productIcon'
 
 export function ShoppingCart() {
   const items = usePosStore((s) => s.items)
@@ -24,12 +25,17 @@ export function ShoppingCart() {
         <ul className="divide-y divide-gray-100">
           {items.map((item) => (
             <li key={item.product_id} className="flex items-center justify-between py-2">
-              <div>
-                <p className="font-medium text-gray-900">{item.name}</p>
-                <p className="text-sm text-gray-500">
-                  {formatCurrency(item.unit_price)} × {item.quantity} ={' '}
-                  {formatCurrency(item.unit_price * item.quantity)}
-                </p>
+              <div className="flex items-center gap-3">
+                <span aria-hidden className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-blue-50 text-lg">
+                  {getProductIcon({ name: item.name })}
+                </span>
+                <div>
+                  <p className="font-medium text-gray-900">{item.name}</p>
+                  <p className="text-sm text-gray-500">
+                    {formatCurrency(item.unit_price)} × {item.quantity} ={' '}
+                    {formatCurrency(item.unit_price * item.quantity)}
+                  </p>
+                </div>
               </div>
               <div className="flex items-center gap-2">
                 <button
