@@ -92,9 +92,21 @@ Legend: `[ ]` pending · `[x]` done · `[!]` needs user input/credentials before
 - [x] Purchase order UI (`/dashboard/suppliers/purchase-orders`: list, create form, submit/approve/receive
       actions) — full draft→submit→approve→receive cycle tested end-to-end against the live Supabase
       project, stock correctly incremented on receipt
-- [ ] Tax report calculation (PPN/PPh) — not started
+- [ ] Tax report calculation (PPN/PPh) — not started, placeholder page in place
 - [ ] Integration test: transaction → journal entry → P&L accuracy — no journal entries are written
       yet (see above), so this can't be meaningfully tested until that's wired up
+- [x] Financial dashboard sub-pages: `/dashboard/financial/cash-position` (KPI cards + recent cash
+      transactions) and `/dashboard/financial/reports` (P&L with a date-range picker) — both were
+      linked from the sidebar since Sprint 1 but 404'd until now
+- [x] Product management UI (`/dashboard/inventory/products`: list + create form)
+- [x] Audited every sidebar link against actual pages — found and fixed 12 more 404s beyond the
+      Sales gap above. Real pages added where the backend already existed (the three above); an
+      honest "belum tersedia" placeholder (`components/common/ComingSoon.tsx`) for features with no
+      backend at all yet (tax report, stocktake, outlet settings, payment-method settings, staff,
+      attendance, supplier invoices); and two redirects for pages that would've just duplicated an
+      existing one (`/dashboard/settings/users` → `/dashboard/admin/users`,
+      `/dashboard/reports/daily` → `/dashboard/financial`). All 53 routes verified 200/307 (never
+      404) against the live dev server.
 
 ## Phase 4 — Sprint 4: Multi-outlet, Admin & Payment Gateways (roadmap.md Sprint 4)
 - [x] Master Admin dashboard + sidebar (design-system.md §6) — outlet performance leaderboard,
