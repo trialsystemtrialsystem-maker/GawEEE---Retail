@@ -82,6 +82,30 @@ export async function POST() {
     outletId = provisioned.outlet_id
   }
 
+  // 1b) Fast path: the seeder always backdates its most recent invoice to
+  // "today" (see the day-by-day loop below), so if that's still true the
+  // existing data is fresh — skip the ~20s wipe-and-regenerate entirely and
+  // just hand back the login. This is what makes repeat "Coba Demo" clicks
+  // on the same day near-instant instead of always paying the full reseed.
+  const todayStr = new Date().toISOString().slice(0, 10)
+  const { data: latestInvoice } = await admin
+    .from('invoices')
+    .select('created_at')
+    .eq('outlet_id', outletId)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+
+  if (latestInvoice && latestInvoice.created_at.slice(0, 10) === todayStr) {
+    return NextResponse.json({
+      email: DEMO_EMAIL,
+      password: DEMO_PASSWORD,
+      company_id: companyId,
+      outlet_id: outletId,
+      stats: { reused_existing_data: true },
+    })
+  }
+
   // 2) Wipe any previous demo data for this tenant (idempotent reset), in
   // FK-safe order. Sequential deletes rather than one SQL function: this is
   // demo-only data, so a partial failure is low-stakes (same trade-off as PO

@@ -187,6 +187,12 @@ Legend: `[ ]` pending · `[x]` done · `[!]` needs user input/credentials before
       - Confirmed working as-is: Inventory Management, Financial Reports, Compliance Ready (audit log
         has real entries), and Payment Integration (e-wallet/bank mock flow, clearly labeled as demo
         mode pending real Doku/Bank credentials — see Phase 4).
+- [x] "Coba Demo" was slow (~20s) on every click, because it unconditionally wiped and regenerated
+      the full 90-day dataset even when nothing had changed. Added a fast path: if the tenant's most
+      recent invoice is already dated today (true right after any seed, since the generator always
+      backdates its last invoice to "today"), skip straight to returning the login instead of
+      reseeding — full reseed still runs automatically once the data goes stale (next calendar day).
+      Verified: ~20s -> ~1s for a same-day repeat click.
 - [!] The demo seed endpoint is public and unauthenticated by design (so it's reachable from the
       landing page without login) but has no rate-limiting — repeated calls just re-seed the same
       fixed tenant (bounded blast radius), but could still be hammered to load the DB. Acceptable for
