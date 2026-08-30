@@ -15,7 +15,13 @@ Legend: `[ ]` pending · `[x]` done · `[!]` needs user input/credentials before
 - [x] `.env.example` with all vars from roadmap.md §2.3 (no real secrets committed)
 - [x] ESLint config (from create-next-app)
 - [x] Base folder structure per roadmap.md §3.1 (app/, components/, lib/, database/)
-- [!] Supabase project (URL + anon key + service role key) — **needs user to create a Supabase project and share credentials**, or approve using local Supabase CLI / mock mode for now
+- [x] Supabase project created (`nwzbzbehdxatnuymmjgg`, region auto-selected), all 12 migrations run,
+      `.env.local` configured. **Verified end-to-end against the live project**: signup → login →
+      create product → adjust stock → POS sale (atomic, stock deducted correctly) → oversell rejected
+      (409) → daily report accurate → void restores stock → unauthenticated requests rejected (401) →
+      full PO cycle (draft→submit→approve→receive, stock incremented). Note: "Confirm email" is
+      currently **disabled** in Supabase Auth settings (no SMTP configured yet) so signup completes
+      without email verification — re-enable once SendGrid/custom SMTP is set up for production.
 
 ## Phase 1 — Sprint 1: Foundation & Auth (roadmap.md Sprint 1)
 - [x] Database schema migration files (companies → outlets → users → products/inventory →
@@ -74,7 +80,9 @@ Legend: `[ ]` pending · `[x]` done · `[!]` needs user input/credentials before
       increased via `update_inventory()` on receipt — sequential calls rather than one atomic SQL
       function like invoices, since a partial failure here just needs a manual re-run (documented
       in the route's comment)
-- [ ] Purchase order UI (list/create/receive screens) — API exists, no dashboard pages yet
+- [x] Purchase order UI (`/dashboard/suppliers/purchase-orders`: list, create form, submit/approve/receive
+      actions) — full draft→submit→approve→receive cycle tested end-to-end against the live Supabase
+      project, stock correctly incremented on receipt
 - [ ] Tax report calculation (PPN/PPh) — not started
 - [ ] Integration test: transaction → journal entry → P&L accuracy — no journal entries are written
       yet (see above), so this can't be meaningfully tested until that's wired up
