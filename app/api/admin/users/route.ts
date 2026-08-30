@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
 
   let query = auth.supabase
     .from('users')
-    .select('id, email, full_name, role, status, last_login_at, outlets(name)')
+    .select('id, email, full_name, role, status, last_login_at, outlets!users_outlet_id_fkey(name)')
     .eq('company_id', auth.company_id)
 
   if (outletId) query = query.eq('outlet_id', outletId)
