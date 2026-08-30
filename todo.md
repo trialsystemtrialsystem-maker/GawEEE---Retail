@@ -58,7 +58,13 @@ Legend: `[ ]` pending · `[x]` done · `[!]` needs user input/credentials before
 - [x] Inventory API: list (`/api/inventory/:outletId`, with search/barcode/status filters), adjust; low-stock via `alert_status`
 - [x] Inventory dashboard UI (stock table, search, status filter, stock/retail value totals)
 - [ ] Real-time inventory sync via Supabase Realtime channel — not wired up yet, table just refetches on filter change
-- [ ] E2E test: full POS transaction (scan → pay → receipt), void flow — Playwright not set up yet
+- [x] E2E test: full POS transaction (scan → pay → receipt) — Playwright set up (`npm run test:e2e`),
+      5 tests passing against the live dev server + real Supabase project (login errors, signup
+      validation, landing page links, a full cash sale through the actual UI, empty-cart guard).
+      Credentials come from `E2E_TEST_EMAIL`/`E2E_TEST_PASSWORD`/`E2E_TEST_PRODUCT_BARCODE` env vars
+      (set in `.env.local`, not committed) rather than being hardcoded in the spec file. Not wired
+      into CI yet since that needs these as GitHub Actions secrets — not something I can add myself.
+      Void-flow E2E coverage still missing (no void button in the dashboard UI yet — see below).
 - [!] Sidebar's "Stok Rendah" link points at `/dashboard/inventory/low-stock`, not yet built (use the
       status filter on `/dashboard/inventory` for now)
 
