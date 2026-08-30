@@ -73,6 +73,12 @@ const NAV_ITEMS: NavItem[] = [
     children: [
       { label: 'Daftar Karyawan', href: '/dashboard/staff' },
       { label: 'Attendance', href: '/dashboard/staff/attendance' },
+      { label: 'Payroll', href: '/dashboard/staff/payroll' },
+      { label: 'Hak Akses', href: '/dashboard/staff/access' },
+      { label: 'Jadwal Kerja', href: '/dashboard/staff/schedule' },
+      { label: 'Notifikasi', href: '/dashboard/staff/notifications' },
+      { label: 'Persetujuan Pembelian', href: '/dashboard/staff/approvals/purchasing' },
+      { label: 'Persetujuan Keuangan', href: '/dashboard/staff/approvals/finance' },
     ],
   },
   {

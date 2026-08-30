@@ -266,8 +266,24 @@ sequential increments, smallest/lowest-risk first:
       (migration `017_bookings.sql`), status workflow pending → confirmed → in_progress → completed
       (or cancel), `/dashboard/bookings`. Also added `GET /api/staff` (minimal staff picker list —
       full staff CRUD lands in 7.6). **Needs `017_bookings.sql` run in Supabase SQL Editor.**
-- [ ] 7.6 Employee expansion — payroll runs/payslips, access-rights matrix, geofence radius on outlets,
-      staff announcements, shifts/schedule, position levels + quick-PIN, purchasing/expense approvals
+- [x] 7.6 Employee expansion — migration `018_employee_expansion.sql` (payroll_runs/payslips,
+      position_levels, shifts/staff_schedules, staff_announcements, expense_requests, plus
+      position_level_id/pin_code on staff_members and geofence_lat/lng/radius_m on outlets).
+      Replaced the two `ComingSoon` stubs (Daftar Karyawan, Attendance) with real CRUD/clock-in-out UI.
+      New: Payroll (generate a run → one payslip per active staff, base salary + commission computed
+      from that period's sales, mark-as-paid), Hak Akses (permission matrix sourced from the actual
+      API route gates + role editor reusing the existing `PUT /api/admin/users/:id`), Jadwal Kerja
+      (shift list + weekly assignment grid), Notifikasi (in-app announcement log, no real push),
+      Persetujuan Pembelian (reuses the existing PO approve endpoint + new reject endpoint),
+      Persetujuan Keuangan (new manual expense-approval flow), Radius Absensi (geofence fields added
+      to the previously-stubbed Outlet Info settings page, which is now also real). Also replaced the
+      generic `ComingSoon` `/dashboard/settings` page with a working outlet-info + geofence editor.
+      **Needs `018_employee_expansion.sql` run in Supabase SQL Editor.**
+
+This closes out Phase 7 (all 6 modules from the reference mockups shipped, adapted to GawEEE's retail
+domain). Follow-ons intentionally deferred (noted inline above): auto-posting journal entries from
+sales/purchasing, quick-PIN wiring into the POS cashier switcher, real WhatsApp/push notification
+delivery.
 
 ## Notes on scope
 This todo tracks the **engineering deliverables** of the PRD (a working Next.js + Supabase codebase

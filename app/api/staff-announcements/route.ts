@@ -1,10 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthContext, canAccessOutlet } from '@/lib/utils/auth-context'
-import { validate, staffMemberSchema } from '@/lib/utils/validation'
+import { validate, staffAnnouncementSchema } from '@/lib/utils/validation'
 import { handleDatabaseError } from '@/lib/utils/errors'
 
-// GET /api/staff?outlet_id= — active staff list, used by pickers (bookings,
-// payroll, schedule) as well as the staff management page itself.
+// GET /api/staff-announcements?outlet_id=
 export async function GET(request: NextRequest) {
   const auth = await getAuthContext()
   if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -15,21 +14,21 @@ export async function GET(request: NextRequest) {
   }
 
   const { data, error } = await auth.supabase
-    .from('staff_members')
-    .select('*')
+    .from('staff_announcements')
+    .select('*, users(full_name)')
     .eq('outlet_id', outletId)
-    .is('deleted_at', null)
-    .order('first_name')
+    .order('created_at', { ascending: false })
+    .limit(50)
 
   if (error) {
     const { status, message } = handleDatabaseError(error)
     return NextResponse.json({ error: message }, { status })
   }
 
-  return NextResponse.json({ staff: data })
+  return NextResponse.json({ announcements: data })
 }
 
-// POST /api/staff — manager+ only.
+// POST /api/staff-announcements — manager+ only.
 export async function POST(request: NextRequest) {
   const auth = await getAuthContext()
   if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -38,17 +37,16 @@ export async function POST(request: NextRequest) {
   }
 
   const body = await request.json()
-  const result = validate(staffMemberSchema, body)
+  const result = validate(staffAnnouncementSchema, body)
   if (!result.valid) return NextResponse.json({ error: result.errors }, { status: 400 })
 
   if (!canAccessOutlet(auth, result.data.outlet_id)) {
     return NextResponse.json({ error: 'Tidak memiliki izin' }, { status: 403 })
   }
 
-  const { pin_code, email, ...rest } = result.data
   const { data, error } = await auth.supabase
-    .from('staff_members')
-    .insert({ ...rest, email: email || null, pin_code: pin_code || null })
+    .from('staff_announcements')
+    .insert({ ...result.data, created_by: auth.id })
     .select()
     .single()
 
@@ -57,5 +55,5 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: message }, { status })
   }
 
-  return NextResponse.json({ staff: data }, { status: 201 })
+  return NextResponse.json({ announcement: data }, { status: 201 })
 }

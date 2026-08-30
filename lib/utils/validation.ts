@@ -145,6 +145,69 @@ export const createJournalEntrySchema = z.object({
 
 export type CreateJournalEntryInput = z.infer<typeof createJournalEntrySchema>
 
+export const staffMemberSchema = z.object({
+  outlet_id: z.string().uuid(),
+  first_name: z.string().min(1, 'Nama depan wajib diisi'),
+  last_name: z.string().optional(),
+  email: z.string().email().optional().or(z.literal('')),
+  phone: z.string().optional(),
+  position: z.string().min(1, 'Jabatan wajib diisi'),
+  position_level_id: z.string().uuid().optional(),
+  hire_date: z.string().min(1, 'Tanggal masuk wajib diisi'),
+  salary_amount: z.number().nonnegative().optional(),
+  salary_frequency: z.enum(['monthly', 'daily']).optional(),
+  employment_status: z.enum(['permanent', 'contract', 'casual']).optional(),
+  commission_rate: z.number().min(0).max(1).optional(),
+  pin_code: z.string().regex(/^\d{4,6}$/, 'PIN harus 4-6 digit angka').optional().or(z.literal('')),
+})
+
+export type StaffMemberInput = z.infer<typeof staffMemberSchema>
+
+export const clockInSchema = z.object({ staff_id: z.string().uuid() })
+export const clockOutSchema = z.object({ attendance_id: z.string().uuid() })
+
+export const positionLevelSchema = z.object({
+  outlet_id: z.string().uuid(),
+  name: z.string().min(1, 'Nama level wajib diisi'),
+  sort_order: z.number().int().nonnegative().default(0),
+})
+
+export const shiftSchema = z.object({
+  outlet_id: z.string().uuid(),
+  name: z.string().min(1, 'Nama shift wajib diisi'),
+  start_time: z.string().min(1),
+  end_time: z.string().min(1),
+})
+
+export const staffScheduleSchema = z.object({
+  staff_id: z.string().uuid(),
+  shift_id: z.string().uuid(),
+  work_date: z.string().min(1),
+})
+
+export const staffAnnouncementSchema = z.object({
+  outlet_id: z.string().uuid(),
+  message: z.string().min(1, 'Pesan wajib diisi'),
+})
+
+export const generatePayrollRunSchema = z.object({
+  outlet_id: z.string().uuid(),
+  period_start: z.string().min(1),
+  period_end: z.string().min(1),
+})
+
+export const expenseRequestSchema = z.object({
+  outlet_id: z.string().uuid(),
+  description: z.string().min(1, 'Deskripsi wajib diisi'),
+  amount: z.number().positive('Nominal harus lebih dari 0'),
+})
+
+export const outletGeofenceSchema = z.object({
+  geofence_lat: z.number().min(-90).max(90).optional(),
+  geofence_lng: z.number().min(-180).max(180).optional(),
+  geofence_radius_m: z.number().int().positive().optional(),
+})
+
 export const createBookingSchema = z.object({
   outlet_id: z.string().uuid(),
   customer_name: z.string().min(1, 'Nama pelanggan wajib diisi'),

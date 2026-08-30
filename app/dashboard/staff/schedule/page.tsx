@@ -1,8 +1,8 @@
 import { createClient } from '@/lib/supabase/server'
 import { Alert } from '@/components/ui/Alert'
-import { StaffManager } from '@/components/staff/StaffManager'
+import { ScheduleManager } from '@/components/staff/ScheduleManager'
 
-export default async function StaffPage() {
+export default async function SchedulePage() {
   const supabase = await createClient()
   const {
     data: { session },
@@ -12,9 +12,9 @@ export default async function StaffPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-gray-900">Daftar Karyawan</h1>
+      <h1 className="text-2xl font-bold text-gray-900">Jadwal Kerja</h1>
       {profile?.outlet_id ? (
-        <StaffManager outletId={profile.outlet_id} canManage={['outlet_manager', 'master_admin'].includes(profile.role)} />
+        <ScheduleManager outletId={profile.outlet_id} canManage={['outlet_manager', 'master_admin'].includes(profile.role)} />
       ) : (
         <Alert variant="warning">Pilih outlet terlebih dahulu.</Alert>
       )}

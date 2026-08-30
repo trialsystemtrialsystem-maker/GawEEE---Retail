@@ -1,20 +1,20 @@
 import { createClient } from '@/lib/supabase/server'
 import { Alert } from '@/components/ui/Alert'
-import { AttendanceManager } from '@/components/staff/AttendanceManager'
+import { PayrollManager } from '@/components/staff/PayrollManager'
 
-export default async function AttendancePage() {
+export default async function PayrollPage() {
   const supabase = await createClient()
   const {
     data: { session },
   } = await supabase.auth.getSession()
   const user = session?.user
-  const { data: profile } = await supabase.from('users').select('outlet_id').eq('id', user!.id).single()
+  const { data: profile } = await supabase.from('users').select('outlet_id, role').eq('id', user!.id).single()
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-gray-900">Attendance</h1>
+      <h1 className="text-2xl font-bold text-gray-900">Payroll</h1>
       {profile?.outlet_id ? (
-        <AttendanceManager outletId={profile.outlet_id} />
+        <PayrollManager outletId={profile.outlet_id} canManage={['outlet_manager', 'master_admin'].includes(profile.role)} />
       ) : (
         <Alert variant="warning">Pilih outlet terlebih dahulu.</Alert>
       )}

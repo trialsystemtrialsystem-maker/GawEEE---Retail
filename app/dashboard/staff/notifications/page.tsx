@@ -1,8 +1,8 @@
 import { createClient } from '@/lib/supabase/server'
 import { Alert } from '@/components/ui/Alert'
-import { StaffManager } from '@/components/staff/StaffManager'
+import { StaffAnnouncements } from '@/components/staff/StaffAnnouncements'
 
-export default async function StaffPage() {
+export default async function StaffNotificationsPage() {
   const supabase = await createClient()
   const {
     data: { session },
@@ -12,9 +12,12 @@ export default async function StaffPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-gray-900">Daftar Karyawan</h1>
+      <div>
+        <h1 className="text-2xl font-bold text-gray-900">Notifikasi Karyawan</h1>
+        <p className="text-gray-500">Pengumuman internal untuk tim — belum terhubung ke push notification asli.</p>
+      </div>
       {profile?.outlet_id ? (
-        <StaffManager outletId={profile.outlet_id} canManage={['outlet_manager', 'master_admin'].includes(profile.role)} />
+        <StaffAnnouncements outletId={profile.outlet_id} canPost={['outlet_manager', 'master_admin'].includes(profile.role)} />
       ) : (
         <Alert variant="warning">Pilih outlet terlebih dahulu.</Alert>
       )}

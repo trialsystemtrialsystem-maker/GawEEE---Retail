@@ -54,6 +54,9 @@ export type Outlet = {
   opening_cash: number
   target_daily_revenue: number | null
   settings: Record<string, unknown>
+  geofence_lat: number | null
+  geofence_lng: number | null
+  geofence_radius_m: number | null
   created_at: string
   updated_at: string
   deleted_at: string | null
@@ -404,9 +407,78 @@ export type StaffMember = {
   contract_end_date: string | null
   notes: string | null
   commission_rate: number
+  position_level_id: string | null
+  pin_code: string | null
   created_at: string
   updated_at: string
   deleted_at: string | null
+}
+
+export type PositionLevel = {
+  id: string
+  outlet_id: string
+  name: string
+  sort_order: number
+  created_at: string
+}
+
+export type PayrollRun = {
+  id: string
+  outlet_id: string
+  period_start: string
+  period_end: string
+  status: 'draft' | 'paid'
+  created_by: string
+  created_at: string
+  paid_at: string | null
+}
+
+export type Payslip = {
+  id: string
+  payroll_run_id: string
+  staff_id: string
+  base_salary: number
+  commission_amount: number
+  deductions: number
+  net_pay: number
+  created_at: string
+}
+
+export type Shift = {
+  id: string
+  outlet_id: string
+  name: string
+  start_time: string
+  end_time: string
+  created_at: string
+}
+
+export type StaffSchedule = {
+  id: string
+  staff_id: string
+  shift_id: string
+  work_date: string
+  created_at: string
+}
+
+export type StaffAnnouncement = {
+  id: string
+  outlet_id: string
+  message: string
+  created_by: string
+  created_at: string
+}
+
+export type ExpenseRequest = {
+  id: string
+  outlet_id: string
+  description: string
+  amount: number
+  requested_by: string
+  status: 'pending' | 'approved' | 'rejected'
+  approved_by: string | null
+  decided_at: string | null
+  created_at: string
 }
 
 export type Attendance = {
@@ -585,6 +657,13 @@ export type Database = {
       whatsapp_broadcasts: Table<WhatsappBroadcast>
       staff_members: Table<StaffMember>
       attendance: Table<Attendance>
+      position_levels: Table<PositionLevel>
+      payroll_runs: Table<PayrollRun>
+      payslips: Table<Payslip>
+      shifts: Table<Shift>
+      staff_schedules: Table<StaffSchedule>
+      staff_announcements: Table<StaffAnnouncement>
+      expense_requests: Table<ExpenseRequest>
       chart_of_accounts: Table<ChartOfAccount>
       journal_entries: Table<JournalEntry>
       journal_entry_details: Table<JournalEntryDetail>
