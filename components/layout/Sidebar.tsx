@@ -12,6 +12,11 @@ interface NavItem {
 
 const NAV_ITEMS: NavItem[] = [
   {
+    label: 'Kasir (POS)',
+    href: '/pos',
+    icon: '🛒',
+  },
+  {
     label: 'Dashboard',
     href: '/dashboard',
     icon: '📊',

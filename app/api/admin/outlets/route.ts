@@ -1,5 +1,6 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { getAuthContext } from '@/lib/utils/auth-context'
+import { handleDatabaseError } from '@/lib/utils/errors'
 
 // GET /api/admin/outlets — master_admin only. See prd.md §4.7.
 export async function GET() {
@@ -83,4 +84,41 @@ export async function GET() {
       avg_outlet_revenue: results.length ? totalRevenue / results.length : 0,
     },
   })
+}
+
+// POST /api/admin/outlets — add another outlet to the company. Not in the
+// original prd.md spec — added because Master Admin had no way to actually
+// create a second outlet, so "multi-outlet support" had nothing to manage
+// beyond the one outlet created at signup.
+export async function POST(request: NextRequest) {
+  const auth = await getAuthContext()
+  if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (auth.role !== 'master_admin') {
+    return NextResponse.json({ error: 'Tidak memiliki izin' }, { status: 403 })
+  }
+
+  const body = await request.json()
+  const { name, address, city, phone } = body as { name: string; address?: string; city?: string; phone?: string }
+  if (!name || !name.trim()) {
+    return NextResponse.json({ error: 'Nama outlet wajib diisi' }, { status: 400 })
+  }
+
+  const { data, error } = await auth.supabase
+    .from('outlets')
+    .insert({
+      company_id: auth.company_id,
+      name: name.trim(),
+      address: address?.trim() || '-',
+      city: city?.trim() || '-',
+      phone: phone?.trim() || null,
+    })
+    .select()
+    .single()
+
+  if (error) {
+    const { status, message } = handleDatabaseError(error)
+    return NextResponse.json({ error: message }, { status })
+  }
+
+  return NextResponse.json({ outlet: data }, { status: 201 })
 }

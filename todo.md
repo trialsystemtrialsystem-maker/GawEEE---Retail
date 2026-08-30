@@ -174,6 +174,19 @@ Legend: `[ ]` pending · `[x]` done · `[!]` needs user input/credentials before
       landing hero) — most smaller components still use the original gray/blue Tailwind utility classes
       rather than the new brand tokens throughout. A full systematic pass wasn't attempted (large
       surface area, diminishing returns for the time available).
+- [x] Full click-through audit of every sidebar link + all 6 "Fitur Unggulan" landing-page claims
+      against the live demo account, prompted by user report that POS "wasn't there." Found and fixed:
+      - **Real-time POS had no sidebar link at all** — the page worked (E2E-tested since Sprint 2) but
+        was only reachable by typing `/pos` directly, so it looked missing. Added "Kasir (POS)" as the
+        first sidebar item.
+      - **POS had no way back to the dashboard** — its minimal layout had zero navigation. Added a
+        "← Kembali ke Dashboard" bar.
+      - **Multi-outlet Support had no way to add an outlet** — Master Admin could only view the single
+        outlet created at signup, nothing to actually manage. Added `POST /api/admin/outlets` +
+        a "+ Tambah Outlet" form; verified a second outlet now appears correctly in the leaderboard.
+      - Confirmed working as-is: Inventory Management, Financial Reports, Compliance Ready (audit log
+        has real entries), and Payment Integration (e-wallet/bank mock flow, clearly labeled as demo
+        mode pending real Doku/Bank credentials — see Phase 4).
 - [!] The demo seed endpoint is public and unauthenticated by design (so it's reachable from the
       landing page without login) but has no rate-limiting — repeated calls just re-seed the same
       fixed tenant (bounded blast radius), but could still be hammered to load the DB. Acceptable for

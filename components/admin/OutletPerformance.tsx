@@ -1,10 +1,13 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { KPICard } from '@/components/dashboard/KPICard'
 import { Card } from '@/components/ui/Card'
 import { Alert } from '@/components/ui/Alert'
+import { Button } from '@/components/ui/Button'
+import { Input } from '@/components/ui/Input'
 import { formatCurrency, formatPercent } from '@/lib/utils/formatting'
+import { useNotificationStore } from '@/store/notificationStore'
 
 interface OutletRow {
   outlet_id: string
@@ -30,27 +33,98 @@ interface OutletsResponse {
 export function OutletPerformance() {
   const [data, setData] = useState<OutletsResponse | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [showForm, setShowForm] = useState(false)
+  const [form, setForm] = useState({ name: '', address: '', city: '', phone: '' })
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const showToast = useNotificationStore((s) => s.show)
 
-  useEffect(() => {
-    fetch('/api/admin/outlets')
-      .then(async (res) => {
-        const json = await res.json()
-        if (!res.ok) {
-          setError(json.error ?? 'Gagal memuat data')
-          return
-        }
-        setData(json)
-      })
-      .catch(() => setError('Terjadi kesalahan jaringan'))
+  const load = useCallback(async () => {
+    try {
+      const res = await fetch('/api/admin/outlets')
+      const json = await res.json()
+      if (!res.ok) {
+        setError(json.error ?? 'Gagal memuat data')
+        return
+      }
+      setData(json)
+    } catch {
+      setError('Terjadi kesalahan jaringan')
+    }
   }, [])
 
-  if (error) return <Alert variant="danger">{error}</Alert>
+  useEffect(() => {
+    const timeout = setTimeout(load, 0)
+    return () => clearTimeout(timeout)
+  }, [load])
+
+  async function handleCreate(e: React.FormEvent) {
+    e.preventDefault()
+    setError(null)
+    setIsSubmitting(true)
+    try {
+      const res = await fetch('/api/admin/outlets', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(form),
+      })
+      const result = await res.json()
+      if (!res.ok) {
+        setError(typeof result.error === 'string' ? result.error : 'Gagal menambah outlet')
+        return
+      }
+      showToast(`Outlet "${form.name}" berhasil ditambahkan`, 'success')
+      setForm({ name: '', address: '', city: '', phone: '' })
+      setShowForm(false)
+      load()
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  if (error && !data) return <Alert variant="danger">{error}</Alert>
   if (!data) return <p className="text-gray-400">Memuat…</p>
 
   const sorted = [...data.outlets].sort((a, b) => b.revenue_mtd - a.revenue_mtd)
 
   return (
     <div className="space-y-6">
+      <div className="flex items-center justify-end">
+        <Button size="sm" onClick={() => setShowForm((v) => !v)}>
+          {showForm ? 'Batal' : '+ Tambah Outlet'}
+        </Button>
+      </div>
+
+      {error && <Alert variant="danger">{error}</Alert>}
+
+      {showForm && (
+        <Card>
+          <form onSubmit={handleCreate} className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <Input
+              label="Nama Outlet"
+              required
+              value={form.name}
+              onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+            />
+            <Input label="Kota" value={form.city} onChange={(e) => setForm((f) => ({ ...f, city: e.target.value }))} />
+            <Input
+              label="Alamat"
+              value={form.address}
+              onChange={(e) => setForm((f) => ({ ...f, address: e.target.value }))}
+            />
+            <Input
+              label="Telepon"
+              value={form.phone}
+              onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
+            />
+            <div className="sm:col-span-2">
+              <Button type="submit" isLoading={isSubmitting}>
+                Simpan Outlet
+              </Button>
+            </div>
+          </form>
+        </Card>
+      )}
+
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <KPICard label="Total Revenue (MTD)" value={formatCurrency(data.company_totals.total_revenue_mtd)} />
         <KPICard label="Outlet Aktif" value={`${data.total_outlets}`} />
