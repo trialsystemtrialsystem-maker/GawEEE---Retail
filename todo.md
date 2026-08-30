@@ -254,8 +254,12 @@ sequential increments, smallest/lowest-risk first:
       adds `commission_rate` to `staff_members`, matched to a cashier by email since no direct FK exists
       between `users` and `staff_members`), fraud control (voided-invoice watchlist), sales per
       transaction. **Needs `015_sales_commission.sql` run in Supabase SQL Editor.**
-- [ ] 7.4 Order Online — `online_orders` table (manual entry, since no live channel integration exists),
-      status-workflow UI at `/dashboard/online-orders`
+- [x] 7.4 Order Online — `online_orders` table (migration `016_online_orders.sql`, manual entry since no
+      live channel integration exists), status-workflow UI at `/dashboard/online-orders` (Incoming →
+      On Process → On Delivery → Completed, or Cancel at any non-terminal step; transitions validated
+      server-side via `lib/utils/onlineOrders.ts`). Wired into the Sales Dashboard's Order Type card
+      (was showing 0 for "Online" as a placeholder — now a real number). **Needs `016_online_orders.sql`
+      run in Supabase SQL Editor.**
 - [ ] 7.5 Appointment/Booking — reframed as pre-order & pickup scheduling, `bookings` table,
       `/dashboard/bookings`
 - [ ] 7.6 Employee expansion — payroll runs/payslips, access-rights matrix, geofence radius on outlets,

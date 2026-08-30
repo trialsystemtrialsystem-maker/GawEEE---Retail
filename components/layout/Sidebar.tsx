@@ -76,6 +76,11 @@ const NAV_ITEMS: NavItem[] = [
     ],
   },
   {
+    label: 'Order Online',
+    href: '/dashboard/online-orders',
+    icon: '🛵',
+  },
+  {
     label: 'Akuntansi',
     href: '/dashboard/accounting',
     icon: '📒',

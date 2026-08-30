@@ -462,6 +462,24 @@ export type JournalEntryDetail = {
   reference_id: string | null
 }
 
+export type OnlineOrderStatus = 'incoming' | 'on_process' | 'on_delivery' | 'completed' | 'cancelled'
+
+export type OnlineOrder = {
+  id: string
+  outlet_id: string
+  order_number: string
+  channel: string
+  customer_name: string
+  customer_phone: string | null
+  items: { name: string; quantity: number; price: number }[]
+  total_amount: number
+  status: OnlineOrderStatus
+  notes: string | null
+  created_by: string
+  created_at: string
+  updated_at: string
+}
+
 export type WhatsappTemplate = {
   id: string
   outlet_id: string
@@ -542,6 +560,7 @@ export type Database = {
       audit_log: Table<AuditLogEntry>
       system_alerts: Table<SystemAlert>
       bulk_admin_operations: Table<BulkAdminOperation>
+      online_orders: Table<OnlineOrder>
       whatsapp_templates: Table<WhatsappTemplate>
       whatsapp_broadcasts: Table<WhatsappBroadcast>
       staff_members: Table<StaffMember>

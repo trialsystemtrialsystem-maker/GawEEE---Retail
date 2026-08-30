@@ -28,7 +28,7 @@ export async function GET(request: NextRequest) {
   start.setDate(start.getDate() - days + 1)
   start.setHours(0, 0, 0, 0)
 
-  const [invoicesRes, paymentsRes, usersRes, staffRes, lowStockRes] = await Promise.all([
+  const [invoicesRes, paymentsRes, usersRes, staffRes, lowStockRes, onlineOrdersRes] = await Promise.all([
     auth.supabase
       .from('invoices')
       .select(
@@ -49,6 +49,12 @@ export async function GET(request: NextRequest) {
       .select('product_id, name, quantity_on_hand, reorder_level')
       .eq('outlet_id', auth.outlet_id)
       .limit(10),
+    auth.supabase
+      .from('online_orders')
+      .select('total_amount')
+      .eq('outlet_id', auth.outlet_id)
+      .neq('status', 'cancelled')
+      .gte('created_at', start.toISOString()),
   ])
 
   const invoices = (invoicesRes.data ?? []) as unknown as InvoiceRow[]
@@ -108,13 +114,14 @@ export async function GET(request: NextRequest) {
     .slice(0, 10)
 
   const inStoreRevenue = invoices.filter((i) => i.order_status !== 'voided').reduce((s, i) => s + i.total, 0)
+  const onlineRevenue = (onlineOrdersRes.data ?? []).reduce((s, o) => s + o.total_amount, 0)
 
   return NextResponse.json({
     paymentMethods: Array.from(paymentTotals.entries()).map(([method, total]) => ({ method, total })),
     bestProducts,
     cashierSales,
     fraudWatchlist: fraudWatchlist.sort((a, b) => (b.voided_at ?? '').localeCompare(a.voided_at ?? '')),
-    orderChannel: { inStore: inStoreRevenue, online: 0 },
+    orderChannel: { inStore: inStoreRevenue, online: onlineRevenue },
     lowStock: lowStockRes.data ?? [],
   })
 }

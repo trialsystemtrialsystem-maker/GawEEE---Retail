@@ -97,7 +97,6 @@ export function SalesReportGrid({ days }: { days: number }) {
             <span className="font-medium text-gray-900">{formatCurrency(data.orderChannel.online)}</span>
           </li>
         </ul>
-        <p className="mt-3 text-xs text-gray-400">Aktifkan modul Order Online untuk melacak penjualan online.</p>
       </ReportCard>
 
       <ReportCard title="Produk Terlaris">

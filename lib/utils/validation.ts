@@ -145,6 +145,26 @@ export const createJournalEntrySchema = z.object({
 
 export type CreateJournalEntryInput = z.infer<typeof createJournalEntrySchema>
 
+export const onlineOrderItemSchema = z.object({
+  name: z.string().min(1),
+  quantity: z.number().int().positive(),
+  price: z.number().nonnegative(),
+})
+
+export const createOnlineOrderSchema = z.object({
+  outlet_id: z.string().uuid(),
+  channel: z.enum(['whatsapp', 'instagram', 'marketplace', 'other']),
+  customer_name: z.string().min(1, 'Nama pelanggan wajib diisi'),
+  customer_phone: z.string().optional(),
+  items: z.array(onlineOrderItemSchema).min(1, 'Minimal 1 item'),
+  notes: z.string().optional(),
+})
+
+export type CreateOnlineOrderInput = z.infer<typeof createOnlineOrderSchema>
+
+const ONLINE_ORDER_STATUSES = ['incoming', 'on_process', 'on_delivery', 'completed', 'cancelled'] as const
+export const onlineOrderStatusSchema = z.object({ status: z.enum(ONLINE_ORDER_STATUSES) })
+
 export const whatsappTemplateSchema = z.object({
   outlet_id: z.string().uuid(),
   name: z.string().min(1, 'Nama template wajib diisi'),
