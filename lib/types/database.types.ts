@@ -385,6 +385,41 @@ export type LowStockAlertView = {
   alert_status: string
 }
 
+export type StaffMember = {
+  id: string
+  outlet_id: string
+  first_name: string
+  last_name: string | null
+  email: string | null
+  phone: string | null
+  position: string
+  hire_date: string
+  salary_amount: number | null
+  salary_frequency: string | null
+  bank_account_name: string | null
+  bank_account_number: string | null
+  tax_id: string | null
+  status: string
+  employment_status: string | null
+  contract_end_date: string | null
+  notes: string | null
+  commission_rate: number
+  created_at: string
+  updated_at: string
+  deleted_at: string | null
+}
+
+export type Attendance = {
+  id: string
+  staff_id: string
+  attendance_date: string
+  clock_in_time: string | null
+  clock_out_time: string | null
+  status: string
+  notes: string | null
+  created_at: string
+}
+
 export type ChartOfAccount = {
   id: string
   outlet_id: string
@@ -509,6 +544,8 @@ export type Database = {
       bulk_admin_operations: Table<BulkAdminOperation>
       whatsapp_templates: Table<WhatsappTemplate>
       whatsapp_broadcasts: Table<WhatsappBroadcast>
+      staff_members: Table<StaffMember>
+      attendance: Table<Attendance>
       chart_of_accounts: Table<ChartOfAccount>
       journal_entries: Table<JournalEntry>
       journal_entry_details: Table<JournalEntryDetail>

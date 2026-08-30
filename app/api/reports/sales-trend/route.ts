@@ -11,6 +11,7 @@ export async function GET(request: NextRequest) {
   if (!auth.outlet_id) return NextResponse.json({ error: 'Pilih outlet terlebih dahulu' }, { status: 400 })
 
   const days = Math.min(Number(request.nextUrl.searchParams.get('days') ?? '90'), 180)
+  const granularity = request.nextUrl.searchParams.get('granularity') ?? 'daily'
   const now = new Date()
   const startCurrent = new Date(now)
   startCurrent.setDate(startCurrent.getDate() - days + 1)
@@ -88,8 +89,10 @@ export async function GET(request: NextRequest) {
     return Math.round(((current - previous) / previous) * 10000) / 100
   }
 
+  const daily = Array.from(dailyMap.values())
+
   return NextResponse.json({
-    daily: Array.from(dailyMap.values()),
+    daily: bucketByGranularity(daily, granularity),
     comparison: {
       current: { revenue: currentRevenue, transactions: currentTx, profit: currentProfit },
       previous: { revenue: previousRevenue, transactions: previousTx, profit: previousProfit },
@@ -103,4 +106,33 @@ export async function GET(request: NextRequest) {
       .map(([name, revenue]) => ({ name, revenue: Math.round(revenue) }))
       .sort((a, b) => b.revenue - a.revenue),
   })
+}
+
+type DailyPoint = { date: string; total_sales: number; transaction_count: number; gross_profit: number }
+
+// Re-buckets the daily series into weekly (Monday-start) or monthly groups
+// for the dashboard's Daily/Weekly/Monthly toggle — the underlying
+// comparison totals above are unaffected, only chart granularity changes.
+function bucketByGranularity(daily: DailyPoint[], granularity: string): DailyPoint[] {
+  if (granularity !== 'weekly' && granularity !== 'monthly') return daily
+
+  const buckets = new Map<string, DailyPoint>()
+  for (const point of daily) {
+    const d = new Date(point.date + 'T00:00:00Z')
+    let key: string
+    if (granularity === 'monthly') {
+      key = point.date.slice(0, 7) // YYYY-MM
+    } else {
+      const dayOfWeek = (d.getUTCDay() + 6) % 7 // 0 = Monday
+      const monday = new Date(d)
+      monday.setUTCDate(d.getUTCDate() - dayOfWeek)
+      key = monday.toISOString().slice(0, 10)
+    }
+    const bucket = buckets.get(key) ?? { date: key, total_sales: 0, transaction_count: 0, gross_profit: 0 }
+    bucket.total_sales += point.total_sales
+    bucket.transaction_count += point.transaction_count
+    bucket.gross_profit += point.gross_profit
+    buckets.set(key, bucket)
+  }
+  return Array.from(buckets.values()).sort((a, b) => a.date.localeCompare(b.date))
 }

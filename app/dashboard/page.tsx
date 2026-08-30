@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { TodayOverview } from '@/components/dashboard/TodayOverview'
 import { SalesAnalytics } from '@/components/charts/SalesAnalytics'
+import { SalesReportGrid } from '@/components/dashboard/SalesReportGrid'
 import { Card } from '@/components/ui/Card'
 
 export default async function DashboardOverviewPage() {
@@ -55,6 +56,11 @@ export default async function DashboardOverviewPage() {
 
       <div className="border-t border-gray-200 pt-6">
         <SalesAnalytics />
+      </div>
+
+      <div className="border-t border-gray-200 pt-6">
+        <h2 className="mb-4 text-lg font-semibold text-gray-900">Laporan Penjualan (30 Hari Terakhir)</h2>
+        <SalesReportGrid days={30} />
       </div>
     </div>
   )

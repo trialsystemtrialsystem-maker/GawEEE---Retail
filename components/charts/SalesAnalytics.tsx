@@ -22,15 +22,22 @@ const RANGE_OPTIONS = [
   { label: '90 Hari', days: 90 },
 ]
 
+const GRANULARITY_OPTIONS = [
+  { label: 'Daily', value: 'daily' },
+  { label: 'Weekly', value: 'weekly' },
+  { label: 'Monthly', value: 'monthly' },
+] as const
+
 export function SalesAnalytics() {
   const [days, setDays] = useState(30)
+  const [granularity, setGranularity] = useState<(typeof GRANULARITY_OPTIONS)[number]['value']>('daily')
   const [data, setData] = useState<TrendResponse | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   const load = useCallback(async () => {
     setError(null)
     try {
-      const res = await fetch(`/api/reports/sales-trend?days=${days}`)
+      const res = await fetch(`/api/reports/sales-trend?days=${days}&granularity=${granularity}`)
       const json = await res.json()
       if (!res.ok) {
         setError(json.error ?? 'Gagal memuat data tren')
@@ -40,7 +47,7 @@ export function SalesAnalytics() {
     } catch {
       setError('Terjadi kesalahan jaringan')
     }
-  }, [days])
+  }, [days, granularity])
 
   useEffect(() => {
     const timeout = setTimeout(load, 0)
@@ -52,21 +59,37 @@ export function SalesAnalytics() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-lg font-semibold text-gray-900">Perbandingan Periode</h2>
-        <div className="flex gap-1 rounded-md border border-gray-200 p-1">
-          {RANGE_OPTIONS.map((opt) => (
-            <button
-              key={opt.days}
-              type="button"
-              onClick={() => setDays(opt.days)}
-              className={`rounded px-3 py-1 text-sm font-medium transition-colors ${
-                days === opt.days ? 'bg-blue-500 text-white' : 'text-gray-600 hover:bg-gray-100'
-              }`}
-            >
-              {opt.label}
-            </button>
-          ))}
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="flex gap-1 rounded-md border border-gray-200 p-1">
+            {GRANULARITY_OPTIONS.map((opt) => (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => setGranularity(opt.value)}
+                className={`rounded px-3 py-1 text-sm font-medium transition-colors ${
+                  granularity === opt.value ? 'bg-blue-500 text-white' : 'text-gray-600 hover:bg-gray-100'
+                }`}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+          <div className="flex gap-1 rounded-md border border-gray-200 p-1">
+            {RANGE_OPTIONS.map((opt) => (
+              <button
+                key={opt.days}
+                type="button"
+                onClick={() => setDays(opt.days)}
+                className={`rounded px-3 py-1 text-sm font-medium transition-colors ${
+                  days === opt.days ? 'bg-blue-500 text-white' : 'text-gray-600 hover:bg-gray-100'
+                }`}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 

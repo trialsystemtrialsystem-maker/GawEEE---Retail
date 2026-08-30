@@ -246,9 +246,14 @@ sequential increments, smallest/lowest-risk first:
       balance check before submit), Buku Besar (per-account running balance), Neraca, Laba Rugi.
       Does not yet auto-post journal entries from sales/purchasing — manual bookkeeping only, tracked
       as a follow-on. **Also needs `014_accounting_functions.sql` run in Supabase SQL Editor.**
-- [ ] 7.3 Sales Dashboard enhancement — Daily/Weekly/Monthly granularity toggle on sales-trend, new
-      sales-breakdown report (payment method, best-seller, sales/commission per cashier, fraud-control
-      watchlist), `commission_rate` on `staff_members`
+- [x] 7.3 Sales Dashboard enhancement — Daily/Weekly/Monthly toggle added to `/api/reports/sales-trend`
+      (re-buckets the existing daily series server-side; comparison totals unaffected). New
+      `/api/reports/sales-breakdown` + `SalesReportGrid` on the main dashboard: payment method,
+      order type (in-store vs online — 0 until 7.4 ships), best-selling products, lowest stock (reuses
+      `v_low_stock_alerts`), sales per cashier, commission per cashier (migration `015_sales_commission.sql`
+      adds `commission_rate` to `staff_members`, matched to a cashier by email since no direct FK exists
+      between `users` and `staff_members`), fraud control (voided-invoice watchlist), sales per
+      transaction. **Needs `015_sales_commission.sql` run in Supabase SQL Editor.**
 - [ ] 7.4 Order Online — `online_orders` table (manual entry, since no live channel integration exists),
       status-workflow UI at `/dashboard/online-orders`
 - [ ] 7.5 Appointment/Booking — reframed as pre-order & pickup scheduling, `bookings` table,
