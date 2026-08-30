@@ -26,7 +26,7 @@ interface PORow {
   po_number: string
   status: string
   total: number | null
-  created_at: string
+  order_date: string
   suppliers: { name: string } | null
 }
 
@@ -280,7 +280,7 @@ export function PurchaseOrderList({ outletId }: { outletId: string }) {
                 <tr key={po.id} className="hover:bg-gray-50">
                   <td className="px-4 py-2 font-medium text-gray-900">{po.po_number}</td>
                   <td className="px-4 py-2 text-gray-600">{po.suppliers?.name ?? '-'}</td>
-                  <td className="px-4 py-2 text-gray-600">{formatDate(po.created_at)}</td>
+                  <td className="px-4 py-2 text-gray-600">{formatDate(po.order_date)}</td>
                   <td className="px-4 py-2 text-right text-gray-700">{formatCurrency(po.total ?? 0)}</td>
                   <td className="px-4 py-2 text-gray-600">{STATUS_LABEL[po.status] ?? po.status}</td>
                   <td className="px-4 py-2">

@@ -1,26 +1,59 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #111827;
+  --background: #f7f9fc;
+  --foreground: #0b1830;
 
-  /* GawEEE brand palette — design-system.md §1.2 */
-  --color-primary: #1f2937;
-  --color-primary-accent: #3b82f6;
-  --color-secondary-accent: #10b981;
+  /* GawEEE brand — deep navy chrome + vivid blue accent (redesigned for
+     more visual warmth per user request: "biru tua yang nyaman dilihat") */
+  --brand-950: #061224;
+  --brand-900: #0b1f3d;
+  --brand-800: #102a52;
+  --brand-700: #163a6e;
+  --brand-600: #1d4d8f;
+  --brand-500: #2a78d6; /* = chart categorical slot 1 — deliberate, ties UI accent to data color */
+  --brand-100: #e5eefb;
+  --brand-50: #f2f7fd;
 
-  --color-success: #10b981;
-  --color-warning: #f59e0b;
-  --color-danger: #ef4444;
-  --color-info: #3b82f6;
+  --color-primary: var(--brand-900);
+  --color-primary-accent: var(--brand-500);
+  --color-secondary-accent: #1baf7a;
+
+  /* Status palette (dataviz skill, reserved — never reused for chart series) */
+  --status-good: #0ca30c;
+  --status-warning: #fab219;
+  --status-serious: #ec835a;
+  --status-critical: #d03b3b;
+
+  --color-success: var(--status-good);
+  --color-warning: var(--status-warning);
+  --color-danger: var(--status-critical);
+  --color-info: var(--brand-500);
   --color-neutral: #6b7280;
 
-  --color-gray-50: #f9fafb;
-  --color-gray-100: #f3f4f6;
-  --color-gray-200: #e5e7eb;
-  --color-gray-500: #6b7280;
-  --color-gray-700: #374151;
-  --color-gray-900: #111827;
+  /* Categorical chart palette (dataviz skill reference, validated CVD-safe
+     in fixed order — never cycle/reassign per series) */
+  --chart-1: #2a78d6; /* blue */
+  --chart-2: #eb6834; /* orange */
+  --chart-3: #1baf7a; /* aqua */
+  --chart-4: #eda100; /* yellow */
+  --chart-5: #e87ba4; /* magenta */
+  --chart-6: #008300; /* green */
+  --chart-7: #4a3aa7; /* violet */
+  --chart-8: #e34948; /* red */
+
+  /* Sequential blue ramp (magnitude encoding) */
+  --seq-100: #cde2fb;
+  --seq-250: #86b6ef;
+  --seq-400: #3987e5;
+  --seq-500: #256abf;
+  --seq-600: #184f95;
+  --seq-700: #0d366b;
+
+  --chart-surface: #fcfcfb;
+  --chart-grid: #e1e0d9;
+  --chart-axis: #c3c2b7;
+  --chart-muted: #898781;
 }
 
 @theme inline {
@@ -37,6 +70,15 @@
   --color-danger: var(--color-danger);
   --color-info: var(--color-info);
   --color-neutral: var(--color-neutral);
+
+  --color-brand-950: var(--brand-950);
+  --color-brand-900: var(--brand-900);
+  --color-brand-800: var(--brand-800);
+  --color-brand-700: var(--brand-700);
+  --color-brand-600: var(--brand-600);
+  --color-brand-500: var(--brand-500);
+  --color-brand-100: var(--brand-100);
+  --color-brand-50: var(--brand-50);
 }
 
 body {

@@ -18,11 +18,11 @@ export function Header({
   }
 
   return (
-    <header className="flex items-center justify-between border-b border-gray-200 bg-white px-4 py-3">
+    <header className="flex items-center justify-between border-b-2 border-blue-500/20 bg-white px-4 py-3 shadow-sm">
       <button
         type="button"
         onClick={onMenuClick}
-        className="rounded p-2 hover:bg-gray-100 md:hidden"
+        className="rounded p-2 text-blue-900 hover:bg-blue-50 md:hidden"
         aria-label="Buka menu"
       >
         ☰
@@ -31,11 +31,18 @@ export function Header({
       <div className="hidden md:block" />
 
       <div className="flex items-center gap-3">
-        {userName && <span className="text-sm text-gray-700">{userName}</span>}
+        {userName && (
+          <span className="flex items-center gap-2 text-sm text-gray-700">
+            <span className="flex h-7 w-7 items-center justify-center rounded-full bg-blue-500 text-xs font-bold text-white">
+              {userName.charAt(0).toUpperCase()}
+            </span>
+            {userName}
+          </span>
+        )}
         <button
           type="button"
           onClick={handleLogout}
-          className="rounded-md px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-100"
+          className="rounded-md px-3 py-1.5 text-sm text-gray-600 hover:bg-red-50 hover:text-red-600"
         >
           Keluar
         </button>

@@ -263,6 +263,34 @@ export type PurchaseOrderItem = {
   created_at: string
 }
 
+export type PurchaseInvoice = {
+  id: string
+  po_id: string
+  supplier_id: string
+  invoice_number: string
+  invoice_date: string
+  due_date: string
+  subtotal: number | null
+  tax_amount: number | null
+  total: number | null
+  payment_status: 'unpaid' | 'partial' | 'paid'
+  notes: string | null
+  created_at: string
+  updated_at: string
+}
+
+export type PurchasePayment = {
+  id: string
+  purchase_invoice_id: string
+  payment_date: string
+  amount: number
+  payment_method: string | null
+  reference_number: string | null
+  notes: string | null
+  recorded_by: string
+  created_at: string
+}
+
 export type DailyFinancialSummary = {
   id: string
   outlet_id: string
@@ -409,6 +437,8 @@ export type Database = {
       suppliers: Table<Supplier>
       purchase_orders: Table<PurchaseOrder>
       po_items: Table<PurchaseOrderItem>
+      purchase_invoices: Table<PurchaseInvoice>
+      purchase_payments: Table<PurchasePayment>
       daily_financial_summary: Table<DailyFinancialSummary>
       audit_log: Table<AuditLogEntry>
       system_alerts: Table<SystemAlert>

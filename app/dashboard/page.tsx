@@ -1,8 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
-import { KPICard } from '@/components/dashboard/KPICard'
+import { TodayOverview } from '@/components/dashboard/TodayOverview'
+import { SalesAnalytics } from '@/components/charts/SalesAnalytics'
 import { Card } from '@/components/ui/Card'
-import { Alert } from '@/components/ui/Alert'
-import { formatCurrency } from '@/lib/utils/formatting'
 
 export default async function DashboardOverviewPage() {
   const supabase = await createClient()
@@ -16,17 +15,6 @@ export default async function DashboardOverviewPage() {
     .eq('id', user!.id)
     .single()
 
-  const today = new Date().toISOString().slice(0, 10)
-
-  const { data: summary } = profile?.outlet_id
-    ? await supabase
-        .from('daily_financial_summary')
-        .select('*')
-        .eq('outlet_id', profile.outlet_id)
-        .eq('summary_date', today)
-        .maybeSingle()
-    : { data: null }
-
   const { data: lowStock } = profile?.outlet_id
     ? await supabase
         .from('v_low_stock_alerts')
@@ -36,7 +24,7 @@ export default async function DashboardOverviewPage() {
     : { data: [] }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <div>
         <h1 className="text-2xl font-bold text-gray-900">Ringkasan</h1>
         <p className="text-gray-500">
@@ -44,27 +32,7 @@ export default async function DashboardOverviewPage() {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <KPICard label="Penjualan Hari Ini" value={formatCurrency(summary?.total_sales ?? 0)} />
-        <KPICard
-          label="Keuntungan"
-          value={formatCurrency(summary?.gross_profit ?? 0)}
-          tone={summary?.gross_profit ? 'positive' : 'neutral'}
-        />
-        <KPICard label="Transaksi" value={String(summary?.total_invoices ?? 0)} />
-        <KPICard
-          label="Stok Rendah"
-          value={String(lowStock?.length ?? 0)}
-          tone={(lowStock?.length ?? 0) > 0 ? 'negative' : 'neutral'}
-        />
-      </div>
-
-      {!summary && (
-        <Alert variant="info">
-          Belum ada data transaksi untuk hari ini. Data akan muncul otomatis setelah transaksi
-          pertama dibuat lewat POS.
-        </Alert>
-      )}
+      <TodayOverview lowStockCount={lowStock?.length ?? 0} />
 
       <Card>
         <h2 className="mb-4 text-lg font-semibold text-gray-900">Peringatan Stok Rendah</h2>
@@ -83,6 +51,10 @@ export default async function DashboardOverviewPage() {
           <p className="text-sm text-gray-500">Tidak ada produk dengan stok rendah.</p>
         )}
       </Card>
+
+      <div className="border-t border-gray-200 pt-6">
+        <SalesAnalytics />
+      </div>
     </div>
   )
 }

@@ -140,6 +140,45 @@ Legend: `[ ]` pending · `[x]` done · `[!]` needs user input/credentials before
 
 ---
 
+## Phase 6 — Visual redesign, demo data, and analytics (ad hoc user request)
+- [x] Redesigned brand color to a deep navy (`--brand-900`/`--brand-950` gradient sidebar, richer
+      header/KPI cards) + adopted the dataviz skill's validated CVD-safe 8-color categorical palette,
+      status palette, and sequential blue ramp as CSS custom properties in `globals.css`
+- [x] Demo data generator (`lib/demo/catalog.ts` + `app/api/demo/seed/route.ts`, public/unauthenticated
+      — it's the landing page's "Coba Demo" button): resets and regenerates a fixed demo tenant
+      ("Toko Frozen Fresh Demo") with 24 frozen-food products, 4 suppliers, ~700 invoices across 90
+      days of history (growth trend + weekday/weekend variation), matching payments, 16 purchase
+      orders covering every status the UI shows (draft/pending_approval/ordered/received), 2 voided
+      invoices, a manual stock adjustment, and low/out-of-stock alerts on 2 intentionally lean
+      products — touches every module with working UI (POS, inventory, sales, suppliers/PO, financial
+      reports, admin/audit log). Found and fixed a real bug during testing: the first version's
+      starting stock was sized almost exactly to total demand, so every product hit zero simultaneously
+      ~9 days before "today," leaving a dead gap with no recent transactions — fixed by resizing stock
+      and restock schedule to a ~2x safety margin (verified: latest invoice now lands today, only the
+      2 intentionally-lean products show low/out-of-stock).
+- [x] `GET /api/reports/sales-trend`: daily revenue/profit series + current-vs-previous-period
+      comparison + revenue-by-category breakdown, backing the new chart components
+- [x] Chart components (`components/charts/`) built per the dataviz skill: `SalesTrendChart` (line,
+      one axis, 2 categorical series in fixed slot order, legend, hover tooltip), `CategoryBreakdownChart`
+      (bar, stable per-category color independent of sort rank, direct labels), `ComparisonKPIRow`
+      (status-colored up/down delta badges, not categorical hues) — wired into both `/dashboard` and
+      `/dashboard/financial`
+- [x] Fixed a pre-existing bug found while wiring this up: the main `/dashboard` overview read the
+      `daily_financial_summary` table, which nothing has ever populated (see Sprint 3 note above) — it
+      always showed zeros regardless of real sales. Now uses the same live-computed endpoint as the
+      financial dashboard.
+- [x] Fixed a display bug in the Purchase Order list: it rendered `created_at` (DB insert time — always
+      "today" for seeded/backdated rows) instead of `order_date` (the actual order date) in the date
+      column, and sorted by the same wrong field.
+- [ ] Color redesign only touched the highest-impact structural surfaces (sidebar, header, KPI cards,
+      landing hero) — most smaller components still use the original gray/blue Tailwind utility classes
+      rather than the new brand tokens throughout. A full systematic pass wasn't attempted (large
+      surface area, diminishing returns for the time available).
+- [!] The demo seed endpoint is public and unauthenticated by design (so it's reachable from the
+      landing page without login) but has no rate-limiting — repeated calls just re-seed the same
+      fixed tenant (bounded blast radius), but could still be hammered to load the DB. Acceptable for
+      a portfolio/demo deployment; would need real rate-limiting before a production launch.
+
 ## Notes on scope
 This todo tracks the **engineering deliverables** of the PRD (a working Next.js + Supabase codebase
 implementing Phase 1 features, with payment gateways behind a swappable mock interface). Items marked

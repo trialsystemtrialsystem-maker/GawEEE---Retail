@@ -1,5 +1,6 @@
 import { PRICING_TIERS } from '@/lib/utils/constants'
 import { formatCurrency } from '@/lib/utils/formatting'
+import { TryDemoButton } from '@/components/common/TryDemoButton'
 
 const FEATURES = [
   { icon: '🛒', title: 'Real-time POS', desc: 'Proses transaksi cepat dengan barcode scanning dan multiple payment methods.' },
@@ -74,6 +75,14 @@ export default function LandingPage() {
               >
                 Lihat Fitur
               </a>
+            </div>
+
+            <div className="rounded-xl border border-dashed border-blue-300 bg-blue-50/60 p-4">
+              <p className="mb-2 text-sm text-gray-600">
+                Ingin lihat dulu tanpa daftar? Coba dashboard yang sudah terisi 3 bulan data toko
+                frozen food sungguhan — POS, inventori, supplier, sampai laporan keuangan.
+              </p>
+              <TryDemoButton />
             </div>
           </div>
 

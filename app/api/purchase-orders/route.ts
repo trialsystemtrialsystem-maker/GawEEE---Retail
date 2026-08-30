@@ -69,7 +69,7 @@ export async function GET(request: NextRequest) {
   const { searchParams } = request.nextUrl
   const status = searchParams.get('status')
 
-  let query = auth.supabase.from('purchase_orders').select('*, suppliers(name)').order('created_at', { ascending: false })
+  let query = auth.supabase.from('purchase_orders').select('*, suppliers(name)').order('order_date', { ascending: false })
 
   if (auth.role === 'master_admin') {
     const outletId = searchParams.get('outlet_id')
