@@ -57,6 +57,9 @@ Legend: `[ ]` pending · `[x]` done · `[!]` needs user input/credentials before
 - [x] Invoice void flow (`void_invoice()` SQL function + `/api/invoices/:id/void`, manager+ only, 24h window)
 - [x] Inventory API: list (`/api/inventory/:outletId`, with search/barcode/status filters), adjust; low-stock via `alert_status`
 - [x] Inventory dashboard UI (stock table, search, status filter, stock/retail value totals)
+- [x] Sales/Invoice dashboard UI (`/dashboard/sales` today's transactions, `/dashboard/sales/invoices`
+      full history, `/dashboard/sales/[invoiceId]` detail with void button) — these sidebar links
+      existed since Sprint 1 but had no page behind them (404) until now
 - [ ] Real-time inventory sync via Supabase Realtime channel — not wired up yet, table just refetches on filter change
 - [x] E2E test: full POS transaction (scan → pay → receipt) — Playwright set up (`npm run test:e2e`),
       5 tests passing against the live dev server + real Supabase project (login errors, signup
@@ -64,7 +67,7 @@ Legend: `[ ]` pending · `[x]` done · `[!]` needs user input/credentials before
       Credentials come from `E2E_TEST_EMAIL`/`E2E_TEST_PASSWORD`/`E2E_TEST_PRODUCT_BARCODE` env vars
       (set in `.env.local`, not committed) rather than being hardcoded in the spec file. Not wired
       into CI yet since that needs these as GitHub Actions secrets — not something I can add myself.
-      Void-flow E2E coverage still missing (no void button in the dashboard UI yet — see below).
+      Void-flow E2E coverage still missing (no automated test yet, but the manual flow works — see below).
 - [!] Sidebar's "Stok Rendah" link points at `/dashboard/inventory/low-stock`, not yet built (use the
       status filter on `/dashboard/inventory` for now)
 
