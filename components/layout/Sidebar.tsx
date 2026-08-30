@@ -76,6 +76,24 @@ const NAV_ITEMS: NavItem[] = [
     ],
   },
   {
+    label: 'Akuntansi',
+    href: '/dashboard/accounting',
+    icon: '📒',
+    children: [
+      { label: 'Dashboard Akuntansi', href: '/dashboard/accounting' },
+      { label: 'Chart of Accounts', href: '/dashboard/accounting/accounts' },
+      { label: 'Jurnal Umum', href: '/dashboard/accounting/journal' },
+      { label: 'Buku Besar', href: '/dashboard/accounting/ledger' },
+      { label: 'Neraca', href: '/dashboard/accounting/balance-sheet' },
+      { label: 'Laba Rugi', href: '/dashboard/accounting/profit-loss' },
+    ],
+  },
+  {
+    label: 'WhatsApp',
+    href: '/dashboard/whatsapp',
+    icon: '💬',
+  },
+  {
     label: 'Master Admin',
     href: '/dashboard/admin',
     icon: '🏬',

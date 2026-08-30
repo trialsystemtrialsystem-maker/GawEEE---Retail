@@ -223,6 +223,39 @@ Legend: `[ ]` pending · `[x]` done · `[!]` needs user input/credentials before
       fixed tenant (bounded blast radius), but could still be hammered to load the DB. Acceptable for
       a portfolio/demo deployment; would need real rate-limiting before a production launch.
 
+## Phase 7 — Business Suite Modules (Sales Dashboard, Order Online, Booking, Employee, Accounting, WhatsApp)
+User pasted 14 reference screenshots from a laundry-service SaaS ("majoo") asking for 6 new dashboard
+modules matching that layout. GawEEE is retail/UMKM (not laundry), so domain concepts are adapted to
+retail equivalents rather than copied literally; SaaS-billing/infra artifacts from the mockup (quota
+widgets, onboarding checklist, real WhatsApp API sending, real push notifications) are intentionally
+out of scope. Full plan: `C:\Users\LENOVO\.claude\plans\nifty-tumbling-candy.md`. Shipping as 6
+sequential increments, smallest/lowest-risk first:
+- [x] 7.1 WhatsApp — `whatsapp_templates`/`whatsapp_broadcasts` tables (migration `013_whatsapp.sql`),
+      template CRUD + simulated broadcast (recipient count is real, computed from customers on file;
+      sending is not — matches the mockup's own disclaimer), `/dashboard/whatsapp`. Sidebar link added.
+      **Needs the user to run `013_whatsapp.sql` in Supabase SQL Editor before it works against the
+      live DB** (no direct DB access from this environment — same manual-paste flow as the original
+      schema; content is appended to `database/combined_migration.sql`).
+- [x] 7.2 Accounting — wired up the previously-unused `chart_of_accounts`/`journal_entries`/
+      `journal_entry_details` schema from Phase 1 (migration `014_accounting_functions.sql`):
+      `create_journal_entry()` (atomic, single-transaction line-item insert, mirrors `create_invoice()`)
+      and `post_journal_entry()` (re-validates balance, locks the row) as Postgres functions; a default
+      14-account Indonesian-retail COA seeded on every new outlet via `provision_company_and_owner()`
+      and backfilled (idempotent) onto existing outlets. Pages: Dashboard Akuntansi (this-month
+      income/expense/net-profit), Chart of Accounts, Jurnal Umum (dynamic dr/cr rows, client-side
+      balance check before submit), Buku Besar (per-account running balance), Neraca, Laba Rugi.
+      Does not yet auto-post journal entries from sales/purchasing — manual bookkeeping only, tracked
+      as a follow-on. **Also needs `014_accounting_functions.sql` run in Supabase SQL Editor.**
+- [ ] 7.3 Sales Dashboard enhancement — Daily/Weekly/Monthly granularity toggle on sales-trend, new
+      sales-breakdown report (payment method, best-seller, sales/commission per cashier, fraud-control
+      watchlist), `commission_rate` on `staff_members`
+- [ ] 7.4 Order Online — `online_orders` table (manual entry, since no live channel integration exists),
+      status-workflow UI at `/dashboard/online-orders`
+- [ ] 7.5 Appointment/Booking — reframed as pre-order & pickup scheduling, `bookings` table,
+      `/dashboard/bookings`
+- [ ] 7.6 Employee expansion — payroll runs/payslips, access-rights matrix, geofence radius on outlets,
+      staff announcements, shifts/schedule, position levels + quick-PIN, purchasing/expense approvals
+
 ## Notes on scope
 This todo tracks the **engineering deliverables** of the PRD (a working Next.js + Supabase codebase
 implementing Phase 1 features, with payment gateways behind a swappable mock interface). Items marked

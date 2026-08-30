@@ -385,6 +385,70 @@ export type LowStockAlertView = {
   alert_status: string
 }
 
+export type ChartOfAccount = {
+  id: string
+  outlet_id: string
+  account_code: string
+  account_name: string
+  account_type: 'asset' | 'liability' | 'equity' | 'income' | 'expense'
+  parent_account_id: string | null
+  is_header: boolean
+  is_active: boolean
+  description: string | null
+  created_at: string
+  updated_at: string
+}
+
+export type JournalEntry = {
+  id: string
+  outlet_id: string
+  entry_date: string
+  entry_number: string | null
+  description: string
+  source_type: string | null
+  source_id: string | null
+  created_by: string
+  status: 'draft' | 'posted' | 'reversed'
+  posted_date: string | null
+  reversed_date: string | null
+  reversal_reason: string | null
+  notes: string | null
+  created_at: string
+  updated_at: string
+}
+
+export type JournalEntryDetail = {
+  id: string
+  journal_entry_id: string
+  account_id: string
+  debit: number
+  credit: number
+  description: string | null
+  reference_id: string | null
+}
+
+export type WhatsappTemplate = {
+  id: string
+  outlet_id: string
+  name: string
+  content: string
+  created_by: string
+  created_at: string
+  updated_at: string
+}
+
+export type WhatsappBroadcast = {
+  id: string
+  outlet_id: string
+  template_id: string
+  target_note: string
+  status: string
+  sent_count: number
+  created_by: string
+  created_at: string
+  sent_at: string | null
+}
+
 export type DailySalesSummaryView = {
   outlet_id: string
   sale_date: string
@@ -443,6 +507,11 @@ export type Database = {
       audit_log: Table<AuditLogEntry>
       system_alerts: Table<SystemAlert>
       bulk_admin_operations: Table<BulkAdminOperation>
+      whatsapp_templates: Table<WhatsappTemplate>
+      whatsapp_broadcasts: Table<WhatsappBroadcast>
+      chart_of_accounts: Table<ChartOfAccount>
+      journal_entries: Table<JournalEntry>
+      journal_entry_details: Table<JournalEntryDetail>
     }
     Views: {
       v_low_stock_alerts: View<LowStockAlertView>
@@ -492,6 +561,22 @@ export type Database = {
           p_notes?: string
         }
         Returns: { new_quantity_on_hand: number }[]
+      }
+      create_journal_entry: {
+        Args: {
+          p_outlet_id: string
+          p_created_by: string
+          p_entry_date: string
+          p_description: string
+          p_lines: { account_id: string; debit?: number; credit?: number; description?: string | null }[]
+          p_source_type?: string
+          p_source_id?: string | null
+        }
+        Returns: { journal_entry_id: string }[]
+      }
+      post_journal_entry: {
+        Args: { p_entry_id: string }
+        Returns: { posted_date: string }[]
       }
     }
   }

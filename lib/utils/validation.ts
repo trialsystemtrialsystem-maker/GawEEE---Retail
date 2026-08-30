@@ -115,6 +115,52 @@ export const receivePurchaseOrderSchema = z.object({
 
 export type ReceivePurchaseOrderInput = z.infer<typeof receivePurchaseOrderSchema>
 
+export const accountSchema = z.object({
+  outlet_id: z.string().uuid(),
+  account_code: z.string().min(1, 'Kode akun wajib diisi'),
+  account_name: z.string().min(1, 'Nama akun wajib diisi'),
+  account_type: z.enum(['asset', 'liability', 'equity', 'income', 'expense']),
+  description: z.string().optional(),
+})
+
+export type AccountInput = z.infer<typeof accountSchema>
+
+export const journalEntryLineSchema = z
+  .object({
+    account_id: z.string().uuid(),
+    debit: z.number().min(0).default(0),
+    credit: z.number().min(0).default(0),
+    description: z.string().optional(),
+  })
+  .refine((l) => (l.debit > 0) !== (l.credit > 0), {
+    message: 'Setiap baris harus memiliki debit ATAU kredit, tidak keduanya',
+  })
+
+export const createJournalEntrySchema = z.object({
+  outlet_id: z.string().uuid(),
+  entry_date: z.string().min(1, 'Tanggal wajib diisi'),
+  description: z.string().min(1, 'Deskripsi wajib diisi'),
+  lines: z.array(journalEntryLineSchema).min(2, 'Jurnal minimal memiliki 2 baris'),
+})
+
+export type CreateJournalEntryInput = z.infer<typeof createJournalEntrySchema>
+
+export const whatsappTemplateSchema = z.object({
+  outlet_id: z.string().uuid(),
+  name: z.string().min(1, 'Nama template wajib diisi'),
+  content: z.string().min(1, 'Isi pesan wajib diisi'),
+})
+
+export type WhatsappTemplateInput = z.infer<typeof whatsappTemplateSchema>
+
+export const whatsappBroadcastSchema = z.object({
+  outlet_id: z.string().uuid(),
+  template_id: z.string().uuid(),
+  target_note: z.string().min(1, 'Keterangan target wajib diisi'),
+})
+
+export type WhatsappBroadcastInput = z.infer<typeof whatsappBroadcastSchema>
+
 /** Runs a Zod schema and returns a `{ valid, data?, errors? }` shape that
  * matches the `validateXInput` helpers referenced throughout prd.md's API
  * route examples. */
