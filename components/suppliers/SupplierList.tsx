@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Alert } from '@/components/ui/Alert'
+import { useNotificationStore } from '@/store/notificationStore'
 
 interface Supplier {
   id: string
@@ -22,6 +23,7 @@ export function SupplierList() {
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState({ name: '', contact_person: '', phone: '', email: '' })
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const showToast = useNotificationStore((s) => s.show)
 
   const load = useCallback(async () => {
     setIsLoading(true)
@@ -51,6 +53,7 @@ export function SupplierList() {
         setError(typeof data.error === 'string' ? data.error : 'Gagal menambah supplier')
         return
       }
+      showToast(`Supplier "${form.name}" berhasil ditambahkan`, 'success')
       setForm({ name: '', contact_person: '', phone: '', email: '' })
       setShowForm(false)
       load()

@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Alert } from '@/components/ui/Alert'
 import { Card } from '@/components/ui/Card'
+import { useNotificationStore } from '@/store/notificationStore'
 
 export function BulkPriceUpdateForm() {
   const [direction, setDirection] = useState<'price_increase' | 'price_decrease'>('price_increase')
@@ -12,6 +13,7 @@ export function BulkPriceUpdateForm() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [result, setResult] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const showToast = useNotificationStore((s) => s.show)
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -34,6 +36,7 @@ export function BulkPriceUpdateForm() {
         return
       }
       setResult(`Berhasil memperbarui ${data.preview.products_affected} produk.`)
+      showToast(`Harga ${data.preview.products_affected} produk berhasil diperbarui`, 'success')
     } finally {
       setIsSubmitting(false)
     }
