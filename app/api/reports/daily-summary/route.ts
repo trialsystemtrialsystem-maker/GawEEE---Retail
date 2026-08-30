@@ -16,22 +16,26 @@ export async function GET() {
   const startOfDay = `${today}T00:00:00`
   const endOfDay = `${today}T23:59:59`
 
-  const { data: invoices } = await auth.supabase
-    .from('invoices')
-    .select('*, invoice_items(quantity, cost_of_goods_sold)')
-    .eq('outlet_id', auth.outlet_id)
-    .neq('order_status', 'voided')
-    .gte('created_at', startOfDay)
-    .lte('created_at', endOfDay)
-
-  const { data: payments } = await auth.supabase
-    .from('payment_transactions')
-    .select('payment_method, amount, invoices!inner(outlet_id)')
-    .eq('invoices.outlet_id', auth.outlet_id)
-    .gte('created_at', startOfDay)
-    .lte('created_at', endOfDay)
-
-  const { data: outlet } = await auth.supabase.from('outlets').select('opening_cash').eq('id', auth.outlet_id).single()
+  // Independent queries — run in parallel rather than sequentially awaited,
+  // since each round-trip adds its own network latency (was ~3s combined,
+  // now bounded by whichever single query is slowest).
+  const [{ data: invoices }, { data: payments }, { data: outlet }, { data: lowStock }] = await Promise.all([
+    auth.supabase
+      .from('invoices')
+      .select('*, invoice_items(quantity, cost_of_goods_sold)')
+      .eq('outlet_id', auth.outlet_id)
+      .neq('order_status', 'voided')
+      .gte('created_at', startOfDay)
+      .lte('created_at', endOfDay),
+    auth.supabase
+      .from('payment_transactions')
+      .select('payment_method, amount, invoices!inner(outlet_id)')
+      .eq('invoices.outlet_id', auth.outlet_id)
+      .gte('created_at', startOfDay)
+      .lte('created_at', endOfDay),
+    auth.supabase.from('outlets').select('opening_cash').eq('id', auth.outlet_id).single(),
+    auth.supabase.from('v_low_stock_alerts').select('name').eq('outlet_id', auth.outlet_id).limit(5),
+  ])
 
   const rows = invoices ?? []
   const totalSales = rows.reduce((s, i) => s + i.total, 0)
@@ -66,11 +70,6 @@ export async function GET() {
   const closingCash = openingCash + cashReceived
 
   const alerts: { type: string; severity: string; message: string }[] = []
-  const { data: lowStock } = await auth.supabase
-    .from('v_low_stock_alerts')
-    .select('name')
-    .eq('outlet_id', auth.outlet_id)
-    .limit(5)
   for (const item of lowStock ?? []) {
     alerts.push({ type: 'low_stock', severity: 'warning', message: `Stok ${item.name} menipis` })
   }

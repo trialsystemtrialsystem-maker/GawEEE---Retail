@@ -7,8 +7,9 @@ export const metadata = { title: 'Kasir | GawEEE' }
 export default async function POSPage() {
   const supabase = await createClient()
   const {
-    data: { user },
-  } = await supabase.auth.getUser()
+    data: { session },
+  } = await supabase.auth.getSession()
+  const user = session?.user
   if (!user) redirect('/auth/login')
 
   const { data: profile } = await supabase

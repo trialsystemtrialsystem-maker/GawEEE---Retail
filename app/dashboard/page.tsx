@@ -6,8 +6,9 @@ import { Card } from '@/components/ui/Card'
 export default async function DashboardOverviewPage() {
   const supabase = await createClient()
   const {
-    data: { user },
-  } = await supabase.auth.getUser()
+    data: { session },
+  } = await supabase.auth.getSession()
+  const user = session?.user
 
   const { data: profile } = await supabase
     .from('users')

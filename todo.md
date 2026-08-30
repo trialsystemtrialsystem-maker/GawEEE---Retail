@@ -193,6 +193,31 @@ Legend: `[ ]` pending · `[x]` done · `[!]` needs user input/credentials before
       backdates its last invoice to "today"), skip straight to returning the login instead of
       reseeding — full reseed still runs automatically once the data goes stale (next calendar day).
       Verified: ~20s -> ~1s for a same-day repeat click.
+- [x] User reported the whole app (not just the demo seed) still felt slow after the fast-path fix
+      above. Found two systemic causes and fixed both:
+      1. **Redundant network auth verification.** `supabase.auth.getUser()` re-verifies the JWT
+         against Supabase's Auth server over the network (~1-1.5s) every time it's called. It was
+         being called once in `proxy.ts` middleware (correct — this is the real security boundary,
+         run on every request) *and again* redundantly in `getAuthContext()` (used by nearly every API
+         route) and in 12 separate Server Component pages — often 2-3x per single page load. Since
+         proxy.ts's middleware already verifies every request before it reaches these pages/routes
+         (confirmed: it mutates `request.cookies` and passes the modified `request` into
+         `NextResponse.next({ request })`, which is what Next.js forwards downstream in the same
+         request — the same pattern Supabase's own SSR docs use), replaced all 13 downstream calls
+         with `getSession()` (reads the already-verified cookie, no network round-trip) instead of
+         re-verifying from scratch. Verified the security boundary is intact: unauthenticated requests
+         to `/api/reports/daily-summary`, `/api/auth/me`, and `/dashboard` still correctly return
+         401/401/307 respectively.
+      2. **Sequential independent queries.** `/api/reports/daily-summary`, `/api/reports/cash-position`,
+         and `/api/admin/outlets` each awaited 3-4 independent Supabase queries one after another
+         instead of via `Promise.all`, paying each query's network latency serially. Parallelized all
+         three. Found and fixed a real accuracy bug in the same pass: `cash-position`'s "cash on hand"
+         total was computed from the same `limit(10)` query used for the "recent transactions" list,
+         so it silently undercounted cash on hand for any outlet with more than 10 cash sales — split
+         into a separate unlimited query for the total vs. the limited one for display.
+      Verified: `/api/auth/me` 3.9s -> 1.6s; full login-to-dashboard-loaded flow (measured via a real
+      Playwright browser session, not curl) is ~6.7s total including the ~2s Supabase Auth
+      `signInWithPassword` call itself. Full unit + E2E suite green after the change.
 - [!] The demo seed endpoint is public and unauthenticated by design (so it's reachable from the
       landing page without login) but has no rate-limiting — repeated calls just re-seed the same
       fixed tenant (bounded blast radius), but could still be hammered to load the DB. Acceptable for

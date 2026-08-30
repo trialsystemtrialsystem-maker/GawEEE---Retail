@@ -21,17 +21,15 @@ export async function GET() {
 
   const results = await Promise.all(
     (outlets ?? []).map(async (outlet) => {
-      const { data: invoices } = await auth.supabase
-        .from('invoices')
-        .select('total, created_at, invoice_items(cost_of_goods_sold)')
-        .eq('outlet_id', outlet.id)
-        .neq('order_status', 'voided')
-        .gte('created_at', startOfMonth.toISOString())
-
-      const { count: staffCount } = await auth.supabase
-        .from('users')
-        .select('id', { count: 'exact', head: true })
-        .eq('outlet_id', outlet.id)
+      const [{ data: invoices }, { count: staffCount }] = await Promise.all([
+        auth.supabase
+          .from('invoices')
+          .select('total, created_at, invoice_items(cost_of_goods_sold)')
+          .eq('outlet_id', outlet.id)
+          .neq('order_status', 'voided')
+          .gte('created_at', startOfMonth.toISOString()),
+        auth.supabase.from('users').select('id', { count: 'exact', head: true }).eq('outlet_id', outlet.id),
+      ])
 
       const rows = invoices ?? []
       const revenueMtd = rows.reduce((s, i) => s + i.total, 0)
