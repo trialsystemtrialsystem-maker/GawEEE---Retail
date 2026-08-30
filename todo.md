@@ -260,8 +260,12 @@ sequential increments, smallest/lowest-risk first:
       server-side via `lib/utils/onlineOrders.ts`). Wired into the Sales Dashboard's Order Type card
       (was showing 0 for "Online" as a placeholder — now a real number). **Needs `016_online_orders.sql`
       run in Supabase SQL Editor.**
-- [ ] 7.5 Appointment/Booking — reframed as pre-order & pickup scheduling, `bookings` table,
-      `/dashboard/bookings`
+- [x] 7.5 Appointment/Booking — reframed as pre-order & pickup scheduling (bakery custom-cake orders,
+      bulk frozen-food reservations) rather than the literal laundry "appointment" from the mockup,
+      keeping the same table shape (Tanggal/Jam/Pelanggan/Layanan/Staf/Status). `bookings` table
+      (migration `017_bookings.sql`), status workflow pending → confirmed → in_progress → completed
+      (or cancel), `/dashboard/bookings`. Also added `GET /api/staff` (minimal staff picker list —
+      full staff CRUD lands in 7.6). **Needs `017_bookings.sql` run in Supabase SQL Editor.**
 - [ ] 7.6 Employee expansion — payroll runs/payslips, access-rights matrix, geofence radius on outlets,
       staff announcements, shifts/schedule, position levels + quick-PIN, purchasing/expense approvals
 

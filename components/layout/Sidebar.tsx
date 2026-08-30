@@ -76,6 +76,11 @@ const NAV_ITEMS: NavItem[] = [
     ],
   },
   {
+    label: 'Booking',
+    href: '/dashboard/bookings',
+    icon: '📅',
+  },
+  {
     label: 'Order Online',
     href: '/dashboard/online-orders',
     icon: '🛵',

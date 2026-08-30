@@ -462,6 +462,25 @@ export type JournalEntryDetail = {
   reference_id: string | null
 }
 
+export type BookingStatus = 'pending' | 'confirmed' | 'in_progress' | 'completed' | 'cancelled'
+
+export type Booking = {
+  id: string
+  outlet_id: string
+  customer_name: string
+  customer_phone: string | null
+  item_description: string
+  staff_id: string | null
+  scheduled_date: string
+  scheduled_start_time: string
+  scheduled_end_time: string | null
+  status: BookingStatus
+  notes: string | null
+  created_by: string
+  created_at: string
+  updated_at: string
+}
+
 export type OnlineOrderStatus = 'incoming' | 'on_process' | 'on_delivery' | 'completed' | 'cancelled'
 
 export type OnlineOrder = {
@@ -560,6 +579,7 @@ export type Database = {
       audit_log: Table<AuditLogEntry>
       system_alerts: Table<SystemAlert>
       bulk_admin_operations: Table<BulkAdminOperation>
+      bookings: Table<Booking>
       online_orders: Table<OnlineOrder>
       whatsapp_templates: Table<WhatsappTemplate>
       whatsapp_broadcasts: Table<WhatsappBroadcast>

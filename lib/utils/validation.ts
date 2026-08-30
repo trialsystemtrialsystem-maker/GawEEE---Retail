@@ -145,6 +145,23 @@ export const createJournalEntrySchema = z.object({
 
 export type CreateJournalEntryInput = z.infer<typeof createJournalEntrySchema>
 
+export const createBookingSchema = z.object({
+  outlet_id: z.string().uuid(),
+  customer_name: z.string().min(1, 'Nama pelanggan wajib diisi'),
+  customer_phone: z.string().optional(),
+  item_description: z.string().min(1, 'Deskripsi wajib diisi'),
+  staff_id: z.string().uuid().optional(),
+  scheduled_date: z.string().min(1, 'Tanggal wajib diisi'),
+  scheduled_start_time: z.string().min(1, 'Jam wajib diisi'),
+  scheduled_end_time: z.string().optional(),
+  notes: z.string().optional(),
+})
+
+export type CreateBookingInput = z.infer<typeof createBookingSchema>
+
+const BOOKING_STATUSES = ['pending', 'confirmed', 'in_progress', 'completed', 'cancelled'] as const
+export const bookingStatusSchema = z.object({ status: z.enum(BOOKING_STATUSES) })
+
 export const onlineOrderItemSchema = z.object({
   name: z.string().min(1),
   quantity: z.number().int().positive(),
