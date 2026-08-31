@@ -47,7 +47,7 @@ export function PrintBarcodeManager() {
     setIsLoading(true)
     const res = await fetch('/api/products?limit=200')
     const data = await res.json()
-    if (res.ok) setProducts(data.products ?? [])
+    if (res.ok) setProducts(data.data ?? [])
     setIsLoading(false)
   }, [])
 

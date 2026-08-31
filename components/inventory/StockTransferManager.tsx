@@ -68,7 +68,7 @@ export function StockTransferManager({ outletId, view, canManage }: { outletId: 
     const productData = await productRes.json()
     if (transferRes.ok) setTransfers(transferData.transfers ?? [])
     if (outletRes.ok) setOutlets(outletData.outlets ?? [])
-    if (productRes.ok) setProducts(productData.products ?? [])
+    if (productRes.ok) setProducts(productData.data ?? [])
     setIsLoading(false)
   }, [outletId, config.statusFilter])
 

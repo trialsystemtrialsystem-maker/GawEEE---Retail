@@ -44,7 +44,7 @@ create index idx_production_runs_outlet_id on production_runs(outlet_id);
 -- has insufficient stock (same guarantee update_inventory() already gives
 -- create_invoice()/ship_stock_transfer()).
 create or replace function submit_production_run(p_run_id uuid, p_submitted_by uuid)
-returns table (output_quantity int) as $$
+returns table (produced_quantity int) as $$
 declare
   v_outlet_id uuid;
   v_recipe_id uuid;

@@ -54,7 +54,7 @@ export function PurchaseReturnManager({ outletId, canManage }: { outletId: strin
     const prodData = await prodRes.json()
     if (retRes.ok) setReturns(retData.returns ?? [])
     if (supRes.ok) setSuppliers(supData.suppliers ?? [])
-    if (prodRes.ok) setProducts(prodData.products ?? [])
+    if (prodRes.ok) setProducts(prodData.data ?? [])
     setIsLoading(false)
   }, [outletId])
 

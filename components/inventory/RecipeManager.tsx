@@ -38,7 +38,7 @@ export function RecipeManager({ outletId, canManage }: { outletId: string; canMa
     const recipeData = await recipeRes.json()
     const productData = await productRes.json()
     if (recipeRes.ok) setRecipes(recipeData.recipes ?? [])
-    if (productRes.ok) setProducts(productData.products ?? [])
+    if (productRes.ok) setProducts(productData.data ?? [])
     setIsLoading(false)
   }, [outletId])
 

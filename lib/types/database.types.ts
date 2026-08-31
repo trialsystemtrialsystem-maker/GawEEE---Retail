@@ -944,7 +944,7 @@ export type Database = {
       }
       submit_production_run: {
         Args: { p_run_id: string; p_submitted_by: string }
-        Returns: { output_quantity: number }[]
+        Returns: { produced_quantity: number }[]
       }
       submit_purchase_return: {
         Args: { p_return_id: string; p_submitted_by: string }

@@ -45,7 +45,7 @@ export function SpecialPricingManager({ outletId }: { outletId: string }) {
     const productData = await productRes.json()
     if (priceRes.ok) setPrices(priceData.special_prices ?? [])
     if (groupRes.ok) setGroups(groupData.groups ?? [])
-    if (productRes.ok) setProducts(productData.products ?? [])
+    if (productRes.ok) setProducts(productData.data ?? [])
     setIsLoading(false)
   }, [outletId])
 

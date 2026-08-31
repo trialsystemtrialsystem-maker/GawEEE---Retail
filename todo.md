@@ -465,6 +465,24 @@ Playwright after every batch (no console/page errors, sampled routes all 200), `
 `database/combined_migration.sql` — **all 9 need to be run in Supabase SQL Editor** for the features to
 work against the live database (see the migration filenames referenced in each item above for the exact
 list and order).
+- [x] Post-migration deep verification (after the user ran all 9): sampled all 16 new GET endpoints
+      (200 across the board), then actually *called* the riskiest atomic RPCs end-to-end
+      (submit_stocktake, submit_purchase_return, ship/receive_stock_transfer, submit_production_run) —
+      not just page-loads. Found and fixed two real bugs this surfaced:
+      1. **5 new components read the wrong JSON key from `GET /api/products`** (`.products` instead of
+         the route's actual `.data`) — RecipeManager, SpecialPricingManager, PrintBarcodeManager,
+         StockTransferManager, PurchaseReturnManager. Their product pickers were silently always empty;
+         page loads never surfaced it since there's no error, just no options. Caught only by actually
+         reading the fetched array's contents during the write test, not by loading the page.
+      2. **`submit_production_run()` failed on every call** with "column reference \"output_quantity\"
+         is ambiguous" — `returns table (output_quantity int)` implicitly declares a plpgsql variable
+         named `output_quantity`, which collided with `recipes.output_quantity` in a `select ... into`
+         inside the function body. Fixed by renaming the return column to `produced_quantity`
+         (migration `029_fix_production_run.sql` — **needs to be run** in addition to the other 9).
+         create_recipe/create_production_run both succeeded silently; only the final /submit call
+         exposed it, confirming the value of testing the full flow through to completion, not just the
+         first step. Test artifacts (recipe/run/transfer/return) cleaned up via service-role delete
+         after confirming the bug.
 
 ## Notes on scope
 This todo tracks the **engineering deliverables** of the PRD (a working Next.js + Supabase codebase

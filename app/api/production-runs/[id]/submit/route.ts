@@ -19,5 +19,5 @@ export async function POST(_request: NextRequest, ctx: RouteContext<'/api/produc
     return NextResponse.json({ error: message }, { status })
   }
 
-  return NextResponse.json({ output_quantity: data?.[0]?.output_quantity ?? 0 })
+  return NextResponse.json({ output_quantity: data?.[0]?.produced_quantity ?? 0 })
 }
