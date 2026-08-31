@@ -244,6 +244,25 @@ export const customerCustomFieldsSchema = z.object({
   custom_fields: z.record(z.string(), z.string()),
 })
 
+export const recipeIngredientInputSchema = z.object({
+  ingredient_product_id: z.string().uuid(),
+  quantity: z.number().int().positive(),
+})
+
+export const createRecipeSchema = z.object({
+  outlet_id: z.string().uuid(),
+  name: z.string().min(1, 'Nama resep wajib diisi'),
+  output_product_id: z.string().uuid(),
+  output_quantity: z.number().int().positive(),
+  ingredients: z.array(recipeIngredientInputSchema).min(1, 'Minimal 1 bahan'),
+})
+
+export const createProductionRunSchema = z.object({
+  outlet_id: z.string().uuid(),
+  recipe_id: z.string().uuid(),
+  batch_count: z.number().int().positive(),
+})
+
 export const promotionSchema = z.object({
   outlet_id: z.string().uuid(),
   name: z.string().min(1, 'Nama promosi wajib diisi'),
@@ -387,6 +406,7 @@ export const whatsappBroadcastSchema = z.object({
   outlet_id: z.string().uuid(),
   template_id: z.string().uuid(),
   target_note: z.string().min(1, 'Keterangan target wajib diisi'),
+  customer_group_id: z.string().uuid().optional(),
 })
 
 export type WhatsappBroadcastInput = z.infer<typeof whatsappBroadcastSchema>

@@ -43,13 +43,26 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Tidak memiliki izin' }, { status: 403 })
   }
 
-  const { data: customers } = await auth.supabase
-    .from('invoices')
-    .select('customer_phone')
-    .eq('outlet_id', result.data.outlet_id)
-    .not('customer_phone', 'is', null)
+  let sentCount: number
 
-  const sentCount = new Set((customers ?? []).map((c) => c.customer_phone)).size
+  if (result.data.customer_group_id) {
+    // Campaign targeted at a customer_groups segment (Sales > Campaign) —
+    // real audience is that group's customers who have a phone on file.
+    const { count } = await auth.supabase
+      .from('customers')
+      .select('id', { count: 'exact', head: true })
+      .eq('outlet_id', result.data.outlet_id)
+      .eq('group_id', result.data.customer_group_id)
+      .not('phone', 'is', null)
+    sentCount = count ?? 0
+  } else {
+    const { data: customers } = await auth.supabase
+      .from('invoices')
+      .select('customer_phone')
+      .eq('outlet_id', result.data.outlet_id)
+      .not('customer_phone', 'is', null)
+    sentCount = new Set((customers ?? []).map((c) => c.customer_phone)).size
+  }
 
   const { data, error } = await auth.supabase
     .from('whatsapp_broadcasts')

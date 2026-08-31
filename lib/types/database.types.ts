@@ -672,6 +672,34 @@ export type SpecialPrice = {
   created_at: string
 }
 
+export type Recipe = {
+  id: string
+  outlet_id: string
+  name: string
+  output_product_id: string
+  output_quantity: number
+  created_by: string
+  created_at: string
+}
+
+export type RecipeIngredient = {
+  id: string
+  recipe_id: string
+  ingredient_product_id: string
+  quantity: number
+}
+
+export type ProductionRun = {
+  id: string
+  outlet_id: string
+  recipe_id: string
+  batch_count: number
+  status: 'draft' | 'completed'
+  produced_by: string
+  created_at: string
+  completed_at: string | null
+}
+
 export type Promotion = {
   id: string
   outlet_id: string
@@ -754,6 +782,7 @@ export type WhatsappBroadcast = {
   created_by: string
   created_at: string
   sent_at: string | null
+  customer_group_id: string | null
 }
 
 export type DailySalesSummaryView = {
@@ -819,6 +848,9 @@ export type Database = {
       customer_groups: Table<CustomerGroup>
       special_prices: Table<SpecialPrice>
       customer_field_definitions: Table<CustomerFieldDefinition>
+      recipes: Table<Recipe>
+      recipe_ingredients: Table<RecipeIngredient>
+      production_runs: Table<ProductionRun>
       promotions: Table<Promotion>
       coupons: Table<Coupon>
       loyalty_ledger: Table<LoyaltyLedgerEntry>
@@ -909,6 +941,10 @@ export type Database = {
       submit_stocktake: {
         Args: { p_stocktake_id: string; p_submitted_by: string }
         Returns: { total_variance_value: number }[]
+      }
+      submit_production_run: {
+        Args: { p_run_id: string; p_submitted_by: string }
+        Returns: { output_quantity: number }[]
       }
       submit_purchase_return: {
         Args: { p_return_id: string; p_submitted_by: string }

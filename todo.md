@@ -450,8 +450,21 @@ retail/bakery/frozen-food/minimarket business model, building them would be fabr
       (points earned per Rp1,000, Rupiah value per point redeemed). One system (earn + redeem is a
       single ledger), so both mockup menu items render the same `LoyaltyManager` component rather than
       being built as two half-duplicated features.
-- [ ] 10.15 Send Marketing Campaign (reuses WhatsApp broadcast pattern)
-- [ ] 10.16 Stock Production + Master Recipes (bakery vertical: recipes/BOM + production runs)
+- [x] 10.15 Send Marketing Campaign — reuses `whatsapp_broadcasts` (added a nullable `customer_group_id`
+      column, migration `027_campaign_targeting.sql`) rather than a new table; real audience count when
+      targeted at a group (customers in that group with a phone on file).
+- [x] 10.16 Stock Production + Master Recipes — new `recipes`/`recipe_ingredients`/`production_runs`
+      tables + atomic `submit_production_run()` (migration `028_stock_production.sql`, consumes
+      ingredient stock and adds finished-good stock in one transaction, same guarantee as
+      `create_invoice()`). "Master Recipes" and "Stock Production Template" are the same concept (a
+      template *is* a recipe) so both mockup menu items render the same `RecipeManager` component.
+
+**Phase 10 complete** — all 16 real-functionality items shipped across 9 commits, verified live via
+Playwright after every batch (no console/page errors, sampled routes all 200), `tsc`/`eslint`/
+`npm run build`/`npm test` green throughout. 9 new migrations this phase (`020`-`028`), all appended to
+`database/combined_migration.sql` — **all 9 need to be run in Supabase SQL Editor** for the features to
+work against the live database (see the migration filenames referenced in each item above for the exact
+list and order).
 
 ## Notes on scope
 This todo tracks the **engineering deliverables** of the PRD (a working Next.js + Supabase codebase
