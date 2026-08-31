@@ -397,6 +397,41 @@ Report), never a fabricated feature or dead link.
       yet migrated), and Sales Peak Time renders a real hour-by-hour bar chart from actual demo
       transaction data (peak 12:00-13:00, confirming the aggregation logic is correct).
 
+## Phase 10 — Build real functionality behind every ComingSoon stub (where it fits the business)
+User asked to sweep the whole system and complete every "belum tersedia" feature. Full plan + the
+explicit Tier A/B/C disposition of all 50 stubs (which get built for real vs. stay honest stubs and
+why): `C:\Users\LENOVO\.claude\plans\nifty-tumbling-candy.md`. Tier C (Kitchen/Service/Facility Report,
+Ojek Online pricing, Time-Based Pricing, Customer Satisfaction, Deposits, Notes Category List, Sales
+Quotation/Order/Delivery, Buy Marketing Campaign) stays stubbed — confirmed these don't fit GawEEE's
+retail/bakery/frozen-food/minimarket business model, building them would be fabricated functionality.
+- [x] 10.1 Stocktake — full physical count session workflow: `submit_stocktake()` atomic function
+      (migration `020_stocktake_functions.sql`) applies every counted-vs-expected variance via
+      `update_inventory()` and marks the session completed, all-or-nothing. Start session (snapshots
+      expected qty from `inventory`) → enter counts → submit.
+- [x] 10.2 Invoice Supplier + Invoice Payment — real CRUD over the existing `purchase_invoices`/
+      `purchase_payments` tables (Phase 1, unused since): record an invoice against a received PO,
+      record payments against it (auto-updates unpaid/partial/paid). Combined into one page — payment
+      recording is inline per-invoice rather than a separate page (todo'd redirect note left at
+      `/dashboard/inventory/purchasing/invoice-payment` pointing here).
+- [x] 10.3 Payment Methods Settings — new `outlets.enabled_payment_methods` column (migration
+      `021_payment_methods_settings.sql`), settings page to toggle cash/e-wallet/bank-transfer per
+      outlet, and POS's `PaymentMethod.tsx` now actually fetches and respects it (previously hardcoded).
+- [x] 10.4 Tax Report — real PPN report from `invoices.tax_amount` (already computed by `create_invoice()`
+      at sale time, just never had a report view), grouped by month.
+- [x] 10.5 Stock Waste — reuses `update_inventory()` with `movement_type='waste'` (no new table needed,
+      the function already takes an arbitrary movement type string), write-off form + history list.
+- [ ] 10.6 Purchase Return
+- [ ] 10.7 Item Request
+- [ ] 10.8 Stock Mutation (multi-outlet transfer, 5 menu items / 1 workflow)
+- [ ] 10.9 Print Barcode (client-side, no backend)
+- [ ] 10.10 Customer Group
+- [ ] 10.11 Promotion + Coupon
+- [ ] 10.12 Loyalty + Point Reward
+- [ ] 10.13 Special Pricing Group
+- [ ] 10.14 Customer Custom Fields
+- [ ] 10.15 Send Marketing Campaign (reuses WhatsApp broadcast pattern)
+- [ ] 10.16 Stock Production + Master Recipes (bakery vertical: recipes/BOM + production runs)
+
 ## Notes on scope
 This todo tracks the **engineering deliverables** of the PRD (a working Next.js + Supabase codebase
 implementing Phase 1 features, with payment gateways behind a swappable mock interface). Items marked

@@ -218,7 +218,7 @@ export function POSScreen({ outletId, cashierName }: { outletId: string; cashier
       <div className="space-y-4 rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
         {error && <Alert variant="danger">{error}</Alert>}
         <ShoppingCart />
-        <PaymentMethod />
+        <PaymentMethod outletId={outletId} />
         <Button className="w-full" size="lg" onClick={handleCheckout} isLoading={isSubmitting} disabled={items.length === 0}>
           Proses Pembayaran
         </Button>

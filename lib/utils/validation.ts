@@ -145,6 +145,40 @@ export const createJournalEntrySchema = z.object({
 
 export type CreateJournalEntryInput = z.infer<typeof createJournalEntrySchema>
 
+export const stockWasteSchema = z.object({
+  outlet_id: z.string().uuid(),
+  product_id: z.string().uuid(),
+  quantity: z.number().int().positive(),
+  reason: z.string().min(3, 'Alasan wajib diisi'),
+})
+
+export const createPurchaseInvoiceSchema = z.object({
+  po_id: z.string().uuid(),
+  invoice_number: z.string().min(1, 'Nomor invoice wajib diisi'),
+  invoice_date: z.string().min(1),
+  due_date: z.string().min(1),
+  subtotal: z.number().nonnegative(),
+  tax_amount: z.number().nonnegative().default(0),
+})
+
+export const recordPurchasePaymentSchema = z.object({
+  amount: z.number().positive('Nominal harus lebih dari 0'),
+  payment_date: z.string().min(1),
+  payment_method: z.enum(['cash', 'bank_transfer', 'check']),
+  reference_number: z.string().optional(),
+  notes: z.string().optional(),
+})
+
+export const createStocktakeSchema = z.object({
+  outlet_id: z.string().uuid(),
+  scheduled_date: z.string().min(1),
+  notes: z.string().optional(),
+})
+
+export const stocktakeCountSchema = z.object({
+  counts: z.array(z.object({ detail_id: z.string().uuid(), counted_quantity: z.number().int().nonnegative() })).min(1),
+})
+
 export const customerSchema = z.object({
   outlet_id: z.string().uuid(),
   name: z.string().min(1, 'Nama pelanggan wajib diisi'),

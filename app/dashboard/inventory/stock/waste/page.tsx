@@ -1,10 +1,23 @@
-import { ComingSoon } from '@/components/common/ComingSoon'
+import { createClient } from '@/lib/supabase/server'
+import { Alert } from '@/components/ui/Alert'
+import { StockWasteManager } from '@/components/inventory/StockWasteManager'
 
-export default function StockWastePage() {
+export default async function StockWastePage() {
+  const supabase = await createClient()
+  const {
+    data: { session },
+  } = await supabase.auth.getSession()
+  const user = session?.user
+  const { data: profile } = await supabase.from('users').select('outlet_id, role').eq('id', user!.id).single()
+
   return (
-    <ComingSoon
-      title="Stock Waste"
-      description="Belum tersedia — belum ada pencatatan barang rusak/kadaluarsa terpisah dari stock adjustment biasa."
-    />
+    <div className="space-y-6">
+      <h1 className="text-2xl font-bold text-gray-900">Stock Waste</h1>
+      {profile?.outlet_id ? (
+        <StockWasteManager outletId={profile.outlet_id} canManage={['outlet_manager', 'master_admin'].includes(profile.role)} />
+      ) : (
+        <Alert variant="warning">Pilih outlet terlebih dahulu.</Alert>
+      )}
+    </div>
   )
 }

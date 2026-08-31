@@ -1,10 +1,23 @@
-import { ComingSoon } from '@/components/common/ComingSoon'
+import { createClient } from '@/lib/supabase/server'
+import { Alert } from '@/components/ui/Alert'
+import { TaxReport } from '@/components/financial/TaxReport'
 
-export default function TaxReportPage() {
+export default async function TaxReportPage() {
+  const supabase = await createClient()
+  const {
+    data: { session },
+  } = await supabase.auth.getSession()
+  const user = session?.user
+  const { data: profile } = await supabase.from('users').select('outlet_id').eq('id', user!.id).single()
+
   return (
-    <ComingSoon
-      title="Tax Report"
-      description="Perhitungan PPN/PPh otomatis belum diimplementasikan. Lihat todo.md untuk status pengembangan."
-    />
+    <div className="space-y-6">
+      <h1 className="text-2xl font-bold text-gray-900">Tax Report</h1>
+      {profile?.outlet_id ? (
+        <TaxReport outletId={profile.outlet_id} />
+      ) : (
+        <Alert variant="warning">Pilih outlet terlebih dahulu.</Alert>
+      )}
+    </div>
   )
 }

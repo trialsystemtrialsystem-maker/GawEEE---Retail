@@ -2,6 +2,25 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getAuthContext, canAccessOutlet } from '@/lib/utils/auth-context'
 import { handleDatabaseError } from '@/lib/utils/errors'
 
+// GET /api/outlets/:id — outlet info, RLS scopes to an accessible outlet.
+export async function GET(_request: NextRequest, ctx: RouteContext<'/api/outlets/[id]'>) {
+  const auth = await getAuthContext()
+  if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  const { id } = await ctx.params
+  if (!canAccessOutlet(auth, id)) {
+    return NextResponse.json({ error: 'Tidak memiliki izin' }, { status: 403 })
+  }
+
+  const { data, error } = await auth.supabase.from('outlets').select('*').eq('id', id).single()
+  if (error) {
+    const { status, message } = handleDatabaseError(error)
+    return NextResponse.json({ error: message }, { status })
+  }
+
+  return NextResponse.json({ outlet: data })
+}
+
 // PATCH /api/outlets/:id — manager+ only, for the outlet they belong to (or
 // any outlet for master_admin). Covers outlet info + the Radius Absensi
 // geofence fields (Attendance module, 018_employee_expansion.sql).
@@ -27,6 +46,7 @@ export async function PATCH(request: NextRequest, ctx: RouteContext<'/api/outlet
     geofence_lat?: number | null
     geofence_lng?: number | null
     geofence_radius_m?: number | null
+    enabled_payment_methods?: string[]
   } = {}
   if (typeof body.name === 'string') patch.name = body.name
   if (typeof body.address === 'string') patch.address = body.address
@@ -36,6 +56,7 @@ export async function PATCH(request: NextRequest, ctx: RouteContext<'/api/outlet
   if (typeof body.geofence_lat === 'number' || body.geofence_lat === null) patch.geofence_lat = body.geofence_lat
   if (typeof body.geofence_lng === 'number' || body.geofence_lng === null) patch.geofence_lng = body.geofence_lng
   if (typeof body.geofence_radius_m === 'number' || body.geofence_radius_m === null) patch.geofence_radius_m = body.geofence_radius_m
+  if (Array.isArray(body.enabled_payment_methods)) patch.enabled_payment_methods = body.enabled_payment_methods
 
   const { data, error } = await auth.supabase.from('outlets').update(patch).eq('id', id).select().single()
 

@@ -57,6 +57,7 @@ export type Outlet = {
   geofence_lat: number | null
   geofence_lng: number | null
   geofence_radius_m: number | null
+  enabled_payment_methods: string[]
   created_at: string
   updated_at: string
   deleted_at: string | null
@@ -553,6 +554,33 @@ export type Booking = {
   updated_at: string
 }
 
+export type Stocktake = {
+  id: string
+  outlet_id: string
+  scheduled_date: string
+  actual_start_date: string | null
+  actual_end_date: string | null
+  created_by: string
+  approved_by: string | null
+  status: 'draft' | 'in_progress' | 'completed' | 'approved'
+  variance_tolerance_percent: number
+  total_variance_value: number | null
+  notes: string | null
+  created_at: string
+  updated_at: string
+}
+
+export type StocktakeDetail = {
+  id: string
+  stocktake_id: string
+  product_id: string
+  expected_quantity: number
+  counted_quantity: number
+  variance: number
+  notes: string | null
+  created_at: string
+}
+
 export type Customer = {
   id: string
   outlet_id: string
@@ -665,6 +693,8 @@ export type Database = {
       bulk_admin_operations: Table<BulkAdminOperation>
       bookings: Table<Booking>
       customers: Table<Customer>
+      stocktakes: Table<Stocktake>
+      stocktake_details: Table<StocktakeDetail>
       online_orders: Table<OnlineOrder>
       whatsapp_templates: Table<WhatsappTemplate>
       whatsapp_broadcasts: Table<WhatsappBroadcast>
@@ -741,6 +771,10 @@ export type Database = {
           p_source_id?: string | null
         }
         Returns: { journal_entry_id: string }[]
+      }
+      submit_stocktake: {
+        Args: { p_stocktake_id: string; p_submitted_by: string }
+        Returns: { total_variance_value: number }[]
       }
       post_journal_entry: {
         Args: { p_entry_id: string }
