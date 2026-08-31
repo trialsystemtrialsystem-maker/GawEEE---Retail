@@ -1,10 +1,23 @@
-import { ComingSoon } from '@/components/common/ComingSoon'
+import { createClient } from '@/lib/supabase/server'
+import { Alert } from '@/components/ui/Alert'
+import { CustomerGroupList } from '@/components/sales/CustomerGroupList'
 
-export default function CustomerGroupPage() {
+export default async function CustomerGroupPage() {
+  const supabase = await createClient()
+  const {
+    data: { session },
+  } = await supabase.auth.getSession()
+  const user = session?.user
+  const { data: profile } = await supabase.from('users').select('outlet_id').eq('id', user!.id).single()
+
   return (
-    <ComingSoon
-      title="Customer Group"
-      description="Belum tersedia — belum ada pengelompokan pelanggan di GawEEE. Lihat menu Customer List."
-    />
+    <div className="space-y-6">
+      <h1 className="text-2xl font-bold text-gray-900">Customer Group</h1>
+      {profile?.outlet_id ? (
+        <CustomerGroupList outletId={profile.outlet_id} />
+      ) : (
+        <Alert variant="warning">Pilih outlet terlebih dahulu.</Alert>
+      )}
+    </div>
   )
 }

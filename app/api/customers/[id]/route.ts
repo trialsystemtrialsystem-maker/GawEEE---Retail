@@ -9,11 +9,20 @@ export async function PATCH(request: NextRequest, ctx: RouteContext<'/api/custom
 
   const { id } = await ctx.params
   const body = await request.json()
-  const patch: { name?: string; phone?: string; email?: string; notes?: string } = {}
+  const patch: {
+    name?: string
+    phone?: string
+    email?: string
+    notes?: string
+    group_id?: string | null
+    custom_fields?: Record<string, string>
+  } = {}
   if (typeof body.name === 'string') patch.name = body.name
   if (typeof body.phone === 'string') patch.phone = body.phone
   if (typeof body.email === 'string') patch.email = body.email
   if (typeof body.notes === 'string') patch.notes = body.notes
+  if (typeof body.group_id === 'string' || body.group_id === null) patch.group_id = body.group_id
+  if (body.custom_fields && typeof body.custom_fields === 'object') patch.custom_fields = body.custom_fields
 
   const { data, error } = await auth.supabase.from('customers').update(patch).eq('id', id).select().single()
 

@@ -432,12 +432,18 @@ retail/bakery/frozen-food/minimarket business model, building them would be fabr
       views of the same data (`StockTransferManager` component, `view` prop). Needed a new same-company
       outlets SELECT RLS policy (`outlets_select_same_company`) since the original policy only let a
       non-master_admin see their own outlet — transfers need sibling outlet names for the picker.
-- [x] 10.9 Print Barcode (client-side, no backend)
-- [ ] 10.10 Customer Group
+- [x] 10.9 Print Barcode — real scannable CODE128 labels. Added the `jsbarcode` dependency rather than
+      hand-rolling barcode encoding tables from memory with no way to verify correctness against a real
+      scanner — client-side only, browser print, no backend needed.
+- [x] 10.10 Customer Group — new `customer_groups` table + `customers.group_id` (migration
+      `024_customer_groups.sql`), also lays the groundwork Special Pricing Group needs.
+- [x] 10.13 Special Pricing Group — new `special_prices` table (group + product → override price,
+      migration `025_special_pricing_custom_fields.sql`).
+- [x] 10.14 Customer Custom Fields — staff define field labels (`customer_field_definitions`), values
+      stored in a new `customers.custom_fields` jsonb column; the Customer List create form renders them
+      dynamically. Scoped down from a full form-builder per the plan — just label + text value.
 - [ ] 10.11 Promotion + Coupon
 - [ ] 10.12 Loyalty + Point Reward
-- [ ] 10.13 Special Pricing Group
-- [ ] 10.14 Customer Custom Fields
 - [ ] 10.15 Send Marketing Campaign (reuses WhatsApp broadcast pattern)
 - [ ] 10.16 Stock Production + Master Recipes (bakery vertical: recipes/BOM + production runs)
 

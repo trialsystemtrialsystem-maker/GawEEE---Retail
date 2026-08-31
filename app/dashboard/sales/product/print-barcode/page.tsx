@@ -1,10 +1,10 @@
-import { ComingSoon } from '@/components/common/ComingSoon'
+import { PrintBarcodeManager } from '@/components/sales/PrintBarcodeManager'
 
 export default function PrintBarcodePage() {
   return (
-    <ComingSoon
-      title="Print Barcode"
-      description="Belum tersedia — barcode produk sudah tersimpan di data produk, tapi fitur cetak label belum dibangun."
-    />
+    <div className="space-y-6">
+      <h1 className="text-2xl font-bold text-gray-900">Print Barcode</h1>
+      <PrintBarcodeManager />
+    </div>
   )
 }

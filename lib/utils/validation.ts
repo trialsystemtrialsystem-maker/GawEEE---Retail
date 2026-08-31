@@ -218,6 +218,30 @@ export const customerSchema = z.object({
   phone: z.string().optional(),
   email: z.string().email().optional().or(z.literal('')),
   notes: z.string().optional(),
+  group_id: z.string().uuid().optional(),
+  custom_fields: z.record(z.string(), z.string()).optional(),
+})
+
+export const customerGroupSchema = z.object({
+  outlet_id: z.string().uuid(),
+  name: z.string().min(1, 'Nama grup wajib diisi'),
+  description: z.string().optional(),
+})
+
+export const specialPriceSchema = z.object({
+  outlet_id: z.string().uuid(),
+  group_id: z.string().uuid(),
+  product_id: z.string().uuid(),
+  price: z.number().nonnegative(),
+})
+
+export const customerFieldDefinitionSchema = z.object({
+  outlet_id: z.string().uuid(),
+  label: z.string().min(1, 'Label wajib diisi'),
+})
+
+export const customerCustomFieldsSchema = z.object({
+  custom_fields: z.record(z.string(), z.string()),
 })
 
 export type CustomerInput = z.infer<typeof customerSchema>

@@ -12,22 +12,44 @@ interface Customer {
   phone: string | null
   email: string | null
   notes: string | null
+  customer_groups: { name: string } | null
+}
+
+interface Group {
+  id: string
+  name: string
+}
+
+interface FieldDefinition {
+  id: string
+  label: string
 }
 
 export function CustomerList({ outletId }: { outletId: string }) {
   const [customers, setCustomers] = useState<Customer[]>([])
+  const [groups, setGroups] = useState<Group[]>([])
+  const [fieldDefinitions, setFieldDefinitions] = useState<FieldDefinition[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [showForm, setShowForm] = useState(false)
-  const [form, setForm] = useState({ name: '', phone: '', email: '', notes: '' })
+  const [form, setForm] = useState({ name: '', phone: '', email: '', notes: '', group_id: '' })
+  const [customFieldValues, setCustomFieldValues] = useState<Record<string, string>>({})
   const [isSubmitting, setIsSubmitting] = useState(false)
   const showToast = useNotificationStore((s) => s.show)
 
   const load = useCallback(async () => {
     setIsLoading(true)
-    const res = await fetch(`/api/customers?outlet_id=${outletId}`)
-    const data = await res.json()
-    if (res.ok) setCustomers(data.customers ?? [])
+    const [custRes, groupRes, fieldRes] = await Promise.all([
+      fetch(`/api/customers?outlet_id=${outletId}`),
+      fetch(`/api/customer-groups?outlet_id=${outletId}`),
+      fetch(`/api/customer-field-definitions?outlet_id=${outletId}`),
+    ])
+    const custData = await custRes.json()
+    const groupData = await groupRes.json()
+    const fieldData = await fieldRes.json()
+    if (custRes.ok) setCustomers(custData.customers ?? [])
+    if (groupRes.ok) setGroups(groupData.groups ?? [])
+    if (fieldRes.ok) setFieldDefinitions(fieldData.definitions ?? [])
     setIsLoading(false)
   }, [outletId])
 
@@ -44,7 +66,12 @@ export function CustomerList({ outletId }: { outletId: string }) {
       const res = await fetch('/api/customers', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...form, outlet_id: outletId }),
+        body: JSON.stringify({
+          ...form,
+          group_id: form.group_id || undefined,
+          outlet_id: outletId,
+          custom_fields: customFieldValues,
+        }),
       })
       const data = await res.json()
       if (!res.ok) {
@@ -52,7 +79,8 @@ export function CustomerList({ outletId }: { outletId: string }) {
         return
       }
       showToast(`Pelanggan "${form.name}" berhasil ditambahkan`, 'success')
-      setForm({ name: '', phone: '', email: '', notes: '' })
+      setForm({ name: '', phone: '', email: '', notes: '', group_id: '' })
+      setCustomFieldValues({})
       setShowForm(false)
       load()
     } finally {
@@ -95,6 +123,29 @@ export function CustomerList({ outletId }: { outletId: string }) {
             value={form.notes}
             onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
           />
+          <div className="space-y-1">
+            <label className="block text-sm font-medium text-gray-700">Grup Pelanggan</label>
+            <select
+              value={form.group_id}
+              onChange={(e) => setForm((f) => ({ ...f, group_id: e.target.value }))}
+              className="w-full rounded-sm border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="">Tanpa grup</option>
+              {groups.map((g) => (
+                <option key={g.id} value={g.id}>
+                  {g.name}
+                </option>
+              ))}
+            </select>
+          </div>
+          {fieldDefinitions.map((fd) => (
+            <Input
+              key={fd.id}
+              label={fd.label}
+              value={customFieldValues[fd.label] ?? ''}
+              onChange={(e) => setCustomFieldValues((v) => ({ ...v, [fd.label]: e.target.value }))}
+            />
+          ))}
           <div className="sm:col-span-2">
             <Button type="submit" isLoading={isSubmitting}>
               Simpan
@@ -111,16 +162,17 @@ export function CustomerList({ outletId }: { outletId: string }) {
               <th className="px-4 py-2 text-left font-semibold text-gray-600">Telepon</th>
               <th className="px-4 py-2 text-left font-semibold text-gray-600">Email</th>
               <th className="px-4 py-2 text-left font-semibold text-gray-600">Catatan</th>
+              <th className="px-4 py-2 text-left font-semibold text-gray-600">Grup</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100 bg-white">
             {isLoading ? (
               <tr>
-                <td colSpan={4} className="px-4 py-6 text-center text-gray-400">Memuat…</td>
+                <td colSpan={5} className="px-4 py-6 text-center text-gray-400">Memuat…</td>
               </tr>
             ) : customers.length === 0 ? (
               <tr>
-                <td colSpan={4} className="px-4 py-6 text-center text-gray-400">Belum ada pelanggan</td>
+                <td colSpan={5} className="px-4 py-6 text-center text-gray-400">Belum ada pelanggan</td>
               </tr>
             ) : (
               customers.map((c) => (
@@ -129,6 +181,7 @@ export function CustomerList({ outletId }: { outletId: string }) {
                   <td className="px-4 py-2 text-gray-600">{c.phone ?? '-'}</td>
                   <td className="px-4 py-2 text-gray-600">{c.email ?? '-'}</td>
                   <td className="px-4 py-2 text-gray-600">{c.notes ?? '-'}</td>
+                  <td className="px-4 py-2 text-gray-600">{c.customer_groups?.name ?? '-'}</td>
                 </tr>
               ))
             )}

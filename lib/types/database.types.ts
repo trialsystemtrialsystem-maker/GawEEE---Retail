@@ -644,9 +644,38 @@ export type Customer = {
   phone: string | null
   email: string | null
   notes: string | null
+  group_id: string | null
+  custom_fields: Record<string, string>
   created_by: string
   created_at: string
   updated_at: string
+}
+
+export type CustomerGroup = {
+  id: string
+  outlet_id: string
+  name: string
+  description: string | null
+  created_by: string
+  created_at: string
+}
+
+export type SpecialPrice = {
+  id: string
+  outlet_id: string
+  group_id: string
+  product_id: string
+  price: number
+  created_by: string
+  created_at: string
+}
+
+export type CustomerFieldDefinition = {
+  id: string
+  outlet_id: string
+  label: string
+  sort_order: number
+  created_at: string
 }
 
 export type OnlineOrderStatus = 'incoming' | 'on_process' | 'on_delivery' | 'completed' | 'cancelled'
@@ -749,6 +778,9 @@ export type Database = {
       bulk_admin_operations: Table<BulkAdminOperation>
       bookings: Table<Booking>
       customers: Table<Customer>
+      customer_groups: Table<CustomerGroup>
+      special_prices: Table<SpecialPrice>
+      customer_field_definitions: Table<CustomerFieldDefinition>
       stocktakes: Table<Stocktake>
       stocktake_details: Table<StocktakeDetail>
       item_requests: Table<ItemRequest>
