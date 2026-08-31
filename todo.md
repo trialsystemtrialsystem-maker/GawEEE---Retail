@@ -374,6 +374,10 @@ Report), never a fabricated feature or dead link.
       Group/Special Pricing/Custom Fields/Data Setting, Promotion/Coupon/Loyalty/Point Reward, Sales
       Quotation/Order/Delivery List, Send/Buy Marketing Campaign — each honestly labeled with what's
       missing, never a dead link or fabricated data.
+- [x] Removed the redundant "Inventory" group from inside the Sales accordion per user follow-up —
+      it only ever linked to `/dashboard/inventory`, duplicating the top-level Inventory tab in
+      `TopNav`. Sales sidebar is now 8 groups (Report, Report Analysis, Product, Customer, Promotion,
+      Commission, Invoice, Campaign); Inventory access stays solely via its own top tab.
 - [x] Verified live via Playwright against the demo account: accordion expand/auto-open matches the
       mockup exactly (screenshotted both collapsed and Product-expanded states), all 11 sampled real +
       stub routes return 200 with no console errors except the expected 500 from `customers` (table not

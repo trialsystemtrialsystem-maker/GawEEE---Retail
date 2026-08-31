@@ -87,11 +87,6 @@ export const PRIMARY_NAV: NavItem[] = [
         ],
       },
       {
-        label: 'Inventory',
-        icon: '📦',
-        items: [{ label: 'Stok Barang', href: '/dashboard/inventory' }],
-      },
-      {
         label: 'Customer',
         icon: '👨‍👩‍👧',
         items: [
