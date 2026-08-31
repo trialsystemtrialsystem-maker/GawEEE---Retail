@@ -218,6 +218,26 @@ Legend: `[ ]` pending · `[x]` done · `[!]` needs user input/credentials before
       Verified: `/api/auth/me` 3.9s -> 1.6s; full login-to-dashboard-loaded flow (measured via a real
       Playwright browser session, not curl) is ~6.7s total including the ~2s Supabase Auth
       `signInWithPassword` call itself. Full unit + E2E suite green after the change.
+- [x] "Coba Demo" was slow again (~15-20s) on the **first click of each new day**, even after the earlier
+      same-day fast-path fix, because the fast path only matched when the demo tenant's latest invoice
+      was dated *exactly today* — as soon as the calendar rolled over, that check failed and every click
+      paid the full wipe-and-regenerate cost again, every day, for whoever clicked first. Root-caused by
+      reproducing it directly (backdated the demo tenant's invoices to "yesterday" via the service-role
+      REST API, then timed the endpoint: 1.19s before the fix would have been ~20s). Fixed by extracting
+      the wipe-and-regenerate logic into `regenerateDemoData()` and changing the response strategy: a
+      *genuinely empty* tenant (true first-ever seed) still blocks on the full regenerate since there's
+      nothing to show yet, but a merely-*stale* tenant (data exists, just not dated today) now responds
+      immediately with its existing data and kicks off the regenerate in the background
+      (`void regenerateDemoData(...).catch(...)`, not awaited) so the user is never blocked on it —
+      verified live: response dropped from ~20s to ~1.2s for the stale case, and confirmed the background
+      job actually completes (latest invoice was re-dated to "today" ~20s later, checked directly via
+      the service-role REST API). Known trade-off, low-stakes and left as-is: if two clicks race while
+      stale, both fire a background regenerate and could step on each other (sequential deletes, same
+      "demo data, partial failure is fine" reasoning as the rest of this seeder); would need a lock or
+      a queue to fully close, not worth it for a demo endpoint. Also noted: on a serverless/edge
+      deployment (Vercel, still blocked per below) the background task isn't guaranteed to keep running
+      after the response is sent — would need `waitUntil()` or a scheduled job instead. Fine on the
+      current self-hosted/Node dev setup.
 - [!] The demo seed endpoint is public and unauthenticated by design (so it's reachable from the
       landing page without login) but has no rate-limiting — repeated calls just re-seed the same
       fixed tenant (bounded blast radius), but could still be hammered to load the DB. Acceptable for

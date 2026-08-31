@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/server'
+import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '@/lib/types/database.types'
 import {
   DEMO_CATEGORIES,
@@ -19,6 +20,14 @@ import {
 // time, so repeated clicks can't spawn unbounded tenants — a reasonable
 // safeguard for a public unauthenticated endpoint given no rate-limiting
 // infra exists yet (see todo.md).
+//
+// Response latency: the full regenerate (below) takes ~15-20s. Data is
+// backdated so its most recent invoice lands "today", so once a day rolls
+// over the existing data is technically stale. Rather than pay that cost on
+// every first click of a new day, only a genuinely-empty tenant (nothing to
+// show at all) blocks on the full regenerate; a merely-stale tenant responds
+// immediately with its existing (still fully functional, just a day or so
+// old) data and refreshes in the background. See the branching in POST().
 
 const DAYS_OF_HISTORY = 90
 const TAX_RATE = 0.1
@@ -83,10 +92,9 @@ export async function POST() {
   }
 
   // 1b) Fast path: the seeder always backdates its most recent invoice to
-  // "today" (see the day-by-day loop below), so if that's still true the
-  // existing data is fresh — skip the ~20s wipe-and-regenerate entirely and
-  // just hand back the login. This is what makes repeat "Coba Demo" clicks
-  // on the same day near-instant instead of always paying the full reseed.
+  // "today" (see the day-by-day loop in regenerateDemoData), so if that's
+  // still true the existing data is fresh — skip the ~20s wipe-and-regenerate
+  // entirely and just hand back the login.
   const todayStr = new Date().toISOString().slice(0, 10)
   const { data: latestInvoice } = await admin
     .from('invoices')
@@ -106,6 +114,41 @@ export async function POST() {
     })
   }
 
+  // 1c) A genuinely empty tenant (first-ever seed, or a wipe with no data
+  // yet) has nothing to show — must block on the full regenerate.
+  if (!latestInvoice) {
+    try {
+      const stats = await regenerateDemoData(admin, companyId, outletId, userId)
+      return NextResponse.json({ email: DEMO_EMAIL, password: DEMO_PASSWORD, company_id: companyId, outlet_id: outletId, stats })
+    } catch (err) {
+      return NextResponse.json({ error: err instanceof Error ? err.message : 'Gagal menyimpan data demo' }, { status: 500 })
+    }
+  }
+
+  // 1d) Data exists but is stale (from a previous day) — it's still fully
+  // functional (just not literally dated "today"), so respond immediately
+  // and refresh it in the background instead of making every day's first
+  // click pay the ~20s regeneration cost. (On a serverless/edge deployment
+  // this would need to move to a scheduled job or a `waitUntil()`-style API,
+  // since the process isn't guaranteed to keep running after the response is
+  // sent — fine for the current self-hosted/Node deployment.)
+  void regenerateDemoData(admin, companyId, outletId, userId).catch((err) => {
+    console.error('[demo-seed] background reseed failed:', err)
+  })
+
+  return NextResponse.json({
+    email: DEMO_EMAIL,
+    password: DEMO_PASSWORD,
+    company_id: companyId,
+    outlet_id: outletId,
+    stats: { reused_existing_data: true, refreshing_in_background: true },
+  })
+}
+
+/** Wipes and regenerates the demo tenant's ~3 months of transaction history.
+ * Throws on failure (callers decide whether to await it and surface the
+ * error, or fire it in the background and just log). */
+async function regenerateDemoData(admin: SupabaseClient<Database>, companyId: string, outletId: string, userId: string) {
   // 2) Wipe any previous demo data for this tenant (idempotent reset), in
   // FK-safe order. Sequential deletes rather than one SQL function: this is
   // demo-only data, so a partial failure is low-stakes (same trade-off as PO
@@ -160,7 +203,7 @@ export async function POST() {
   }))
   const { data: productRows, error: productError } = await admin.from('products').insert(productInsert).select('id, name')
   if (productError || !productRows) {
-    return NextResponse.json({ error: productError?.message ?? 'Gagal membuat produk demo' }, { status: 500 })
+    throw new Error(productError?.message ?? 'Gagal membuat produk demo')
   }
 
   const products = DEMO_PRODUCTS.map((p, i) => ({ ...p, id: productRows[i].id }))
@@ -534,32 +577,22 @@ export async function POST() {
     }
   }
 
-  try {
-    await insertChunked('inventory', inventoryRows)
-    await insertChunked('invoices', invoices)
-    await insertChunked('invoice_items', items)
-    await insertChunked('payment_transactions', payments)
-    await insertChunked('inventory_ledger', ledger)
-    await insertChunked('purchase_orders', purchaseOrders)
-    await insertChunked('po_items', poItemRows)
-    await insertChunked('purchase_invoices', purchaseInvoices)
-    await insertChunked('purchase_payments', purchasePayments)
-    if (systemAlertRows.length) await insertChunked('system_alerts', systemAlertRows)
-    if (auditLogRows.length) await insertChunked('audit_log', auditLogRows)
-  } catch (err) {
-    return NextResponse.json({ error: err instanceof Error ? err.message : 'Gagal menyimpan data demo' }, { status: 500 })
-  }
+  await insertChunked('inventory', inventoryRows)
+  await insertChunked('invoices', invoices)
+  await insertChunked('invoice_items', items)
+  await insertChunked('payment_transactions', payments)
+  await insertChunked('inventory_ledger', ledger)
+  await insertChunked('purchase_orders', purchaseOrders)
+  await insertChunked('po_items', poItemRows)
+  await insertChunked('purchase_invoices', purchaseInvoices)
+  await insertChunked('purchase_payments', purchasePayments)
+  if (systemAlertRows.length) await insertChunked('system_alerts', systemAlertRows)
+  if (auditLogRows.length) await insertChunked('audit_log', auditLogRows)
 
-  return NextResponse.json({
-    email: DEMO_EMAIL,
-    password: DEMO_PASSWORD,
-    company_id: companyId,
-    outlet_id: outletId,
-    stats: {
-      products: products.length,
-      invoices: invoices.length,
-      purchase_orders: purchaseOrders.length,
-      days_of_history: DAYS_OF_HISTORY,
-    },
-  })
+  return {
+    products: products.length,
+    invoices: invoices.length,
+    purchase_orders: purchaseOrders.length,
+    days_of_history: DAYS_OF_HISTORY,
+  }
 }
