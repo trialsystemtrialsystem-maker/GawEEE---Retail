@@ -554,6 +554,62 @@ export type Booking = {
   updated_at: string
 }
 
+export type ItemRequest = {
+  id: string
+  outlet_id: string
+  product_id: string
+  quantity_requested: number
+  reason: string | null
+  status: 'pending' | 'approved' | 'rejected' | 'converted'
+  requested_by: string
+  decided_by: string | null
+  decided_at: string | null
+  created_at: string
+}
+
+export type PurchaseReturn = {
+  id: string
+  outlet_id: string
+  supplier_id: string
+  po_id: string | null
+  return_date: string
+  reason: string
+  status: 'draft' | 'completed'
+  total_amount: number
+  created_by: string
+  created_at: string
+}
+
+export type PurchaseReturnItem = {
+  id: string
+  return_id: string
+  product_id: string
+  quantity: number
+  unit_cost: number
+}
+
+export type StockTransfer = {
+  id: string
+  company_id: string
+  source_outlet_id: string
+  destination_outlet_id: string
+  status: 'requested' | 'in_transit' | 'completed' | 'cancelled'
+  notes: string | null
+  requested_by: string
+  shipped_by: string | null
+  received_by: string | null
+  shipped_at: string | null
+  received_at: string | null
+  created_at: string
+}
+
+export type StockTransferItem = {
+  id: string
+  transfer_id: string
+  product_id: string
+  quantity: number
+}
+
 export type Stocktake = {
   id: string
   outlet_id: string
@@ -695,6 +751,11 @@ export type Database = {
       customers: Table<Customer>
       stocktakes: Table<Stocktake>
       stocktake_details: Table<StocktakeDetail>
+      item_requests: Table<ItemRequest>
+      purchase_returns: Table<PurchaseReturn>
+      purchase_return_items: Table<PurchaseReturnItem>
+      stock_transfers: Table<StockTransfer>
+      stock_transfer_items: Table<StockTransferItem>
       online_orders: Table<OnlineOrder>
       whatsapp_templates: Table<WhatsappTemplate>
       whatsapp_broadcasts: Table<WhatsappBroadcast>
@@ -775,6 +836,18 @@ export type Database = {
       submit_stocktake: {
         Args: { p_stocktake_id: string; p_submitted_by: string }
         Returns: { total_variance_value: number }[]
+      }
+      submit_purchase_return: {
+        Args: { p_return_id: string; p_submitted_by: string }
+        Returns: { total_amount: number }[]
+      }
+      ship_stock_transfer: {
+        Args: { p_transfer_id: string; p_shipped_by: string }
+        Returns: { shipped_at: string }[]
+      }
+      receive_stock_transfer: {
+        Args: { p_transfer_id: string; p_received_by: string }
+        Returns: { received_at: string }[]
       }
       post_journal_entry: {
         Args: { p_entry_id: string }

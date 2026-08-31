@@ -145,6 +145,39 @@ export const createJournalEntrySchema = z.object({
 
 export type CreateJournalEntryInput = z.infer<typeof createJournalEntrySchema>
 
+export const createItemRequestSchema = z.object({
+  outlet_id: z.string().uuid(),
+  product_id: z.string().uuid(),
+  quantity_requested: z.number().int().positive(),
+  reason: z.string().optional(),
+})
+
+export const decideItemRequestSchema = z.object({
+  decision: z.enum(['approved', 'rejected', 'converted']),
+})
+
+export const purchaseReturnItemSchema = z.object({
+  product_id: z.string().uuid(),
+  quantity: z.number().int().positive(),
+  unit_cost: z.number().nonnegative(),
+})
+
+export const createPurchaseReturnSchema = z.object({
+  outlet_id: z.string().uuid(),
+  supplier_id: z.string().uuid(),
+  po_id: z.string().uuid().optional(),
+  return_date: z.string().min(1),
+  reason: z.string().min(3, 'Alasan wajib diisi'),
+  items: z.array(purchaseReturnItemSchema).min(1, 'Minimal 1 item'),
+})
+
+export const createStockTransferSchema = z.object({
+  source_outlet_id: z.string().uuid(),
+  destination_outlet_id: z.string().uuid(),
+  notes: z.string().optional(),
+  items: z.array(z.object({ product_id: z.string().uuid(), quantity: z.number().int().positive() })).min(1, 'Minimal 1 item'),
+})
+
 export const stockWasteSchema = z.object({
   outlet_id: z.string().uuid(),
   product_id: z.string().uuid(),

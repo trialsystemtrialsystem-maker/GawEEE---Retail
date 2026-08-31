@@ -1929,3 +1929,251 @@ $$ language plpgsql;
 -- opts to narrow it.
 
 alter table outlets add column enabled_payment_methods text[] not null default array['cash', 'e_wallet', 'bank_transfer'];
+
+
+-- ============================================================
+-- 022_purchasing_extensions.sql
+-- ============================================================
+
+-- 022_purchasing_extensions.sql
+-- Item Request (internal "we need to restock X" request, converted into a
+-- real PO manually — no auto-generation, keeps the existing PO creation
+-- flow as the single source of truth for what a PO contains) and Purchase
+-- Return (returning received PO stock back to a supplier).
+
+create table item_requests (
+  id uuid primary key default gen_random_uuid(),
+  outlet_id uuid not null references outlets(id) on delete cascade,
+  product_id uuid not null references products(id),
+  quantity_requested int not null,
+  reason text,
+  status varchar(50) not null default 'pending', -- 'pending', 'approved', 'rejected', 'converted'
+  requested_by uuid not null references users(id),
+  decided_by uuid references users(id),
+  decided_at timestamptz,
+  created_at timestamptz not null default now()
+);
+
+create index idx_item_requests_outlet_id_status on item_requests(outlet_id, status);
+
+create table purchase_returns (
+  id uuid primary key default gen_random_uuid(),
+  outlet_id uuid not null references outlets(id) on delete cascade,
+  supplier_id uuid not null references suppliers(id),
+  po_id uuid references purchase_orders(id),
+  return_date date not null,
+  reason text not null,
+  status varchar(50) not null default 'draft', -- 'draft', 'completed'
+  total_amount decimal(15,2) not null default 0,
+  created_by uuid not null references users(id),
+  created_at timestamptz not null default now()
+);
+
+create index idx_purchase_returns_outlet_id on purchase_returns(outlet_id);
+
+create table purchase_return_items (
+  id uuid primary key default gen_random_uuid(),
+  return_id uuid not null references purchase_returns(id) on delete cascade,
+  product_id uuid not null references products(id),
+  quantity int not null,
+  unit_cost decimal(15,2) not null
+);
+
+create index idx_purchase_return_items_return_id on purchase_return_items(return_id);
+
+-- Atomically applies a draft return's line items to inventory (stock out,
+-- movement_type='purchase_return') and marks it completed — mirrors
+-- submit_stocktake()'s pattern. Not editable after this point, same as an
+-- invoice or a posted journal entry.
+create or replace function submit_purchase_return(p_return_id uuid, p_submitted_by uuid)
+returns table (total_amount decimal) as $$
+declare
+  v_outlet_id uuid;
+  v_status varchar;
+  v_item record;
+  v_total decimal := 0;
+begin
+  select outlet_id, status into v_outlet_id, v_status from purchase_returns where id = p_return_id for update;
+  if v_outlet_id is null then
+    raise exception 'Retur pembelian tidak ditemukan';
+  end if;
+  if v_status <> 'draft' then
+    raise exception 'Retur ini sudah diselesaikan';
+  end if;
+
+  for v_item in select product_id, quantity, unit_cost from purchase_return_items where return_id = p_return_id loop
+    perform update_inventory(
+      v_outlet_id,
+      v_item.product_id,
+      -v_item.quantity,
+      'purchase_return',
+      p_submitted_by,
+      p_return_id,
+      'purchase_return',
+      v_item.unit_cost,
+      'Retur barang ke supplier'
+    );
+    v_total := v_total + (v_item.quantity * v_item.unit_cost);
+  end loop;
+
+  update purchase_returns set status = 'completed', total_amount = v_total where id = p_return_id;
+
+  return query select v_total;
+end;
+$$ language plpgsql;
+
+-- RLS: same outlet-scoped shape used throughout.
+alter table item_requests enable row level security;
+create policy item_requests_select on item_requests for select using (user_can_access_outlet(outlet_id));
+create policy item_requests_insert on item_requests for insert with check (user_can_access_outlet(outlet_id));
+create policy item_requests_update on item_requests for update using (user_can_access_outlet(outlet_id));
+
+alter table purchase_returns enable row level security;
+create policy purchase_returns_select on purchase_returns for select using (user_can_access_outlet(outlet_id));
+create policy purchase_returns_insert on purchase_returns for insert with check (user_can_access_outlet(outlet_id));
+create policy purchase_returns_update on purchase_returns for update using (user_can_access_outlet(outlet_id));
+
+alter table purchase_return_items enable row level security;
+create policy purchase_return_items_access on purchase_return_items
+  for all using (
+    exists (select 1 from purchase_returns pr where pr.id = return_id and user_can_access_outlet(pr.outlet_id))
+  );
+
+
+-- ============================================================
+-- 023_stock_transfers.sql
+-- ============================================================
+
+-- 023_stock_transfers.sql
+-- Multi-outlet stock mutation. One workflow (request -> ship -> receive)
+-- covers all 5 "Stock Mutation" menu items from the reference mockup as
+-- different status-filtered views of the same table, rather than 5
+-- separate half-duplicated tables:
+--   Stock Request       = status 'requested'
+--   Stock Must Sent     = status 'requested', viewed from the source outlet
+--   Stock Transfer      = the ship action (requested -> in_transit)
+--   Stock in Transit    = status 'in_transit'
+--   Receive Stock Transfer = the receive action (in_transit -> completed)
+
+create table stock_transfers (
+  id uuid primary key default gen_random_uuid(),
+  company_id uuid not null references companies(id) on delete cascade,
+  source_outlet_id uuid not null references outlets(id),
+  destination_outlet_id uuid not null references outlets(id),
+  status varchar(50) not null default 'requested', -- 'requested', 'in_transit', 'completed', 'cancelled'
+  notes text,
+  requested_by uuid not null references users(id),
+  shipped_by uuid references users(id),
+  received_by uuid references users(id),
+  shipped_at timestamptz,
+  received_at timestamptz,
+  created_at timestamptz not null default now(),
+  check (source_outlet_id <> destination_outlet_id)
+);
+
+create index idx_stock_transfers_company_status on stock_transfers(company_id, status);
+create index idx_stock_transfers_source on stock_transfers(source_outlet_id);
+create index idx_stock_transfers_destination on stock_transfers(destination_outlet_id);
+
+create table stock_transfer_items (
+  id uuid primary key default gen_random_uuid(),
+  transfer_id uuid not null references stock_transfers(id) on delete cascade,
+  product_id uuid not null references products(id),
+  quantity int not null
+);
+
+create index idx_stock_transfer_items_transfer_id on stock_transfer_items(transfer_id);
+
+-- Ships a requested transfer: deducts stock from the source outlet for
+-- every line (fails the whole transfer if any line has insufficient stock,
+-- same guarantee update_inventory() already gives create_invoice()).
+create or replace function ship_stock_transfer(p_transfer_id uuid, p_shipped_by uuid)
+returns table (shipped_at timestamptz) as $$
+declare
+  v_source uuid;
+  v_status varchar;
+  v_item record;
+  v_shipped_at timestamptz;
+begin
+  select source_outlet_id, status into v_source, v_status from stock_transfers where id = p_transfer_id for update;
+  if v_source is null then
+    raise exception 'Stock transfer tidak ditemukan';
+  end if;
+  if v_status <> 'requested' then
+    raise exception 'Stock transfer ini bukan status requested';
+  end if;
+
+  for v_item in select product_id, quantity from stock_transfer_items where transfer_id = p_transfer_id loop
+    perform update_inventory(
+      v_source, v_item.product_id, -v_item.quantity, 'transfer_out',
+      p_shipped_by, p_transfer_id, 'stock_transfer', null, 'Mutasi stok keluar'
+    );
+  end loop;
+
+  v_shipped_at := now();
+  update stock_transfers set status = 'in_transit', shipped_by = p_shipped_by, shipped_at = v_shipped_at where id = p_transfer_id;
+
+  return query select v_shipped_at;
+end;
+$$ language plpgsql;
+
+-- Receives an in-transit transfer: adds stock to the destination outlet.
+create or replace function receive_stock_transfer(p_transfer_id uuid, p_received_by uuid)
+returns table (received_at timestamptz) as $$
+declare
+  v_destination uuid;
+  v_status varchar;
+  v_item record;
+  v_received_at timestamptz;
+begin
+  select destination_outlet_id, status into v_destination, v_status from stock_transfers where id = p_transfer_id for update;
+  if v_destination is null then
+    raise exception 'Stock transfer tidak ditemukan';
+  end if;
+  if v_status <> 'in_transit' then
+    raise exception 'Stock transfer ini belum dikirim';
+  end if;
+
+  for v_item in select product_id, quantity from stock_transfer_items where transfer_id = p_transfer_id loop
+    perform update_inventory(
+      v_destination, v_item.product_id, v_item.quantity, 'transfer_in',
+      p_received_by, p_transfer_id, 'stock_transfer', null, 'Mutasi stok masuk'
+    );
+  end loop;
+
+  v_received_at := now();
+  update stock_transfers set status = 'completed', received_by = p_received_by, received_at = v_received_at where id = p_transfer_id;
+
+  return query select v_received_at;
+end;
+$$ language plpgsql;
+
+-- Stock transfers need every staff member to be able to see the *names* of
+-- sibling outlets in their own company (to pick a source/destination), which
+-- the original outlets_access policy (010_rls_policies.sql) doesn't allow —
+-- it only lets a non-master_admin see their own outlet. Adds same-company
+-- read access without touching write access (still master_admin-only via
+-- the existing outlets_master_admin_manage policy).
+create policy outlets_select_same_company on outlets
+  for select using (company_id = current_user_company_id());
+
+-- RLS: company-wide (not single-outlet-scoped, since a transfer spans two
+-- outlets) — access requires belonging to the transfer's company AND being
+-- able to access at least one of the two outlets involved.
+alter table stock_transfers enable row level security;
+create policy stock_transfers_access on stock_transfers
+  for all using (
+    company_id = current_user_company_id()
+    and (user_can_access_outlet(source_outlet_id) or user_can_access_outlet(destination_outlet_id))
+  );
+
+alter table stock_transfer_items enable row level security;
+create policy stock_transfer_items_access on stock_transfer_items
+  for all using (
+    exists (
+      select 1 from stock_transfers st
+      where st.id = transfer_id
+        and st.company_id = current_user_company_id()
+        and (user_can_access_outlet(st.source_outlet_id) or user_can_access_outlet(st.destination_outlet_id))
+    )
+  );

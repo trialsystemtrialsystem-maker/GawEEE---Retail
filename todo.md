@@ -420,10 +420,19 @@ retail/bakery/frozen-food/minimarket business model, building them would be fabr
       at sale time, just never had a report view), grouped by month.
 - [x] 10.5 Stock Waste — reuses `update_inventory()` with `movement_type='waste'` (no new table needed,
       the function already takes an arbitrary movement type string), write-off form + history list.
-- [ ] 10.6 Purchase Return
-- [ ] 10.7 Item Request
-- [ ] 10.8 Stock Mutation (multi-outlet transfer, 5 menu items / 1 workflow)
-- [ ] 10.9 Print Barcode (client-side, no backend)
+- [x] 10.6 Purchase Return — new `purchase_returns`/`purchase_return_items` tables + atomic
+      `submit_purchase_return()` (migration `022_purchasing_extensions.sql`), draft → line items → submit
+      (decrements inventory via `update_inventory()`).
+- [x] 10.7 Item Request — new `item_requests` table, staff request a restock, manager approves/rejects,
+      "converted" flag marked manually once a real PO is created for it (no auto-PO-generation, keeps
+      the existing PO creation flow as the single source of truth).
+- [x] 10.8 Stock Mutation — new `stock_transfers`/`stock_transfer_items` tables + atomic
+      `ship_stock_transfer()`/`receive_stock_transfer()` functions (migration `023_stock_transfers.sql`).
+      One workflow (request → ship → receive) covers all 5 mockup menu items as status/role-filtered
+      views of the same data (`StockTransferManager` component, `view` prop). Needed a new same-company
+      outlets SELECT RLS policy (`outlets_select_same_company`) since the original policy only let a
+      non-master_admin see their own outlet — transfers need sibling outlet names for the picker.
+- [x] 10.9 Print Barcode (client-side, no backend)
 - [ ] 10.10 Customer Group
 - [ ] 10.11 Promotion + Coupon
 - [ ] 10.12 Loyalty + Point Reward

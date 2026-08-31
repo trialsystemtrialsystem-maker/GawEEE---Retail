@@ -1,10 +1,23 @@
-import { ComingSoon } from '@/components/common/ComingSoon'
+import { createClient } from '@/lib/supabase/server'
+import { Alert } from '@/components/ui/Alert'
+import { StockTransferManager } from '@/components/inventory/StockTransferManager'
 
-export default function ReceiveStockTransferPage() {
+export default async function ReceiveStockTransferPage() {
+  const supabase = await createClient()
+  const {
+    data: { session },
+  } = await supabase.auth.getSession()
+  const user = session?.user
+  const { data: profile } = await supabase.from('users').select('outlet_id, role').eq('id', user!.id).single()
+
   return (
-    <ComingSoon
-      title="Receive Stock Transfer"
-      description="Belum tersedia — belum ada modul mutasi stok antar outlet di GawEEE."
-    />
+    <div className="space-y-6">
+      <h1 className="text-2xl font-bold text-gray-900">Receive Stock Transfer</h1>
+      {profile?.outlet_id ? (
+        <StockTransferManager outletId={profile.outlet_id} view="receive" canManage={['outlet_manager', 'master_admin'].includes(profile.role)} />
+      ) : (
+        <Alert variant="warning">Pilih outlet terlebih dahulu.</Alert>
+      )}
+    </div>
   )
 }

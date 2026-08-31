@@ -4,7 +4,7 @@ export default function PurchaseReturnReconciliationPage() {
   return (
     <ComingSoon
       title="Purchase Return Reconciliation"
-      description="Belum tersedia — bergantung pada fitur Purchase Return yang belum dibangun."
+      description="Belum tersedia sebagai laporan terpisah — Purchase Return sendiri sudah bisa dipakai (lihat menu Purchase Return), rekonsiliasi khususnya belum dibangun."
     />
   )
 }
