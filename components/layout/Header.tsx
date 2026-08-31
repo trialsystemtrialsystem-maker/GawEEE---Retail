@@ -1,6 +1,7 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
+import { TopNav } from '@/components/layout/TopNav'
 
 export function Header({
   userName,
@@ -28,7 +29,9 @@ export function Header({
         ☰
       </button>
 
-      <div className="hidden md:block" />
+      <div className="hidden md:block">
+        <TopNav />
+      </div>
 
       <div className="flex items-center gap-3">
         {userName && (

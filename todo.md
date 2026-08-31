@@ -316,6 +316,31 @@ delivery.
       from the API's `handleDatabaseError`, not a broken page, confirming the app stays stable until the
       user runs migrations 013-018.
 
+## Phase 8 — Top Nav Bar (majoo-style module switcher)
+User pasted a mockup of majoo's top nav (logo + horizontal pill tabs: Sales/Order Online/Appointment/
+Employee/Accounting/Whatsapp/More) and asked specifically for a top bar with Sales, Inventory, Employee,
+Accounting, WhatsApp — "moved from the existing menu" (i.e., these 5 sections come out of the flat
+sidebar and into the top bar as the primary module switcher).
+- [x] Extracted nav data into `lib/nav/config.ts` (`PRIMARY_NAV` = the 5 requested sections,
+      `SECONDARY_NAV` = everything else not mentioned — Supplier, Keuangan, Order Online, Booking,
+      Master Admin, Pengaturan — plus `findActiveNavItem(pathname)`, a longest-href-match helper so
+      e.g. `/dashboard/staff/payroll` resolves to Employee, not the shorter `/dashboard` Sales match).
+- [x] New `components/layout/TopNav.tsx`: horizontal pill row for the 5 primary sections + a "More ▾"
+      dropdown for the rest, active section highlighted, rendered in `Header.tsx`.
+- [x] `Sidebar.tsx` rewritten from a flat always-expanded list into a **contextual** sidebar: shows only
+      the active section's children (matching real majoo behavior — confirmed against the earlier
+      screenshots, e.g. Employee's sidebar shows Payroll/Hak Akses/Jadwal Kerja/etc). "Kasir (POS)"
+      stays pinned above it since it's a standalone mode, not a section.
+- [x] Mobile regression avoided: the desktop TopNav pill row is `md:hidden`-excluded from mobile (no
+      room for it in the header), so the section-switcher itself (all `PRIMARY_NAV` + `SECONDARY_NAV`)
+      was also added into the sidebar drawer, `md:hidden`-gated the other way — visible only below the
+      `md` breakpoint, sitting above the contextual children list. Verified both desktop (1440px) and
+      mobile (390px) via Playwright screenshots: desktop shows pills + contextual sidebar, mobile drawer
+      shows the full switcher + contextual children, no console errors either way.
+- [x] "Sales" (top item) merges what were two separate sidebar sections (Dashboard: Ringkasan/Laporan
+      Harian, and Penjualan: Transaksi/Invoice) into one, since the reference mockup's "Sales" tab covers
+      both the KPI dashboard and transaction list in one section.
+
 ## Notes on scope
 This todo tracks the **engineering deliverables** of the PRD (a working Next.js + Supabase codebase
 implementing Phase 1 features, with payment gateways behind a swappable mock interface). Items marked
