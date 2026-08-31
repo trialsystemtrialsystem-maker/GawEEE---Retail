@@ -3,7 +3,29 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { PRIMARY_NAV, SECONDARY_NAV, findActiveNavItem, type NavGroup } from '@/lib/nav/config'
+import { PRIMARY_NAV, SECONDARY_NAV, findActiveNavItem, type NavChild, type NavGroup } from '@/lib/nav/config'
+
+function FlatLinks({ items, pathname, onNavigate }: { items: NavChild[]; pathname: string; onNavigate?: () => void }) {
+  return (
+    <div className="space-y-1">
+      {items.map((child) => (
+        <Link
+          key={child.href}
+          href={child.href}
+          onClick={onNavigate}
+          aria-current={pathname === child.href ? 'page' : undefined}
+          className={`block rounded-md px-3 py-2 text-sm transition-colors ${
+            pathname === child.href
+              ? 'bg-blue-500 text-white shadow-sm shadow-blue-900/40'
+              : 'text-blue-200 hover:bg-white/10 hover:text-white'
+          }`}
+        >
+          {child.label}
+        </Link>
+      ))}
+    </div>
+  )
+}
 
 function SidebarAccordion({ groups, pathname, onNavigate }: { groups: NavGroup[]; pathname: string; onNavigate?: () => void }) {
   const matchingGroup = groups.find((g) => g.items.some((i) => pathname === i.href || pathname.startsWith(i.href + '?')))?.label ?? null
@@ -125,29 +147,17 @@ export function Sidebar({ outletName, onNavigate }: { outletName?: string; onNav
             <div>
               <p className="px-3 pb-2 text-xs font-semibold uppercase tracking-wide text-blue-300">{activeItem.label}</p>
               {activeItem.children && activeItem.children.length > 0 ? (
-                <div className="space-y-1">
-                  {activeItem.children.map((child) => (
-                    <Link
-                      key={child.href}
-                      href={child.href}
-                      onClick={onNavigate}
-                      aria-current={pathname === child.href ? 'page' : undefined}
-                      className={`block rounded-md px-3 py-2 text-sm transition-colors ${
-                        pathname === child.href
-                          ? 'bg-blue-500 text-white shadow-sm shadow-blue-900/40'
-                          : 'text-blue-200 hover:bg-white/10 hover:text-white'
-                      }`}
-                    >
-                      {child.label}
-                    </Link>
-                  ))}
-                </div>
+                <FlatLinks items={activeItem.children} pathname={pathname} onNavigate={onNavigate} />
               ) : !activeItem.groups ? (
                 <p className="px-3 text-sm text-blue-200/60">Tidak ada sub-menu.</p>
               ) : null}
             </div>
 
             {activeItem.groups && <SidebarAccordion groups={activeItem.groups} pathname={pathname} onNavigate={onNavigate} />}
+
+            {activeItem.trailingChildren && activeItem.trailingChildren.length > 0 && (
+              <FlatLinks items={activeItem.trailingChildren} pathname={pathname} onNavigate={onNavigate} />
+            )}
           </div>
         )}
       </div>

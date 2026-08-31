@@ -374,6 +374,19 @@ Report), never a fabricated feature or dead link.
       Group/Special Pricing/Custom Fields/Data Setting, Promotion/Coupon/Loyalty/Point Reward, Sales
       Quotation/Order/Delivery List, Send/Buy Marketing Campaign — each honestly labeled with what's
       missing, never a dead link or fabricated data.
+- [x] Added the same majoo-style nested accordion to the top-level **Inventory** tab per a follow-up
+      mockup: `lib/nav/config.ts`'s Inventory item gained `groups` (Purchase Order (PO), Return, Manage
+      Stock, Stock Production, Stock Mutation) plus a new `trailingChildren` field (a flat-link block
+      rendered *after* the accordion, for "Supplier List" sitting at the bottom per the mockup — extended
+      `Sidebar.tsx`'s `FlatLinks` helper to support this ordering: children → groups → trailingChildren).
+      Real reuses: Purchase Order (PO) → existing `/dashboard/suppliers/purchase-orders`, Purchase
+      Invoice → existing `/dashboard/suppliers/invoices`, Stock List/Ingredient List →
+      `/dashboard/inventory`, Stock Opname → existing `/dashboard/inventory/stocktake`, Supplier List →
+      `/dashboard/suppliers`. 13 honest `ComingSoon` stubs for what doesn't exist (Item Request, Purchase
+      Delivery, Invoice Payment, Purchase Return + Reconciliation, Stock Waste, Stock Production List +
+      Template, and all 5 Stock Mutation items — GawEEE is single-outlet-focused today, no inter-outlet
+      transfer workflow exists). Verified live via Playwright: accordion matches the mockup screenshots
+      exactly, sampled routes all 200 with no console errors.
 - [x] Removed the redundant "Inventory" group from inside the Sales accordion per user follow-up —
       it only ever linked to `/dashboard/inventory`, duplicating the top-level Inventory tab in
       `TopNav`. Sales sidebar is now 8 groups (Report, Report Analysis, Product, Customer, Promotion,

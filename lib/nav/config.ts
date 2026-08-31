@@ -20,9 +20,12 @@ export interface NavItem {
   href: string
   icon: string
   children?: NavChild[]
-  /** Nested accordion groups, used only by the Sales section (majoo-style
-   * mockup) — every other section keeps the flat `children` list. */
+  /** Nested accordion groups, used by Sales/Inventory (majoo-style mockups)
+   * — every other section keeps the flat `children` list. */
   groups?: NavGroup[]
+  /** Flat links rendered *after* the groups (e.g. Inventory's "Supplier
+   * List", which sits below the accordion in the reference mockup). */
+  trailingChildren?: NavChild[]
 }
 
 export const PRIMARY_NAV: NavItem[] = [
@@ -138,12 +141,57 @@ export const PRIMARY_NAV: NavItem[] = [
     label: 'Inventory',
     href: '/dashboard/inventory',
     icon: '📦',
-    children: [
-      { label: 'Stok Barang', href: '/dashboard/inventory' },
-      { label: 'Kategori Produk', href: '/dashboard/inventory/products' },
-      { label: 'Stocktake', href: '/dashboard/inventory/stocktake' },
-      { label: 'Stok Rendah', href: '/dashboard/inventory?status=low_stock' },
+    children: [{ label: 'Ingredient List', href: '/dashboard/inventory' }],
+    groups: [
+      {
+        label: 'Purchase Order (PO)',
+        icon: '🧾',
+        items: [
+          { label: 'Item Request', href: '/dashboard/inventory/purchasing/item-request' },
+          { label: 'Purchase Order (PO)', href: '/dashboard/suppliers/purchase-orders' },
+          { label: 'Purchase Delivery', href: '/dashboard/inventory/purchasing/delivery' },
+          { label: 'Purchase Invoice', href: '/dashboard/suppliers/invoices' },
+          { label: 'Invoice Payment', href: '/dashboard/inventory/purchasing/invoice-payment' },
+        ],
+      },
+      {
+        label: 'Return',
+        icon: '↩️',
+        items: [
+          { label: 'Purchase Return', href: '/dashboard/inventory/returns' },
+          { label: 'Purchase Return Reconciliation', href: '/dashboard/inventory/returns/reconciliation' },
+        ],
+      },
+      {
+        label: 'Manage Stock',
+        icon: '📦',
+        items: [
+          { label: 'Stock List', href: '/dashboard/inventory' },
+          { label: 'Stock Opname', href: '/dashboard/inventory/stocktake' },
+          { label: 'Stock Waste', href: '/dashboard/inventory/stock/waste' },
+        ],
+      },
+      {
+        label: 'Stock Production',
+        icon: '🏭',
+        items: [
+          { label: 'Stock Production List', href: '/dashboard/inventory/production' },
+          { label: 'Stock Production Template', href: '/dashboard/inventory/production/template' },
+        ],
+      },
+      {
+        label: 'Stock Mutation',
+        icon: '🔀',
+        items: [
+          { label: 'Stock Request', href: '/dashboard/inventory/mutation/request' },
+          { label: 'Stock Must Sent', href: '/dashboard/inventory/mutation/must-sent' },
+          { label: 'Stock Transfer', href: '/dashboard/inventory/mutation/transfer' },
+          { label: 'Receive Stock Transfer', href: '/dashboard/inventory/mutation/receive-transfer' },
+          { label: 'Stock in Transit', href: '/dashboard/inventory/mutation/in-transit' },
+        ],
+      },
     ],
+    trailingChildren: [{ label: 'Supplier List', href: '/dashboard/suppliers' }],
   },
   {
     key: 'employee',
