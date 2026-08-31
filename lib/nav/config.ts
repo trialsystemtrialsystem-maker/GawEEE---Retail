@@ -8,12 +8,21 @@ export interface NavChild {
   href: string
 }
 
+export interface NavGroup {
+  label: string
+  icon: string
+  items: NavChild[]
+}
+
 export interface NavItem {
   key: string
   label: string
   href: string
   icon: string
   children?: NavChild[]
+  /** Nested accordion groups, used only by the Sales section (majoo-style
+   * mockup) — every other section keeps the flat `children` list. */
+  groups?: NavGroup[]
 }
 
 export const PRIMARY_NAV: NavItem[] = [
@@ -23,10 +32,110 @@ export const PRIMARY_NAV: NavItem[] = [
     href: '/dashboard',
     icon: '📊',
     children: [
-      { label: 'Ringkasan', href: '/dashboard' },
+      { label: 'Dashboard', href: '/dashboard' },
       { label: 'Laporan Harian', href: '/dashboard/reports/daily' },
-      { label: 'Transaksi', href: '/dashboard/sales' },
-      { label: 'Invoice', href: '/dashboard/sales/invoices' },
+    ],
+    groups: [
+      {
+        label: 'Report',
+        icon: '📋',
+        items: [
+          { label: 'Sales Report', href: '/dashboard/sales' },
+          { label: 'Kitchen Report', href: '/dashboard/sales/reports/kitchen' },
+          { label: 'Product Report', href: '/dashboard/sales/reports/product' },
+          { label: 'Service Report', href: '/dashboard/sales/reports/service' },
+          { label: 'Facility Report', href: '/dashboard/sales/reports/facility' },
+          { label: 'Promo & Loyalty Report', href: '/dashboard/sales/reports/promo-loyalty' },
+          { label: 'Tax Report', href: '/dashboard/financial/tax-report' },
+          { label: 'Cashier Report', href: '/dashboard/sales/reports/cashier' },
+          { label: 'Deposit Report', href: '/dashboard/sales/reports/deposit' },
+          { label: 'Customer Summary Report', href: '/dashboard/sales/reports/customer-summary' },
+          { label: 'Employee Report', href: '/dashboard/sales/reports/employee' },
+          { label: 'Inventory Report', href: '/dashboard/sales/reports/inventory' },
+          { label: 'Settlement Report', href: '/dashboard/sales/reports/settlement' },
+        ],
+      },
+      {
+        label: 'Report Analysis',
+        icon: '📈',
+        items: [
+          { label: 'Product Peak Time', href: '/dashboard/sales/analysis/product-peak-time' },
+          { label: 'Sales Peak Time', href: '/dashboard/sales/analysis/sales-peak-time' },
+          { label: 'Stock Turnover', href: '/dashboard/sales/analysis/stock-turnover' },
+          { label: 'Customer Satisfaction', href: '/dashboard/sales/analysis/customer-satisfaction' },
+        ],
+      },
+      {
+        label: 'Product',
+        icon: '📦',
+        items: [
+          { label: 'Department List', href: '/dashboard/sales/product/departments' },
+          { label: 'Category List', href: '/dashboard/inventory/products' },
+          { label: 'Product List', href: '/dashboard/inventory' },
+          { label: 'Service Products', href: '/dashboard/sales/product/service-products' },
+          { label: 'Product Facility', href: '/dashboard/sales/product/facility' },
+          { label: 'Extra Product', href: '/dashboard/sales/product/extra' },
+          { label: 'Product Bundling', href: '/dashboard/sales/product/bundling' },
+          { label: 'Deposits', href: '/dashboard/sales/product/deposits' },
+          { label: 'Scheduling Recipe Changes', href: '/dashboard/sales/product/recipe-changes' },
+          { label: 'Ojek Online Price List', href: '/dashboard/sales/product/ojol-price-list' },
+          { label: 'Price Scheduler', href: '/dashboard/sales/product/price-scheduler' },
+          { label: 'Time-Based Pricing', href: '/dashboard/sales/product/time-based-pricing' },
+          { label: 'Print Barcode', href: '/dashboard/sales/product/print-barcode' },
+          { label: 'Notes Category List', href: '/dashboard/sales/product/notes-category' },
+          { label: 'Master Recipes', href: '/dashboard/sales/product/master-recipes' },
+        ],
+      },
+      {
+        label: 'Inventory',
+        icon: '📦',
+        items: [{ label: 'Stok Barang', href: '/dashboard/inventory' }],
+      },
+      {
+        label: 'Customer',
+        icon: '👨‍👩‍👧',
+        items: [
+          { label: 'Customer List', href: '/dashboard/sales/customers' },
+          { label: 'Customer Group', href: '/dashboard/sales/customers/groups' },
+          { label: 'Special Pricing Group', href: '/dashboard/sales/customers/special-pricing' },
+          { label: 'Customer Custom Fields', href: '/dashboard/sales/customers/custom-fields' },
+          { label: 'Customer Data Setting', href: '/dashboard/sales/customers/settings' },
+        ],
+      },
+      {
+        label: 'Promotion',
+        icon: '🏷️',
+        items: [
+          { label: 'Promotion', href: '/dashboard/sales/promotion' },
+          { label: 'Coupon', href: '/dashboard/sales/promotion/coupon' },
+          { label: 'Loyalty', href: '/dashboard/sales/promotion/loyalty' },
+          { label: 'Point Reward', href: '/dashboard/sales/promotion/point-reward' },
+        ],
+      },
+      {
+        label: 'Commission',
+        icon: '🤝',
+        items: [{ label: 'Commission Group List', href: '/dashboard/sales/commission' }],
+      },
+      {
+        label: 'Invoice',
+        icon: '🧾',
+        items: [
+          { label: 'Sales Quotation List', href: '/dashboard/sales/documents/quotations' },
+          { label: 'Sales Order List', href: '/dashboard/sales/documents/orders' },
+          { label: 'Sales Delivery List', href: '/dashboard/sales/documents/deliveries' },
+          { label: 'Invoice List', href: '/dashboard/sales/invoices' },
+          { label: 'Sales Receipt', href: '/dashboard/sales/invoices' },
+        ],
+      },
+      {
+        label: 'Campaign',
+        icon: '📣',
+        items: [
+          { label: 'Send Marketing Campaign', href: '/dashboard/sales/campaign/send' },
+          { label: 'Buy Marketing Campaign', href: '/dashboard/sales/campaign/buy' },
+        ],
+      },
     ],
   },
   {

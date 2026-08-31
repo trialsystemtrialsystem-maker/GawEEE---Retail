@@ -553,6 +553,18 @@ export type Booking = {
   updated_at: string
 }
 
+export type Customer = {
+  id: string
+  outlet_id: string
+  name: string
+  phone: string | null
+  email: string | null
+  notes: string | null
+  created_by: string
+  created_at: string
+  updated_at: string
+}
+
 export type OnlineOrderStatus = 'incoming' | 'on_process' | 'on_delivery' | 'completed' | 'cancelled'
 
 export type OnlineOrder = {
@@ -652,6 +664,7 @@ export type Database = {
       system_alerts: Table<SystemAlert>
       bulk_admin_operations: Table<BulkAdminOperation>
       bookings: Table<Booking>
+      customers: Table<Customer>
       online_orders: Table<OnlineOrder>
       whatsapp_templates: Table<WhatsappTemplate>
       whatsapp_broadcasts: Table<WhatsappBroadcast>

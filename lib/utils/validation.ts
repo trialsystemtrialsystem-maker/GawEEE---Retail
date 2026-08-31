@@ -145,6 +145,16 @@ export const createJournalEntrySchema = z.object({
 
 export type CreateJournalEntryInput = z.infer<typeof createJournalEntrySchema>
 
+export const customerSchema = z.object({
+  outlet_id: z.string().uuid(),
+  name: z.string().min(1, 'Nama pelanggan wajib diisi'),
+  phone: z.string().optional(),
+  email: z.string().email().optional().or(z.literal('')),
+  notes: z.string().optional(),
+})
+
+export type CustomerInput = z.infer<typeof customerSchema>
+
 export const staffMemberSchema = z.object({
   outlet_id: z.string().uuid(),
   first_name: z.string().min(1, 'Nama depan wajib diisi'),

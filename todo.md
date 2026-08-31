@@ -341,6 +341,45 @@ sidebar and into the top bar as the primary module switcher).
       Harian, and Penjualan: Transaksi/Invoice) into one, since the reference mockup's "Sales" tab covers
       both the KPI dashboard and transaction list in one section.
 
+## Phase 9 — Sales sidebar: majoo-style nested accordion menu
+User pasted 10 screenshots of majoo's full Sales module sidebar (Dashboard/Report/Report Analysis/
+Product/Inventory/Customer/Promotion/Commission/Invoice/Campaign, ~60 leaf items, nested accordion
+groups) and asked for GawEEE's Sales menu to match. Full plan: `C:\Users\LENOVO\.claude\plans\nifty-tumbling-candy.md`.
+Confirmed via direct schema check that several categories (Customer, Promotion, most of Invoice,
+Campaign, several report types) describe subsystems GawEEE's schema doesn't have at all — real items
+get real pages/APIs, everything else gets an honest `ComingSoon` stub (same pattern as Stocktake/Tax
+Report), never a fabricated feature or dead link.
+- [x] 9.1 Nav data + accordion sidebar UI — `lib/nav/config.ts`'s Sales item gained a `groups` field
+      (9 categories: Report, Report Analysis, Product, Inventory, Customer, Promotion, Commission,
+      Invoice, Campaign — 47 leaf items total, matching the mockup's exact order), `Sidebar.tsx` renders
+      them as an accordion (one group open at a time, auto-expands to match the current route, adjusted
+      during render per React's state-reset guidance rather than an effect to satisfy
+      `react-hooks/set-state-in-effect`). Every other section (Employee, Accounting, etc.) keeps the
+      flat list — unaffected.
+- [x] 9.2 Real report pages, all reusing existing data rather than fabricating anything: Cashier/
+      Product/Employee Report (existing `/api/reports/sales-breakdown` cashierSales/bestProducts),
+      Inventory Report (new `/api/reports/inventory-report` wrapping `v_inventory_valuation`),
+      Settlement Report (new `/api/reports/settlement-report` over `payment_transactions`), Product &
+      Sales Peak Time (new `/api/reports/peak-time`, hour/day aggregation), Stock Turnover (new
+      `/api/reports/stock-turnover` — COGS sold ÷ *current* stock value as an approximation, clearly
+      labeled since the schema has no historical inventory snapshots for a true average).
+- [x] 9.3 Customer List — new `customers` table (migration `019_customers.sql`) + CRUD, following the
+      exact `SupplierList.tsx` pattern. Starts empty (invoice `customer_name` strings are free-text, not
+      a reliable auto-match key). **Needs `019_customers.sql` run in Supabase SQL Editor.**
+- [x] 9.4 Commission Group List — dedicated editable view over the existing `staff_members.commission_rate`
+      field (Phase 7.3), reuses `GET /api/staff` + `PATCH /api/staff/:id`, no new API surface.
+- [x] 9.5 33 `ComingSoon` stub pages for subsystems confirmed (via direct schema check) not to exist:
+      Kitchen/Service/Facility/Promo & Loyalty/Deposit/Customer Summary Reports, Customer Satisfaction,
+      Department List + 12 more Product items (bundling, recipes, barcode printing, etc.), Customer
+      Group/Special Pricing/Custom Fields/Data Setting, Promotion/Coupon/Loyalty/Point Reward, Sales
+      Quotation/Order/Delivery List, Send/Buy Marketing Campaign — each honestly labeled with what's
+      missing, never a dead link or fabricated data.
+- [x] Verified live via Playwright against the demo account: accordion expand/auto-open matches the
+      mockup exactly (screenshotted both collapsed and Product-expanded states), all 11 sampled real +
+      stub routes return 200 with no console errors except the expected 500 from `customers` (table not
+      yet migrated), and Sales Peak Time renders a real hour-by-hour bar chart from actual demo
+      transaction data (peak 12:00-13:00, confirming the aggregation logic is correct).
+
 ## Notes on scope
 This todo tracks the **engineering deliverables** of the PRD (a working Next.js + Supabase codebase
 implementing Phase 1 features, with payment gateways behind a swappable mock interface). Items marked
