@@ -58,6 +58,8 @@ export type Outlet = {
   geofence_lng: number | null
   geofence_radius_m: number | null
   enabled_payment_methods: string[]
+  loyalty_points_per_1000: number
+  loyalty_rp_per_point: number
   created_at: string
   updated_at: string
   deleted_at: string | null
@@ -670,6 +672,42 @@ export type SpecialPrice = {
   created_at: string
 }
 
+export type Promotion = {
+  id: string
+  outlet_id: string
+  name: string
+  discount_type: 'percentage' | 'fixed'
+  discount_value: number
+  start_date: string
+  end_date: string
+  is_active: boolean
+  created_by: string
+  created_at: string
+}
+
+export type Coupon = {
+  id: string
+  outlet_id: string
+  code: string
+  discount_type: 'percentage' | 'fixed'
+  discount_value: number
+  usage_limit: number | null
+  usage_count: number
+  expires_at: string | null
+  is_active: boolean
+  created_by: string
+  created_at: string
+}
+
+export type LoyaltyLedgerEntry = {
+  id: string
+  customer_id: string
+  points_change: number
+  reason: string
+  recorded_by: string
+  created_at: string
+}
+
 export type CustomerFieldDefinition = {
   id: string
   outlet_id: string
@@ -781,6 +819,9 @@ export type Database = {
       customer_groups: Table<CustomerGroup>
       special_prices: Table<SpecialPrice>
       customer_field_definitions: Table<CustomerFieldDefinition>
+      promotions: Table<Promotion>
+      coupons: Table<Coupon>
+      loyalty_ledger: Table<LoyaltyLedgerEntry>
       stocktakes: Table<Stocktake>
       stocktake_details: Table<StocktakeDetail>
       item_requests: Table<ItemRequest>

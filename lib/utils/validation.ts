@@ -244,6 +244,35 @@ export const customerCustomFieldsSchema = z.object({
   custom_fields: z.record(z.string(), z.string()),
 })
 
+export const promotionSchema = z.object({
+  outlet_id: z.string().uuid(),
+  name: z.string().min(1, 'Nama promosi wajib diisi'),
+  discount_type: z.enum(['percentage', 'fixed']),
+  discount_value: z.number().positive(),
+  start_date: z.string().min(1),
+  end_date: z.string().min(1),
+})
+
+export const couponSchema = z.object({
+  outlet_id: z.string().uuid(),
+  code: z.string().min(1, 'Kode kupon wajib diisi'),
+  discount_type: z.enum(['percentage', 'fixed']),
+  discount_value: z.number().positive(),
+  usage_limit: z.number().int().positive().optional(),
+  expires_at: z.string().optional(),
+})
+
+export const loyaltyAdjustSchema = z.object({
+  customer_id: z.string().uuid(),
+  points_change: z.number().int().refine((n) => n !== 0, 'Jumlah poin tidak boleh 0'),
+  reason: z.string().min(1, 'Alasan wajib diisi'),
+})
+
+export const loyaltySettingsSchema = z.object({
+  loyalty_points_per_1000: z.number().int().nonnegative(),
+  loyalty_rp_per_point: z.number().int().positive(),
+})
+
 export type CustomerInput = z.infer<typeof customerSchema>
 
 export const staffMemberSchema = z.object({

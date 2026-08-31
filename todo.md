@@ -442,8 +442,14 @@ retail/bakery/frozen-food/minimarket business model, building them would be fabr
 - [x] 10.14 Customer Custom Fields — staff define field labels (`customer_field_definitions`), values
       stored in a new `customers.custom_fields` jsonb column; the Customer List create form renders them
       dynamically. Scoped down from a full form-builder per the plan — just label + text value.
-- [ ] 10.11 Promotion + Coupon
-- [ ] 10.12 Loyalty + Point Reward
+- [x] 10.11 Promotion + Coupon — new `promotions`/`coupons` tables (migration `026_promotions_loyalty.sql`),
+      manager creates/toggles promotions, staff redeem coupon codes (`/api/coupons/redeem` validates
+      active/not-expired/under-limit and increments usage atomically-adjacent). Manual apply at checkout
+      per the plan's scope line — no automatic discount-rules engine.
+- [x] 10.12 Loyalty + Point Reward — new `loyalty_ledger` table + 2 settings columns on `outlets`
+      (points earned per Rp1,000, Rupiah value per point redeemed). One system (earn + redeem is a
+      single ledger), so both mockup menu items render the same `LoyaltyManager` component rather than
+      being built as two half-duplicated features.
 - [ ] 10.15 Send Marketing Campaign (reuses WhatsApp broadcast pattern)
 - [ ] 10.16 Stock Production + Master Recipes (bakery vertical: recipes/BOM + production runs)
 
