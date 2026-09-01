@@ -7,6 +7,9 @@ export interface CartItem {
   sku: string
   unit_price: number
   quantity: number
+  discount?: number // per-item discount passed through to create_invoice() — see Multi-UOM
+  unit_label?: string // display only, e.g. "2 Dus" — cleared on merge if the unit differs
+  unit_quantity?: number // display only, how many of unit_label
 }
 
 interface PosState {
@@ -42,9 +45,18 @@ export const usePosStore = create<PosState>((set, get) => ({
     set((state) => {
       const existing = state.items.find((i) => i.product_id === item.product_id)
       if (existing) {
+        const sameUnit = existing.unit_label === item.unit_label
         return {
           items: state.items.map((i) =>
-            i.product_id === item.product_id ? { ...i, quantity: i.quantity + quantity } : i
+            i.product_id === item.product_id
+              ? {
+                  ...i,
+                  ...item,
+                  quantity: i.quantity + quantity,
+                  discount: (i.discount ?? 0) + (item.discount ?? 0),
+                  unit_quantity: sameUnit ? (i.unit_quantity ?? 0) + (item.unit_quantity ?? 0) : item.unit_quantity,
+                }
+              : i
           ),
         }
       }

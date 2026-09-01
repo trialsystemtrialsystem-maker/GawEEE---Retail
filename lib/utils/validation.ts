@@ -33,6 +33,10 @@ export const invoiceItemSchema = z.object({
   product_id: z.string().uuid(),
   quantity: z.number().int().positive(),
   discount: z.number().min(0).optional(),
+  // Cosmetic/receipt-display only (Multi-UOM, Phase 11 plan item 10) — not
+  // read by create_invoice(), applied via a follow-up UPDATE afterward.
+  unit_label: z.string().optional(),
+  unit_quantity: z.number().int().positive().optional(),
 })
 
 export const createInvoiceSchema = z.object({
@@ -224,6 +228,13 @@ export const productBundleSchema = z.object({
       })
     )
     .min(2, 'Paket minimal terdiri dari 2 produk'),
+})
+
+export const productUnitSchema = z.object({
+  product_id: z.string().uuid(),
+  unit_label: z.string().min(1, 'Nama satuan wajib diisi'),
+  conversion_to_base: z.number().int().min(2, 'Konversi minimal 2x satuan dasar'),
+  unit_price: z.number().positive('Harga satuan harus lebih dari 0'),
 })
 
 export const customerRefundSchema = z.object({

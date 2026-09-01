@@ -40,6 +40,29 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: message }, { status: isStockError ? 409 : status })
   }
 
+  // Cosmetic-only follow-up (Multi-UOM, Phase 11 plan item 10): create_invoice()
+  // doesn't know about unit_label/unit_quantity (they're not read from the
+  // jsonb items it received), so stamp them onto the newly created
+  // invoice_items rows here. Non-atomic with the RPC above on purpose — same
+  // trade-off already used for PO receiving — since this only affects how
+  // the receipt displays a line, never what was actually charged.
+  const itemsWithUnits = items.filter((i) => i.unit_label)
+  if (itemsWithUnits.length > 0) {
+    const { data: createdItems } = await auth.supabase
+      .from('invoice_items')
+      .select('id, product_id')
+      .eq('invoice_id', data!.invoice_id)
+    for (const line of itemsWithUnits) {
+      const match = createdItems?.find((ci) => ci.product_id === line.product_id)
+      if (match) {
+        await auth.supabase
+          .from('invoice_items')
+          .update({ sold_unit_label: line.unit_label, sold_unit_quantity: line.unit_quantity })
+          .eq('id', match.id)
+      }
+    }
+  }
+
   const nextStep =
     payment_method === 'cash'
       ? 'receipt_ready'

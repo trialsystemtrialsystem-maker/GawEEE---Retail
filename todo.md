@@ -548,7 +548,19 @@ user approved building all of them. Full plan (including why each does/doesn't t
       sale and plain e-wallet sale both still work unchanged (regression check), plus 2 new split
       scenarios — cash+e-wallet (routes to the existing e-wallet confirm screen for the pending line)
       and cash+cash (skips straight to the receipt since nothing is pending).
-- [ ] 11.10 Multi-UOM / Satuan Ganda (sell by box vs piece)
+- [x] 11.10 Multi-UOM / Satuan Ganda (sell by box vs piece) — new `product_units` table + 2 nullable
+      cosmetic columns on `invoice_items` (migration `034`). A bulk-unit add converts to an ordinary
+      base-unit quantity plus a per-item `discount` — `create_invoice()` already supported per-item
+      discount (`p_items: [{product_id, quantity, discount?}]`, confirmed by reading the function), so
+      genuinely zero SQL changes. `CartItem` gained optional `discount`/`unit_label`/`unit_quantity`
+      fields; `addItem`'s merge logic now overwrites price/label fields from the newest add instead of
+      keeping the first-added line's stale values (an incidental correctness fix for the non-multi-UOM
+      case too). New `UnitPickerModal` in the POS product grid (barcode scans still resolve to the base
+      unit only — scoped deliberately, no per-unit barcodes modeled), a "Kelola" expandable row in the
+      product list for adding/removing units, and `sold_unit_label` shown on the cart/receipt. Verified
+      live: management UI renders/expands correctly and the base unit displays right; the actual
+      create/use round-trip is blocked on migration 034 (`GET`/`POST /api/product-units` both correctly
+      500 "table not found" — same expected state as every other Phase 11 item needing a new table).
 - [ ] 11.11 Expiry/Batch Tracking at PO receiving + Expiry Report (scoped down from full FEFO — see plan)
 - [ ] 11.12 Petty Cash / Expense Ledger (extends Phase 10's expense_requests, ties into Accounting)
 

@@ -30,7 +30,14 @@ export function ShoppingCart() {
                   {getProductIcon({ name: item.name })}
                 </span>
                 <div>
-                  <p className="font-medium text-gray-900">{item.name}</p>
+                  <p className="font-medium text-gray-900">
+                    {item.name}
+                    {item.unit_label && (
+                      <span className="ml-1.5 rounded-full bg-blue-50 px-2 py-0.5 text-xs font-normal text-blue-600">
+                        {item.unit_quantity} {item.unit_label}
+                      </span>
+                    )}
+                  </p>
                   <p className="text-sm text-gray-500">
                     {formatCurrency(item.unit_price)} × {item.quantity} ={' '}
                     {formatCurrency(item.unit_price * item.quantity)}

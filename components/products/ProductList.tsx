@@ -1,11 +1,12 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
+import { Fragment, useEffect, useState, useCallback } from 'react'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Alert } from '@/components/ui/Alert'
 import { formatCurrency } from '@/lib/utils/formatting'
 import { useNotificationStore } from '@/store/notificationStore'
+import { ProductUnitsEditor } from '@/components/products/ProductUnitsEditor'
 
 interface Product {
   id: string
@@ -18,7 +19,6 @@ interface Product {
   reorder_level: number
   is_active: boolean
 }
-
 const emptyForm = {
   sku: '',
   name: '',
@@ -37,6 +37,7 @@ export function ProductList() {
   const [form, setForm] = useState(emptyForm)
   const [error, setError] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [expandedId, setExpandedId] = useState<string | null>(null)
   const showToast = useNotificationStore((s) => s.show)
 
   const load = useCallback(async () => {
@@ -142,24 +143,43 @@ export function ProductList() {
               <th className="px-4 py-2 text-right font-semibold text-gray-600">Harga Beli</th>
               <th className="px-4 py-2 text-right font-semibold text-gray-600">Harga Jual</th>
               <th className="px-4 py-2 text-left font-semibold text-gray-600">Status</th>
+              <th className="px-4 py-2 text-left font-semibold text-gray-600">Satuan</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100 bg-white">
             {isLoading ? (
-              <tr><td colSpan={5} className="px-4 py-6 text-center text-gray-400">Memuat…</td></tr>
+              <tr><td colSpan={6} className="px-4 py-6 text-center text-gray-400">Memuat…</td></tr>
             ) : products.length === 0 ? (
-              <tr><td colSpan={5} className="px-4 py-6 text-center text-gray-400">Belum ada produk</td></tr>
+              <tr><td colSpan={6} className="px-4 py-6 text-center text-gray-400">Belum ada produk</td></tr>
             ) : (
               products.map((p) => (
-                <tr key={p.id} className="hover:bg-gray-50">
-                  <td className="px-4 py-2 text-gray-900">{p.name}</td>
-                  <td className="px-4 py-2 text-gray-500">{p.sku}</td>
-                  <td className="px-4 py-2 text-right text-gray-700">{formatCurrency(p.purchase_price)}</td>
-                  <td className="px-4 py-2 text-right text-gray-700">{formatCurrency(p.selling_price)}</td>
-                  <td className={`px-4 py-2 ${p.is_active ? 'text-emerald-600' : 'text-gray-400'}`}>
-                    {p.is_active ? 'Aktif' : 'Nonaktif'}
-                  </td>
-                </tr>
+                <Fragment key={p.id}>
+                  <tr className="hover:bg-gray-50">
+                    <td className="px-4 py-2 text-gray-900">{p.name}</td>
+                    <td className="px-4 py-2 text-gray-500">{p.sku}</td>
+                    <td className="px-4 py-2 text-right text-gray-700">{formatCurrency(p.purchase_price)}</td>
+                    <td className="px-4 py-2 text-right text-gray-700">{formatCurrency(p.selling_price)}</td>
+                    <td className={`px-4 py-2 ${p.is_active ? 'text-emerald-600' : 'text-gray-400'}`}>
+                      {p.is_active ? 'Aktif' : 'Nonaktif'}
+                    </td>
+                    <td className="px-4 py-2">
+                      <button
+                        type="button"
+                        onClick={() => setExpandedId((id) => (id === p.id ? null : p.id))}
+                        className="text-blue-500 hover:underline"
+                      >
+                        {expandedId === p.id ? 'Tutup' : 'Kelola'}
+                      </button>
+                    </td>
+                  </tr>
+                  {expandedId === p.id && (
+                    <tr>
+                      <td colSpan={6} className="p-0">
+                        <ProductUnitsEditor productId={p.id} baseUnitLabel={p.unit_type} baseUnitPrice={p.selling_price} />
+                      </td>
+                    </tr>
+                  )}
+                </Fragment>
               ))
             )}
           </tbody>

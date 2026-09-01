@@ -183,6 +183,8 @@ export type InvoiceItem = {
   item_discount: number
   subtotal: number
   cost_of_goods_sold: number | null
+  sold_unit_label: string | null
+  sold_unit_quantity: number | null
   created_at: string
 }
 
@@ -682,6 +684,15 @@ export type CustomerRefundItem = {
   unit_price: number
 }
 
+export type ProductUnit = {
+  id: string
+  product_id: string
+  unit_label: string
+  conversion_to_base: number
+  unit_price: number
+  created_at: string
+}
+
 export type Stocktake = {
   id: string
   outlet_id: string
@@ -930,6 +941,7 @@ export type Database = {
       product_bundle_items: Table<ProductBundleItem>
       customer_refunds: Table<CustomerRefund>
       customer_refund_items: Table<CustomerRefundItem>
+      product_units: Table<ProductUnit>
       stocktakes: Table<Stocktake>
       stocktake_details: Table<StocktakeDetail>
       item_requests: Table<ItemRequest>

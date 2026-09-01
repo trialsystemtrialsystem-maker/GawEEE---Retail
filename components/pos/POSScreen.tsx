@@ -61,7 +61,13 @@ export function POSScreen({ outletId, cashierName }: { outletId: string; cashier
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           outlet_id: outletId,
-          items: items.map((i) => ({ product_id: i.product_id, quantity: i.quantity })),
+          items: items.map((i) => ({
+            product_id: i.product_id,
+            quantity: i.quantity,
+            discount: i.discount,
+            unit_label: i.unit_label,
+            unit_quantity: i.unit_quantity,
+          })),
           payment_method: useSplitPayment ? (splitLines.find((l) => l.payment_method !== 'cash')?.payment_method ?? 'cash') : paymentMethod,
         }),
       })

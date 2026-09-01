@@ -30,7 +30,7 @@ export function Receipt({
           {items.map((item) => (
             <div key={item.product_id} className="flex justify-between py-0.5">
               <span>
-                {item.name} × {item.quantity}
+                {item.name} × {item.unit_label ? `${item.unit_quantity} ${item.unit_label}` : item.quantity}
               </span>
               <span>{formatCurrency(item.unit_price * item.quantity)}</span>
             </div>

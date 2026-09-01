@@ -4,6 +4,7 @@ import { useState, useRef, useEffect, useCallback } from 'react'
 import { usePosStore } from '@/store/posStore'
 import { formatCurrency } from '@/lib/utils/formatting'
 import { getProductIcon } from '@/lib/utils/productIcon'
+import { UnitPickerModal } from '@/components/pos/UnitPickerModal'
 
 interface InventoryItem {
   product_id: string
@@ -14,10 +15,19 @@ interface InventoryItem {
   unit_price: number
   quantity_available: number
 }
+interface ProductUnit {
+  id: string
+  product_id: string
+  unit_label: string
+  conversion_to_base: number
+  unit_price: number
+}
 
 export function ProductSearch({ outletId }: { outletId: string }) {
   const [query, setQuery] = useState('')
   const [allProducts, setAllProducts] = useState<InventoryItem[]>([])
+  const [unitsByProduct, setUnitsByProduct] = useState<Record<string, ProductUnit[]>>({})
+  const [unitPickerItem, setUnitPickerItem] = useState<InventoryItem | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [notFound, setNotFound] = useState<string | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
@@ -26,9 +36,17 @@ export function ProductSearch({ outletId }: { outletId: string }) {
   const loadAll = useCallback(async () => {
     setIsLoading(true)
     try {
-      const res = await fetch(`/api/inventory/${outletId}`)
-      const data = await res.json()
-      setAllProducts(data.inventory ?? [])
+      const [invRes, unitsRes] = await Promise.all([fetch(`/api/inventory/${outletId}`), fetch('/api/product-units')])
+      const invData = await invRes.json()
+      const unitsData = await unitsRes.json()
+      setAllProducts(invData.inventory ?? [])
+      if (unitsRes.ok) {
+        const grouped: Record<string, ProductUnit[]> = {}
+        for (const u of (unitsData.units ?? []) as ProductUnit[]) {
+          ;(grouped[u.product_id] ??= []).push(u)
+        }
+        setUnitsByProduct(grouped)
+      }
     } finally {
       setIsLoading(false)
     }
@@ -58,6 +76,35 @@ export function ProductSearch({ outletId }: { outletId: string }) {
     setNotFound(null)
     inputRef.current?.focus()
     loadAll() // refresh so stock counts on the grid reflect the new cart draw-down risk at a glance
+  }
+
+  // Tile clicks (unlike a barcode scan, which always resolves to the base
+  // unit) offer a unit picker when the product has extra units defined.
+  function handleTileClick(item: InventoryItem) {
+    const units = unitsByProduct[item.product_id]
+    if (units?.length) {
+      setUnitPickerItem(item)
+      return
+    }
+    handleAdd(item)
+  }
+
+  function handleUnitPick(args: { unitPrice: number; quantity: number; discount?: number; unitLabel?: string; unitQuantity?: number }) {
+    if (!unitPickerItem) return
+    addItem(
+      {
+        product_id: unitPickerItem.product_id,
+        name: unitPickerItem.name,
+        sku: unitPickerItem.sku,
+        unit_price: args.unitPrice,
+        discount: args.discount,
+        unit_label: args.unitLabel,
+        unit_quantity: args.unitQuantity,
+      },
+      args.quantity
+    )
+    setUnitPickerItem(null)
+    loadAll()
   }
 
   const needle = query.trim().toLowerCase()
@@ -97,7 +144,7 @@ export function ProductSearch({ outletId }: { outletId: string }) {
               <button
                 key={item.product_id}
                 type="button"
-                onClick={() => handleAdd(item)}
+                onClick={() => handleTileClick(item)}
                 disabled={outOfStock}
                 className="flex flex-col items-center gap-2 rounded-lg border border-gray-200 bg-white p-3 text-center transition hover:border-blue-400 hover:shadow-md disabled:opacity-40 disabled:hover:border-gray-200 disabled:hover:shadow-none"
               >
@@ -107,6 +154,9 @@ export function ProductSearch({ outletId }: { outletId: string }) {
                   <p className={`text-xs ${outOfStock ? 'text-red-500' : 'text-gray-400'}`}>
                     {outOfStock ? 'Stok habis' : `Stok ${item.quantity_available}`}
                   </p>
+                  {(unitsByProduct[item.product_id]?.length ?? 0) > 0 && (
+                    <p className="text-xs text-blue-500">+ satuan lain</p>
+                  )}
                 </div>
                 {/* Category symbol, anchored at the bottom of the tile */}
                 <span
@@ -119,6 +169,15 @@ export function ProductSearch({ outletId }: { outletId: string }) {
             )
           })}
         </div>
+      )}
+
+      {unitPickerItem && (
+        <UnitPickerModal
+          item={unitPickerItem}
+          units={unitsByProduct[unitPickerItem.product_id] ?? []}
+          onPick={handleUnitPick}
+          onClose={() => setUnitPickerItem(null)}
+        />
       )}
     </div>
   )
