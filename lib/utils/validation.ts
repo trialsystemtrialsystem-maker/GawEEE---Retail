@@ -226,6 +226,22 @@ export const productBundleSchema = z.object({
     .min(2, 'Paket minimal terdiri dari 2 produk'),
 })
 
+export const customerRefundSchema = z.object({
+  outlet_id: z.string().uuid(),
+  invoice_id: z.string().uuid(),
+  refund_method: z.enum(['cash', 'e_wallet', 'bank_transfer']),
+  reason: z.string().min(3, 'Alasan wajib diisi'),
+  items: z
+    .array(
+      z.object({
+        product_id: z.string().uuid(),
+        quantity: z.number().int().positive(),
+        unit_price: z.number().nonnegative(),
+      })
+    )
+    .min(1, 'Pilih minimal 1 item untuk diretur'),
+})
+
 export const holdTransactionSchema = z.object({
   outlet_id: z.string().uuid(),
   cart_snapshot: z

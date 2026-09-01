@@ -166,6 +166,7 @@ async function regenerateDemoData(admin: SupabaseClient<Database>, companyId: st
   if (invoiceIds.length) await admin.from('payment_transactions').delete().in('invoice_id', invoiceIds)
   if (invoiceIds.length) await admin.from('virtual_accounts').delete().in('invoice_id', invoiceIds)
   if (invoiceIds.length) await admin.from('invoice_items').delete().in('invoice_id', invoiceIds)
+  if (invoiceIds.length) await admin.from('customer_refunds').delete().in('invoice_id', invoiceIds)
   await admin.from('invoices').delete().eq('outlet_id', outletId)
   await admin.from('inventory_ledger').delete().eq('outlet_id', outletId)
   await admin.from('inventory').delete().eq('outlet_id', outletId)

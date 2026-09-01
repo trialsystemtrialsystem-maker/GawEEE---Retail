@@ -13,7 +13,12 @@ export async function GET(_request: NextRequest, ctx: RouteContext<'/api/invoice
     return NextResponse.json({ error: 'Invoice tidak ditemukan' }, { status: 404 })
   }
 
-  const { data: items } = await auth.supabase.from('invoice_items').select('*').eq('invoice_id', id)
+  const { data: items } = await auth.supabase.from('invoice_items').select('*, products(name)').eq('invoice_id', id)
+  const { data: refunds } = await auth.supabase
+    .from('customer_refunds')
+    .select('*, customer_refund_items(product_id, quantity, unit_price)')
+    .eq('invoice_id', id)
+    .order('created_at', { ascending: false })
   const { data: payments } = await auth.supabase.from('payment_transactions').select('*').eq('invoice_id', id)
   const { data: auditTrail } = await auth.supabase
     .from('audit_log')
@@ -26,6 +31,7 @@ export async function GET(_request: NextRequest, ctx: RouteContext<'/api/invoice
     invoice,
     items: items ?? [],
     payments: payments ?? [],
+    refunds: refunds ?? [],
     audit_trail: auditTrail ?? [],
   })
 }

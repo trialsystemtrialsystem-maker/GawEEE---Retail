@@ -662,6 +662,26 @@ export type ProductBundleItem = {
   quantity: number
 }
 
+export type CustomerRefund = {
+  id: string
+  outlet_id: string
+  invoice_id: string
+  refund_method: string
+  reason: string
+  status: 'draft' | 'completed'
+  total_amount: number
+  created_by: string
+  created_at: string
+}
+
+export type CustomerRefundItem = {
+  id: string
+  refund_id: string
+  product_id: string
+  quantity: number
+  unit_price: number
+}
+
 export type Stocktake = {
   id: string
   outlet_id: string
@@ -908,6 +928,8 @@ export type Database = {
       held_transactions: Table<HeldTransaction>
       product_bundles: Table<ProductBundle>
       product_bundle_items: Table<ProductBundleItem>
+      customer_refunds: Table<CustomerRefund>
+      customer_refund_items: Table<CustomerRefundItem>
       stocktakes: Table<Stocktake>
       stocktake_details: Table<StocktakeDetail>
       item_requests: Table<ItemRequest>
@@ -1002,6 +1024,10 @@ export type Database = {
       }
       submit_purchase_return: {
         Args: { p_return_id: string; p_submitted_by: string }
+        Returns: { total_amount: number }[]
+      }
+      submit_customer_refund: {
+        Args: { p_refund_id: string; p_submitted_by: string }
         Returns: { total_amount: number }[]
       }
       ship_stock_transfer: {

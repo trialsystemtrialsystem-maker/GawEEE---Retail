@@ -529,7 +529,15 @@ user approved building all of them. Full plan (including why each does/doesn't t
       as an actual QR image in the POS e-wallet step, replacing the static placeholder div. Still
       demo/mock data, now actually visible. Verified live: real QR canvas renders with non-blank pixel
       data during an e-wallet checkout.
-- [ ] 11.8 Customer Refund (distinct from supplier Purchase Return)
+- [x] 11.8 Customer Refund (distinct from supplier Purchase Return) — new `customer_refunds`/
+      `customer_refund_items` tables + atomic `submit_customer_refund()` (migration `033`), mirroring
+      `submit_purchase_return()`'s draft→completed pattern; restocks via `update_inventory()`, doesn't
+      touch `invoices`/`payment_transactions`/`void_invoice()`. UI added to the invoice detail page
+      (`InvoiceDetail.tsx`): a per-item refund-quantity form capped at (purchased − already refunded),
+      manager+ gated same as void. **Bonus fix**: `GET /api/invoices/[id]` never joined product names,
+      so the item list showed raw product IDs — now embeds `products(name)`. Verified live: item names
+      render correctly, refund form found and submitted on a real paid/non-voided invoice, correctly
+      blocked on pending migration 033 (same expected state as 11.2/11.5/11.6).
 - [ ] 11.9 Split Payment at checkout
 - [ ] 11.10 Multi-UOM / Satuan Ganda (sell by box vs piece)
 - [ ] 11.11 Expiry/Batch Tracking at PO receiving + Expiry Report (scoped down from full FEFO — see plan)
