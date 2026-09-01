@@ -538,7 +538,16 @@ user approved building all of them. Full plan (including why each does/doesn't t
       so the item list showed raw product IDs — now embeds `products(name)`. Verified live: item names
       render correctly, refund form found and submitted on a real paid/non-voided invoice, correctly
       blocked on pending migration 033 (same expected state as 11.2/11.5/11.6).
-- [ ] 11.9 Split Payment at checkout
+- [x] 11.9 Split Payment at checkout — `POST /api/payments/initiate` now accepts `payments: [{method,
+      amount}, ...]` (one `payment_transactions` row per line) instead of a single method; scoped down
+      to at most 1 non-cash line per checkout (each pending digital method needs its own confirmation
+      screen, so 2+ simultaneous pending methods isn't worth the UI complexity — enforced both
+      client-side, via the dropdown, and server-side). New `SplitPaymentEditor` on the POS screen shows
+      a running "Sisa Bayar" as lines are added; `create_invoice()` untouched. No migration needed.
+      **Verified live** (highest-risk item in Phase 11 — touches the checkout flow directly): plain cash
+      sale and plain e-wallet sale both still work unchanged (regression check), plus 2 new split
+      scenarios — cash+e-wallet (routes to the existing e-wallet confirm screen for the pending line)
+      and cash+cash (skips straight to the receipt since nothing is pending).
 - [ ] 11.10 Multi-UOM / Satuan Ganda (sell by box vs piece)
 - [ ] 11.11 Expiry/Batch Tracking at PO receiving + Expiry Report (scoped down from full FEFO — see plan)
 - [ ] 11.12 Petty Cash / Expense Ledger (extends Phase 10's expense_requests, ties into Accounting)

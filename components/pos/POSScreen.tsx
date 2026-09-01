@@ -10,6 +10,7 @@ import { ShiftStatusBanner } from '@/components/pos/ShiftStatusBanner'
 import { HeldTransactionsPanel } from '@/components/pos/HeldTransactionsPanel'
 import { BundleQuickAdd } from '@/components/pos/BundleQuickAdd'
 import { QrCodeCanvas } from '@/components/pos/QrCodeCanvas'
+import { SplitPaymentEditor, type SplitLine } from '@/components/pos/SplitPaymentEditor'
 import { Button } from '@/components/ui/Button'
 import { Alert } from '@/components/ui/Alert'
 import { formatCurrency } from '@/lib/utils/formatting'
@@ -32,14 +33,24 @@ export function POSScreen({ outletId, cashierName }: { outletId: string; cashier
   const [qrCodeData, setQrCodeData] = useState<string | null>(null)
   const [vaInfo, setVaInfo] = useState<{ number: string; bank: string } | null>(null)
   const [cashReceived, setCashReceived] = useState('')
+  const [useSplitPayment, setUseSplitPayment] = useState(false)
+  const [splitLines, setSplitLines] = useState<SplitLine[]>([])
 
   const items = usePosStore((s) => s.items)
   const paymentMethod = usePosStore((s) => s.paymentMethod)
   const clearCart = usePosStore((s) => s.clearCart)
+  const total = usePosStore((s) => s.total())
+
+  const splitPaid = splitLines.reduce((sum, l) => sum + (Number(l.amount) || 0), 0)
+  const splitReady = useSplitPayment && splitLines.length > 0 && Math.round(splitPaid) === Math.round(total)
 
   async function handleCheckout() {
     if (items.length === 0) {
       setError('Keranjang tidak boleh kosong')
+      return
+    }
+    if (useSplitPayment && !splitReady) {
+      setError('Sisa bayar harus 0 sebelum memproses pembayaran')
       return
     }
     setError(null)
@@ -51,7 +62,7 @@ export function POSScreen({ outletId, cashierName }: { outletId: string; cashier
         body: JSON.stringify({
           outlet_id: outletId,
           items: items.map((i) => ({ product_id: i.product_id, quantity: i.quantity })),
-          payment_method: paymentMethod,
+          payment_method: useSplitPayment ? (splitLines.find((l) => l.payment_method !== 'cash')?.payment_method ?? 'cash') : paymentMethod,
         }),
       })
       const data = await res.json()
@@ -67,22 +78,39 @@ export function POSScreen({ outletId, cashierName }: { outletId: string; cashier
         created_at: new Date().toISOString(),
       })
 
+      const payments = useSplitPayment
+        ? splitLines.map((l) => ({ payment_method: l.payment_method, amount: Number(l.amount) || 0 }))
+        : [{ payment_method: paymentMethod, amount: data.total }]
+
       const initRes = await fetch('/api/payments/initiate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ invoice_id: data.invoice_id, payment_method: paymentMethod, amount: data.total }),
+        body: JSON.stringify({ invoice_id: data.invoice_id, payments }),
       })
       const initData = await initRes.json()
+      if (!initRes.ok) {
+        setError(typeof initData.error === 'string' ? initData.error : 'Gagal memproses pembayaran')
+        return
+      }
 
-      if (paymentMethod === 'cash') {
-        setStep('processing_cash')
-      } else if (paymentMethod === 'e_wallet') {
-        setPaymentId(initData.payment_id)
-        setQrCodeData(initData.qr_code_data ?? null)
+      const pendingLine = (initData.payments ?? []).find((p: { status: string }) => p.status === 'pending')
+
+      if (!pendingLine) {
+        // All lines settled immediately (pure cash, or a split fully covered
+        // by cash) — for a single pure-cash payment keep the existing
+        // received/change screen; for anything else go straight to success.
+        if (!useSplitPayment && paymentMethod === 'cash') {
+          setStep('processing_cash')
+        } else {
+          setStep('success')
+        }
+      } else if (pendingLine.payment_method === 'e_wallet') {
+        setPaymentId(pendingLine.payment_id)
+        setQrCodeData(pendingLine.qr_code_data ?? null)
         setStep('processing_ewallet')
       } else {
-        setPaymentId(initData.payment_id)
-        setVaInfo({ number: initData.virtual_account_number, bank: initData.bank_code })
+        setPaymentId(pendingLine.payment_id)
+        setVaInfo({ number: pendingLine.virtual_account_number, bank: pendingLine.bank_code })
         setStep('processing_bank')
       }
     } catch {
@@ -109,6 +137,8 @@ export function POSScreen({ outletId, cashierName }: { outletId: string; cashier
     setQrCodeData(null)
     setVaInfo(null)
     setCashReceived('')
+    setUseSplitPayment(false)
+    setSplitLines([])
     setStep('cart')
   }
 
@@ -235,8 +265,31 @@ export function POSScreen({ outletId, cashierName }: { outletId: string; cashier
       <div className="space-y-4 rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
         {error && <Alert variant="danger">{error}</Alert>}
         <ShoppingCart />
-        <PaymentMethod outletId={outletId} />
-        <Button className="w-full" size="lg" onClick={handleCheckout} isLoading={isSubmitting} disabled={items.length === 0}>
+
+        <button
+          type="button"
+          onClick={() => {
+            setUseSplitPayment((v) => !v)
+            setSplitLines([])
+          }}
+          className="text-sm text-blue-600 hover:underline"
+        >
+          {useSplitPayment ? 'Gunakan 1 metode pembayaran' : 'Bayar dengan beberapa metode'}
+        </button>
+
+        {useSplitPayment ? (
+          <SplitPaymentEditor total={total} lines={splitLines} onChange={setSplitLines} />
+        ) : (
+          <PaymentMethod outletId={outletId} />
+        )}
+
+        <Button
+          className="w-full"
+          size="lg"
+          onClick={handleCheckout}
+          isLoading={isSubmitting}
+          disabled={items.length === 0 || (useSplitPayment && !splitReady)}
+        >
           Proses Pembayaran
         </Button>
       </div>
