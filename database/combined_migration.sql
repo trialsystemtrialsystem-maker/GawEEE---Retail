@@ -2814,3 +2814,26 @@ $$ language plpgsql;
 
 alter table expense_requests add column paid_at timestamptz;
 alter table expense_requests add column payment_method varchar(50); -- 'cash', 'bank_transfer'
+
+
+-- ============================================================
+-- 037_fix_update_inventory_overload.sql
+-- ============================================================
+
+-- 037_fix_update_inventory_overload.sql
+-- CRITICAL FIX: migration 035 added 2 new trailing params to update_inventory()
+-- via `create or replace function`, assuming that would just extend the
+-- existing function. It doesn't — Postgres only replaces a function when its
+-- parameter signature (types, in order) is byte-for-byte identical; adding
+-- parameters (even with defaults) creates a SEPARATE overloaded function
+-- instead. So after 035, the database had TWO functions named
+-- update_inventory (the original 9-param one from 009_functions.sql, and the
+-- new 11-param one) — and every call from create_invoice()/void_invoice()/
+-- anywhere else that didn't pass p_batch_number/p_expiry_date became
+-- ambiguous ("function update_inventory(...) is not unique"), breaking
+-- ordinary checkout, not just the new batch-tracking feature.
+--
+-- Fix: explicitly drop the old 9-param overload, leaving only the 11-param
+-- one (whose 2 new params default to null, so every existing caller behaves
+-- exactly as before).
+drop function if exists update_inventory(uuid, uuid, int, varchar, uuid, uuid, varchar, decimal, text);

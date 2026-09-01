@@ -584,12 +584,20 @@ user approved building all of them. Full plan (including why each does/doesn't t
       the pay step itself correctly 500s "Could not find the 'paid_at' column" — same expected
       pending-migration state as every other Phase 11 item needing new columns/tables.
 
-  **Phase 11 complete — all 12 items shipped** (commits `91b3554` through this one). Every item is
-  code-complete, typechecked/linted/built clean, and live-tested against the demo account to the extent
-  possible without direct DB access; items needing new tables/columns are correctly blocked pending
-  migrations `030`–`036`, which still need to be run in Supabase SQL Editor (in order) before they're
-  live. `database/combined_migration.sql` has the full concatenated set if running them individually is
-  inconvenient.
+  **Phase 11 complete — all 12 items shipped and verified live** after the user ran migrations 030-036.
+  - [x] **037 critical fix**: post-migration live testing found migration 035 had broken ordinary
+        checkout — `create or replace function update_inventory(...)` with 2 *added* parameters doesn't
+        replace the old 9-param function in Postgres, it creates a second overload, so every call
+        without the new params became ambiguous ("function update_inventory(...) is not unique"). This
+        broke `create_invoice()`/`void_invoice()`/every inventory-touching path, not just the new Expiry
+        feature. Fixed by dropping the old overload explicitly. **User ran migration 037** and a live
+        cash sale was re-verified working (201, not 500).
+  - Full live re-verification after 037, all confirmed genuinely working end-to-end (not just
+    "doesn't 500"): 11.5 hold→resume round trip, 11.6 bundle create + POS quick-add with discount, 11.7
+    QR canvas renders real pixel data, 11.8 refund submit + restock, 11.9 cash+e-wallet split completing
+    a real sale, 11.10 unit create → POS picker → discounted checkout → receipt shows "1 Dus", 11.11 PO
+    receive with batch/expiry prompts → Expiry Report shows the batch correctly, 11.12 mark-paid →
+    journal posted → Petty Cash report shows the running total.
 
 ## Notes on scope
 This todo tracks the **engineering deliverables** of the PRD (a working Next.js + Supabase codebase
