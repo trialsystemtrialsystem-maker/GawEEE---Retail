@@ -612,6 +612,28 @@ export type StockTransferItem = {
   quantity: number
 }
 
+export type CashierShift = {
+  id: string
+  outlet_id: string
+  staff_id: string | null
+  shift_date: string
+  shift_start_time: string | null
+  shift_end_time: string | null
+  opening_cash: number
+  closing_cash: number | null
+  total_transactions: number
+  expected_closing_cash: number | null
+  cash_variance: number | null
+  variance_percentage: number | null
+  reconciled: boolean
+  reconciled_by: string | null
+  reconciliation_notes: string | null
+  status: 'open' | 'closed'
+  opened_by: string | null
+  created_at: string
+  updated_at: string
+}
+
 export type Stocktake = {
   id: string
   outlet_id: string
@@ -854,6 +876,7 @@ export type Database = {
       promotions: Table<Promotion>
       coupons: Table<Coupon>
       loyalty_ledger: Table<LoyaltyLedgerEntry>
+      cashier_shifts: Table<CashierShift>
       stocktakes: Table<Stocktake>
       stocktake_details: Table<StocktakeDetail>
       item_requests: Table<ItemRequest>

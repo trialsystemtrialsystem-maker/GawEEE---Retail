@@ -6,6 +6,7 @@ import { ProductSearch } from '@/components/pos/ProductSearch'
 import { ShoppingCart } from '@/components/pos/ShoppingCart'
 import { PaymentMethod } from '@/components/pos/PaymentMethod'
 import { Receipt } from '@/components/pos/Receipt'
+import { ShiftStatusBanner } from '@/components/pos/ShiftStatusBanner'
 import { Button } from '@/components/ui/Button'
 import { Alert } from '@/components/ui/Alert'
 import { formatCurrency } from '@/lib/utils/formatting'
@@ -206,7 +207,9 @@ export function POSScreen({ outletId, cashierName }: { outletId: string; cashier
   }
 
   return (
-    <div className="mx-auto grid max-w-5xl grid-cols-1 gap-6 lg:grid-cols-2">
+    <div className="mx-auto max-w-5xl">
+      <ShiftStatusBanner outletId={outletId} />
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <h1 className="text-xl font-bold text-gray-900">Kasir</h1>
@@ -222,6 +225,7 @@ export function POSScreen({ outletId, cashierName }: { outletId: string; cashier
         <Button className="w-full" size="lg" onClick={handleCheckout} isLoading={isSubmitting} disabled={items.length === 0}>
           Proses Pembayaran
         </Button>
+      </div>
       </div>
     </div>
   )

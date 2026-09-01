@@ -7,10 +7,12 @@ import { Header } from '@/components/layout/Header'
 export function DashboardShell({
   userName,
   outletName,
+  outletId,
   children,
 }: {
   userName?: string
   outletName?: string
+  outletId?: string
   children: React.ReactNode
 }) {
   const [mobileNavOpen, setMobileNavOpen] = useState(false)
@@ -37,7 +39,7 @@ export function DashboardShell({
       )}
 
       <div className="flex flex-1 flex-col overflow-hidden">
-        <Header userName={userName} onMenuClick={() => setMobileNavOpen(true)} />
+        <Header userName={userName} outletId={outletId} onMenuClick={() => setMobileNavOpen(true)} />
         <main className="flex-1 overflow-y-auto p-4 sm:p-6">{children}</main>
       </div>
     </div>

@@ -201,6 +201,7 @@ export const PRIMARY_NAV: NavItem[] = [
     children: [
       { label: 'Daftar Karyawan', href: '/dashboard/staff' },
       { label: 'Attendance', href: '/dashboard/staff/attendance' },
+      { label: 'Buka/Tutup Kasir', href: '/dashboard/staff/cashier-shifts' },
       { label: 'Payroll', href: '/dashboard/staff/payroll' },
       { label: 'Hak Akses', href: '/dashboard/staff/access' },
       { label: 'Jadwal Kerja', href: '/dashboard/staff/schedule' },

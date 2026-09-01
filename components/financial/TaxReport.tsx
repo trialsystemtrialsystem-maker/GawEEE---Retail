@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { Card } from '@/components/ui/Card'
 import { formatCurrency } from '@/lib/utils/formatting'
+import { ExportCsvButton } from '@/components/ui/ExportCsvButton'
 
 interface MonthRow {
   month: string
@@ -36,6 +37,9 @@ export function TaxReport({ outletId }: { outletId: string }) {
 
   return (
     <div className="space-y-4">
+      <div className="flex justify-end">
+        <ExportCsvButton filename="tax-report" rows={rows} />
+      </div>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <Card>
           <p className="text-sm text-gray-500">Total Penjualan Kena Pajak (tahun ini)</p>

@@ -2,12 +2,15 @@
 
 import { useRouter } from 'next/navigation'
 import { TopNav } from '@/components/layout/TopNav'
+import { NotificationBell } from '@/components/layout/NotificationBell'
 
 export function Header({
   userName,
+  outletId,
   onMenuClick,
 }: {
   userName?: string
+  outletId?: string
   onMenuClick?: () => void
 }) {
   const router = useRouter()
@@ -34,6 +37,7 @@ export function Header({
       </div>
 
       <div className="flex items-center gap-3">
+        {outletId && <NotificationBell outletId={outletId} />}
         {userName && (
           <span className="flex items-center gap-2 text-sm text-gray-700">
             <span className="flex h-7 w-7 items-center justify-center rounded-full bg-blue-500 text-xs font-bold text-white">

@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import { formatCurrency } from '@/lib/utils/formatting'
+import { ExportCsvButton } from '@/components/ui/ExportCsvButton'
 
 interface ProductRow {
   product_id: string
@@ -30,16 +31,19 @@ export function ProductReport({ outletId }: { outletId: string }) {
 
   return (
     <div className="space-y-4">
-      <div className="flex gap-1 rounded-md border border-gray-200 p-1 w-fit">
-        {[30, 90].map((d) => (
-          <button
-            key={d}
-            onClick={() => setDays(d)}
-            className={`rounded px-3 py-1 text-sm font-medium ${days === d ? 'bg-blue-500 text-white' : 'text-gray-600 hover:bg-gray-100'}`}
-          >
-            {d} Hari
-          </button>
-        ))}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex gap-1 rounded-md border border-gray-200 p-1 w-fit">
+          {[30, 90].map((d) => (
+            <button
+              key={d}
+              onClick={() => setDays(d)}
+              className={`rounded px-3 py-1 text-sm font-medium ${days === d ? 'bg-blue-500 text-white' : 'text-gray-600 hover:bg-gray-100'}`}
+            >
+              {d} Hari
+            </button>
+          ))}
+        </div>
+        <ExportCsvButton filename={`product-report-${days}hari`} rows={rows} />
       </div>
 
       <div className="overflow-x-auto rounded-lg border border-gray-200">

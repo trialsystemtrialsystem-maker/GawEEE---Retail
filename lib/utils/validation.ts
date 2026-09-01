@@ -202,6 +202,16 @@ export const recordPurchasePaymentSchema = z.object({
   notes: z.string().optional(),
 })
 
+export const openCashierShiftSchema = z.object({
+  outlet_id: z.string().uuid(),
+  opening_cash: z.number().nonnegative(),
+})
+
+export const closeCashierShiftSchema = z.object({
+  closing_cash: z.number().nonnegative(),
+  reconciliation_notes: z.string().optional(),
+})
+
 export const createStocktakeSchema = z.object({
   outlet_id: z.string().uuid(),
   scheduled_date: z.string().min(1),

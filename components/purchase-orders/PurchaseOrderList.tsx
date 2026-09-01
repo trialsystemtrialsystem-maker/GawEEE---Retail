@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/Input'
 import { Alert } from '@/components/ui/Alert'
 import { Card } from '@/components/ui/Card'
 import { formatCurrency, formatDate } from '@/lib/utils/formatting'
+import { ExportCsvButton } from '@/components/ui/ExportCsvButton'
 
 interface Supplier {
   id: string
@@ -177,9 +178,12 @@ export function PurchaseOrderList({ outletId }: { outletId: string }) {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-semibold text-gray-900">Purchase Order</h2>
-        <Button size="sm" onClick={() => setShowForm((v) => !v)}>
-          {showForm ? 'Batal' : '+ Buat PO'}
-        </Button>
+        <div className="flex gap-2">
+          <ExportCsvButton filename="purchase-orders" rows={pos} />
+          <Button size="sm" onClick={() => setShowForm((v) => !v)}>
+            {showForm ? 'Batal' : '+ Buat PO'}
+          </Button>
+        </div>
       </div>
 
       {error && <Alert variant="danger">{error}</Alert>}

@@ -484,6 +484,36 @@ list and order).
          first step. Test artifacts (recipe/run/transfer/return) cleaned up via service-role delete
          after confirming the bug.
 
+## Phase 11 — Retail-completeness gaps for a real Alfamart/Indomaret/sembako-agent/frozen-food operation
+User asked for an honest assessment of what's missing to be a genuinely complete retail system (not just
+mockup-matching) for their target verticals. Investigated the actual code and confirmed 12 real gaps;
+user approved building all of them. Full plan (including why each does/doesn't touch the core
+`create_invoice()`/`void_invoice()` functions): `C:\Users\LENOVO\.claude\plans\nifty-tumbling-candy.md`.
+- [x] 11.1 Thermal Receipt — `@media print` block in `app/globals.css` isolates `#receipt-print-area`
+      (58mm width, monospace) so "Cetak Struk" prints only the receipt, sized for a thermal printer,
+      not the whole POS page. CSS only, no logic changes.
+- [x] 11.2 Cashier Shift Management — `cashier_shifts` (Phase 1, unused) had `closing_cash not null`,
+      which didn't support "open now, close later." Migration `030_cashier_shifts_open_close.sql` makes
+      it nullable + adds `status`/`opened_by`. Open/close API computes `total_transactions` from cash
+      `payment_transactions` in the shift's time range; the generated `cash_variance` column recomputes
+      automatically. POS gets a soft banner (not a hard gate — see plan) linking to a full history page.
+      **Needs `030_cashier_shifts_open_close.sql` run in Supabase SQL Editor** before it works live.
+- [x] 11.3 Notification Center — `system_alerts` table existed (demo-seeder only) with zero API/UI.
+      New `GET /api/notifications` aggregates it + `v_low_stock_alerts` + pending item-request/expense-
+      request/PO-approval counts at read time (no write-path changes anywhere else). Bell icon +
+      dropdown in `Header.tsx`. **Already verified live** — works against existing tables, no migration
+      needed for this one; returned real low-stock alert data on first test.
+- [x] 11.4 CSV Export — new `lib/utils/exportCsv.ts` + `ExportCsvButton`, wired into 7 pages: Cashier/
+      Product/Employee/Inventory/Tax Report, Invoice list, Purchase Order list.
+- [ ] 11.5 Hold/Park Transactions at POS
+- [ ] 11.6 Product Bundling
+- [ ] 11.7 QRIS dynamic QR code rendering (still demo/mock, now actually visible)
+- [ ] 11.8 Customer Refund (distinct from supplier Purchase Return)
+- [ ] 11.9 Split Payment at checkout
+- [ ] 11.10 Multi-UOM / Satuan Ganda (sell by box vs piece)
+- [ ] 11.11 Expiry/Batch Tracking at PO receiving + Expiry Report (scoped down from full FEFO — see plan)
+- [ ] 11.12 Petty Cash / Expense Ledger (extends Phase 10's expense_requests, ties into Accounting)
+
 ## Notes on scope
 This todo tracks the **engineering deliverables** of the PRD (a working Next.js + Supabase codebase
 implementing Phase 1 features, with payment gateways behind a swappable mock interface). Items marked

@@ -24,7 +24,11 @@ export default async function DashboardLayout({ children }: { children: React.Re
     : null
 
   return (
-    <DashboardShell userName={profile?.full_name ?? undefined} outletName={outlet?.name ?? undefined}>
+    <DashboardShell
+      userName={profile?.full_name ?? undefined}
+      outletName={outlet?.name ?? undefined}
+      outletId={profile?.outlet_id ?? undefined}
+    >
       {children}
     </DashboardShell>
   )

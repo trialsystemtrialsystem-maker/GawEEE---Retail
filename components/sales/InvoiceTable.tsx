@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from 'react'
 import Link from 'next/link'
 import { formatCurrency, formatDateTime } from '@/lib/utils/formatting'
 import { Alert } from '@/components/ui/Alert'
+import { ExportCsvButton } from '@/components/ui/ExportCsvButton'
 
 interface InvoiceRow {
   id: string
@@ -61,16 +62,19 @@ export function InvoiceTable({ scope = 'all' }: { scope?: 'today' | 'all' }) {
 
   return (
     <div className="space-y-4">
-      {summary && (
-        <div className="flex gap-6 text-sm text-gray-600">
-          <span>
-            Total Pendapatan: <strong className="text-gray-900">{formatCurrency(summary.total_revenue)}</strong>
-          </span>
-          <span>
-            Rata-rata Transaksi: <strong className="text-gray-900">{formatCurrency(summary.avg_transaction)}</strong>
-          </span>
-        </div>
-      )}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        {summary && (
+          <div className="flex gap-6 text-sm text-gray-600">
+            <span>
+              Total Pendapatan: <strong className="text-gray-900">{formatCurrency(summary.total_revenue)}</strong>
+            </span>
+            <span>
+              Rata-rata Transaksi: <strong className="text-gray-900">{formatCurrency(summary.avg_transaction)}</strong>
+            </span>
+          </div>
+        )}
+        <ExportCsvButton filename="invoices" rows={invoices} />
+      </div>
 
       <div className="overflow-x-auto rounded-lg border border-gray-200">
         <table className="min-w-full divide-y divide-gray-200 text-sm">
