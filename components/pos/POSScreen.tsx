@@ -9,6 +9,7 @@ import { Receipt } from '@/components/pos/Receipt'
 import { ShiftStatusBanner } from '@/components/pos/ShiftStatusBanner'
 import { HeldTransactionsPanel } from '@/components/pos/HeldTransactionsPanel'
 import { BundleQuickAdd } from '@/components/pos/BundleQuickAdd'
+import { QrCodeCanvas } from '@/components/pos/QrCodeCanvas'
 import { Button } from '@/components/ui/Button'
 import { Alert } from '@/components/ui/Alert'
 import { formatCurrency } from '@/lib/utils/formatting'
@@ -28,6 +29,7 @@ export function POSScreen({ outletId, cashierName }: { outletId: string; cashier
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [invoiceResult, setInvoiceResult] = useState<InvoiceResult | null>(null)
   const [paymentId, setPaymentId] = useState<string | null>(null)
+  const [qrCodeData, setQrCodeData] = useState<string | null>(null)
   const [vaInfo, setVaInfo] = useState<{ number: string; bank: string } | null>(null)
   const [cashReceived, setCashReceived] = useState('')
 
@@ -76,6 +78,7 @@ export function POSScreen({ outletId, cashierName }: { outletId: string; cashier
         setStep('processing_cash')
       } else if (paymentMethod === 'e_wallet') {
         setPaymentId(initData.payment_id)
+        setQrCodeData(initData.qr_code_data ?? null)
         setStep('processing_ewallet')
       } else {
         setPaymentId(initData.payment_id)
@@ -103,6 +106,7 @@ export function POSScreen({ outletId, cashierName }: { outletId: string; cashier
     clearCart()
     setInvoiceResult(null)
     setPaymentId(null)
+    setQrCodeData(null)
     setVaInfo(null)
     setCashReceived('')
     setStep('cart')
@@ -166,9 +170,13 @@ export function POSScreen({ outletId, cashierName }: { outletId: string; cashier
       <div className="mx-auto max-w-md space-y-4 rounded-lg border border-gray-200 bg-white p-6 text-center shadow-sm">
         <h2 className="text-lg font-bold text-gray-900">Pembayaran E-Wallet</h2>
         <p className="text-sm text-gray-600">Total: {formatCurrency(invoiceResult.total)}</p>
-        <div className="mx-auto flex h-40 w-40 items-center justify-center rounded-md border-2 border-dashed border-gray-300 text-xs text-gray-400">
-          QR CODE
-        </div>
+        {qrCodeData ? (
+          <QrCodeCanvas data={qrCodeData} />
+        ) : (
+          <div className="mx-auto flex h-40 w-40 items-center justify-center rounded-md border-2 border-dashed border-gray-300 text-xs text-gray-400">
+            QR CODE
+          </div>
+        )}
         <p className="text-sm text-gray-500">Scan dengan e-wallet Anda</p>
         <Alert variant="info">
           Mode demo — belum terhubung ke Doku Pay. Klik tombol di bawah untuk mensimulasikan

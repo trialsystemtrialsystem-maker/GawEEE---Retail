@@ -524,7 +524,11 @@ user approved building all of them. Full plan (including why each does/doesn't t
       `discount_reason` fields (additive to any manual discount already applied) — `create_invoice()`
       untouched. Verified live via a real POST through the app's own API + POS quick-add; blocked only
       on migration 032 (same expected pending-migration state as 11.2/11.5).
-- [ ] 11.7 QRIS dynamic QR code rendering (still demo/mock, now actually visible)
+- [x] 11.7 QRIS dynamic QR code rendering — new `QrCodeCanvas` (using the `qrcode` npm library, same
+      reasoning as `jsbarcode`) renders the mock `qr_code_data` string from `/api/payments/initiate`
+      as an actual QR image in the POS e-wallet step, replacing the static placeholder div. Still
+      demo/mock data, now actually visible. Verified live: real QR canvas renders with non-blank pixel
+      data during an e-wallet checkout.
 - [ ] 11.8 Customer Refund (distinct from supplier Purchase Return)
 - [ ] 11.9 Split Payment at checkout
 - [ ] 11.10 Multi-UOM / Satuan Ganda (sell by box vs piece)
