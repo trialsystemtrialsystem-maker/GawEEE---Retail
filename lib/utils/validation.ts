@@ -212,6 +212,20 @@ export const closeCashierShiftSchema = z.object({
   reconciliation_notes: z.string().optional(),
 })
 
+export const productBundleSchema = z.object({
+  outlet_id: z.string().uuid(),
+  name: z.string().min(1, 'Nama paket wajib diisi'),
+  bundle_price: z.number().positive('Harga paket harus lebih dari 0'),
+  items: z
+    .array(
+      z.object({
+        product_id: z.string().uuid(),
+        quantity: z.number().int().positive(),
+      })
+    )
+    .min(2, 'Paket minimal terdiri dari 2 produk'),
+})
+
 export const holdTransactionSchema = z.object({
   outlet_id: z.string().uuid(),
   cart_snapshot: z

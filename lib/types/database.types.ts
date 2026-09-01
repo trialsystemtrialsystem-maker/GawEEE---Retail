@@ -645,6 +645,23 @@ export type HeldTransaction = {
   created_at: string
 }
 
+export type ProductBundle = {
+  id: string
+  outlet_id: string
+  name: string
+  bundle_price: number
+  is_active: boolean
+  created_by: string
+  created_at: string
+}
+
+export type ProductBundleItem = {
+  id: string
+  bundle_id: string
+  product_id: string
+  quantity: number
+}
+
 export type Stocktake = {
   id: string
   outlet_id: string
@@ -889,6 +906,8 @@ export type Database = {
       loyalty_ledger: Table<LoyaltyLedgerEntry>
       cashier_shifts: Table<CashierShift>
       held_transactions: Table<HeldTransaction>
+      product_bundles: Table<ProductBundle>
+      product_bundle_items: Table<ProductBundleItem>
       stocktakes: Table<Stocktake>
       stocktake_details: Table<StocktakeDetail>
       item_requests: Table<ItemRequest>

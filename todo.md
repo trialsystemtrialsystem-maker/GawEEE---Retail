@@ -517,7 +517,13 @@ user approved building all of them. Full plan (including why each does/doesn't t
       live: demo login + add-to-cart + hold flow all confirmed working; the hold itself 500s with
       "Could not find the table 'public.held_transactions'" until migration 031 is run (same expected
       state as 11.2 pending migration 030).
-- [ ] 11.6 Product Bundling
+- [x] 11.6 Product Bundling — new `product_bundles`/`product_bundle_items` tables (migration `032`),
+      management UI at `/dashboard/sales/product/bundling` (replaced the old `ComingSoon` stub), and a
+      `BundleQuickAdd` "Tambah Paket" action on the POS screen that adds every component to the cart and
+      folds the bundle-vs-components price gap into the existing invoice-level `discount_amount`/
+      `discount_reason` fields (additive to any manual discount already applied) — `create_invoice()`
+      untouched. Verified live via a real POST through the app's own API + POS quick-add; blocked only
+      on migration 032 (same expected pending-migration state as 11.2/11.5).
 - [ ] 11.7 QRIS dynamic QR code rendering (still demo/mock, now actually visible)
 - [ ] 11.8 Customer Refund (distinct from supplier Purchase Return)
 - [ ] 11.9 Split Payment at checkout

@@ -173,6 +173,7 @@ async function regenerateDemoData(admin: SupabaseClient<Database>, companyId: st
   await admin.from('audit_log').delete().eq('company_id', companyId)
   await admin.from('held_transactions').delete().eq('outlet_id', outletId)
   await admin.from('cashier_shifts').delete().eq('outlet_id', outletId)
+  await admin.from('product_bundles').delete().eq('outlet_id', outletId)
 
   // Every other table with a (non-cascading, from products' side) FK to
   // products.id — anything left un-wiped here makes the products delete
