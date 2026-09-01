@@ -23,6 +23,7 @@ interface PosState {
   setDiscount: (amount: number, reason?: string) => void
   setPaymentMethod: (method: PosState['paymentMethod']) => void
   clearCart: () => void
+  restoreCart: (items: CartItem[], discountAmount: number, discountReason: string) => void
   subtotal: () => number
   taxAmount: () => number
   total: () => number
@@ -70,6 +71,8 @@ export const usePosStore = create<PosState>((set, get) => ({
   setPaymentMethod: (method) => set({ paymentMethod: method }),
 
   clearCart: () => set({ items: [], discountAmount: 0, discountReason: '' }),
+
+  restoreCart: (items, discountAmount, discountReason) => set({ items, discountAmount, discountReason }),
 
   subtotal: () => get().items.reduce((sum, i) => sum + i.unit_price * i.quantity, 0),
 

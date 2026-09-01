@@ -171,7 +171,29 @@ async function regenerateDemoData(admin: SupabaseClient<Database>, companyId: st
   await admin.from('inventory').delete().eq('outlet_id', outletId)
   await admin.from('system_alerts').delete().eq('outlet_id', outletId)
   await admin.from('audit_log').delete().eq('company_id', companyId)
-  await admin.from('products').delete().eq('company_id', companyId)
+  await admin.from('held_transactions').delete().eq('outlet_id', outletId)
+  await admin.from('cashier_shifts').delete().eq('outlet_id', outletId)
+
+  // Every other table with a (non-cascading, from products' side) FK to
+  // products.id — anything left un-wiped here makes the products delete
+  // below fail with a 23503 foreign key violation, which the codebase found
+  // out about the hard way: a stocktake done against the demo tenant in an
+  // earlier phase (stocktake_details -> products) silently blocked every
+  // reseed since, because this delete's error wasn't checked (fixed below
+  // too). production_runs must go before recipes since it references
+  // recipes(id) without cascade; the *_items/details children of
+  // recipes/purchase_returns/stocktakes/stock_transfers all cascade
+  // automatically from their parent's `on delete cascade`.
+  await admin.from('production_runs').delete().eq('outlet_id', outletId)
+  await admin.from('recipes').delete().eq('outlet_id', outletId)
+  await admin.from('item_requests').delete().eq('outlet_id', outletId)
+  await admin.from('purchase_returns').delete().eq('outlet_id', outletId)
+  await admin.from('special_prices').delete().eq('outlet_id', outletId)
+  await admin.from('stock_transfers').delete().eq('company_id', companyId)
+  await admin.from('stocktakes').delete().eq('outlet_id', outletId)
+
+  const { error: productDeleteError } = await admin.from('products').delete().eq('company_id', companyId)
+  if (productDeleteError) throw new Error(`products (delete): ${productDeleteError.message}`)
   await admin.from('product_categories').delete().eq('company_id', companyId)
   await admin.from('suppliers').delete().eq('company_id', companyId)
 

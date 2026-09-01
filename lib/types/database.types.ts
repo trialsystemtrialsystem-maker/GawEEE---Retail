@@ -634,6 +634,17 @@ export type CashierShift = {
   updated_at: string
 }
 
+export type HeldTransaction = {
+  id: string
+  outlet_id: string
+  cashier_id: string
+  cart_snapshot: { product_id: string; name: string; sku: string; unit_price: number; quantity: number }[]
+  discount_amount: number
+  discount_reason: string | null
+  note: string | null
+  created_at: string
+}
+
 export type Stocktake = {
   id: string
   outlet_id: string
@@ -877,6 +888,7 @@ export type Database = {
       coupons: Table<Coupon>
       loyalty_ledger: Table<LoyaltyLedgerEntry>
       cashier_shifts: Table<CashierShift>
+      held_transactions: Table<HeldTransaction>
       stocktakes: Table<Stocktake>
       stocktake_details: Table<StocktakeDetail>
       item_requests: Table<ItemRequest>

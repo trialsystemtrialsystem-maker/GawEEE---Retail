@@ -7,6 +7,7 @@ import { ShoppingCart } from '@/components/pos/ShoppingCart'
 import { PaymentMethod } from '@/components/pos/PaymentMethod'
 import { Receipt } from '@/components/pos/Receipt'
 import { ShiftStatusBanner } from '@/components/pos/ShiftStatusBanner'
+import { HeldTransactionsPanel } from '@/components/pos/HeldTransactionsPanel'
 import { Button } from '@/components/ui/Button'
 import { Alert } from '@/components/ui/Alert'
 import { formatCurrency } from '@/lib/utils/formatting'
@@ -215,6 +216,7 @@ export function POSScreen({ outletId, cashierName }: { outletId: string; cashier
           <h1 className="text-xl font-bold text-gray-900">Kasir</h1>
           {cashierName && <span className="text-sm text-gray-500">Kasir: {cashierName}</span>}
         </div>
+        <HeldTransactionsPanel outletId={outletId} />
         <ProductSearch outletId={outletId} />
       </div>
 

@@ -212,6 +212,24 @@ export const closeCashierShiftSchema = z.object({
   reconciliation_notes: z.string().optional(),
 })
 
+export const holdTransactionSchema = z.object({
+  outlet_id: z.string().uuid(),
+  cart_snapshot: z
+    .array(
+      z.object({
+        product_id: z.string().uuid(),
+        name: z.string(),
+        sku: z.string(),
+        unit_price: z.number().nonnegative(),
+        quantity: z.number().positive(),
+      })
+    )
+    .min(1, 'Keranjang kosong'),
+  discount_amount: z.number().nonnegative().default(0),
+  discount_reason: z.string().optional(),
+  note: z.string().max(255).optional(),
+})
+
 export const createStocktakeSchema = z.object({
   outlet_id: z.string().uuid(),
   scheduled_date: z.string().min(1),

@@ -505,7 +505,18 @@ user approved building all of them. Full plan (including why each does/doesn't t
       needed for this one; returned real low-stock alert data on first test.
 - [x] 11.4 CSV Export — new `lib/utils/exportCsv.ts` + `ExportCsvButton`, wired into 7 pages: Cashier/
       Product/Employee/Inventory/Tax Report, Invoice list, Purchase Order list.
-- [ ] 11.5 Hold/Park Transactions at POS
+- [x] 11.5 Hold/Park Transactions at POS — new `held_transactions` table (migration `031`), API
+      (`app/api/held-transactions/`), `HeldTransactionsPanel` on the POS screen ("Tahan Transaksi" /
+      "Transaksi Tertahan (N)"). Restores items + discount into the Zustand store on resume, then
+      deletes the held row. **Bonus fix**: while testing this live, found the demo seeder had never
+      wiped `recipes`/`production_runs`/`item_requests`/`purchase_returns`/`special_prices`/
+      `stock_transfers`/`stocktakes` — all of which FK to `products.id` — so any demo tenant that ever
+      had a stocktake/recipe/etc. done against it would permanently fail to reseed (silently, since the
+      delete's error wasn't checked). Fixed in `app/api/demo/seed/route.ts`: added all of them to the
+      wipe list in FK-safe order, and now throws loudly if the `products` delete itself fails. Verified
+      live: demo login + add-to-cart + hold flow all confirmed working; the hold itself 500s with
+      "Could not find the table 'public.held_transactions'" until migration 031 is run (same expected
+      state as 11.2 pending migration 030).
 - [ ] 11.6 Product Bundling
 - [ ] 11.7 QRIS dynamic QR code rendering (still demo/mock, now actually visible)
 - [ ] 11.8 Customer Refund (distinct from supplier Purchase Return)
