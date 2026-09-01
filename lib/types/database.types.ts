@@ -1011,6 +1011,8 @@ export type Database = {
           p_reference_type?: string
           p_unit_cost?: number
           p_notes?: string
+          p_batch_number?: string
+          p_expiry_date?: string
         }
         Returns: { new_quantity_on_hand: number }[]
       }

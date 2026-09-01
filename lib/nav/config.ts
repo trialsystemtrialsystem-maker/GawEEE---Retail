@@ -169,6 +169,7 @@ export const PRIMARY_NAV: NavItem[] = [
           { label: 'Stock List', href: '/dashboard/inventory' },
           { label: 'Stock Opname', href: '/dashboard/inventory/stocktake' },
           { label: 'Stock Waste', href: '/dashboard/inventory/stock/waste' },
+          { label: 'Laporan Kadaluarsa', href: '/dashboard/inventory/expiry' },
         ],
       },
       {

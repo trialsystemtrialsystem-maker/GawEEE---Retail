@@ -16,7 +16,9 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Tidak memiliki izin' }, { status: 403 })
   }
 
-  const [alertsRes, lowStockRes, itemRequestsRes, expenseRequestsRes, poRes] = await Promise.all([
+  const in7Days = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10)
+
+  const [alertsRes, lowStockRes, itemRequestsRes, expenseRequestsRes, poRes, expiringRes] = await Promise.all([
     auth.supabase
       .from('system_alerts')
       .select('*')
@@ -28,6 +30,12 @@ export async function GET(request: NextRequest) {
     auth.supabase.from('item_requests').select('id', { count: 'exact', head: true }).eq('outlet_id', outletId).eq('status', 'pending'),
     auth.supabase.from('expense_requests').select('id', { count: 'exact', head: true }).eq('outlet_id', outletId).eq('status', 'pending'),
     auth.supabase.from('purchase_orders').select('id', { count: 'exact', head: true }).eq('outlet_id', outletId).eq('status', 'pending_approval'),
+    auth.supabase
+      .from('inventory_ledger')
+      .select('id', { count: 'exact', head: true })
+      .eq('outlet_id', outletId)
+      .not('expiry_date', 'is', null)
+      .lte('expiry_date', in7Days),
   ])
 
   if (alertsRes.error) {
@@ -43,5 +51,6 @@ export async function GET(request: NextRequest) {
       purchaseOrders: poRes.count ?? 0,
     },
     lowStockCount: lowStockRes.count ?? 0,
+    expiringSoonCount: expiringRes.count ?? 0,
   })
 }

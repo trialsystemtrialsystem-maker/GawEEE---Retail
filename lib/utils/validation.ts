@@ -111,6 +111,8 @@ export const receivePurchaseOrderSchema = z.object({
     z.object({
       po_item_id: z.string().uuid(),
       quantity_received: z.number().int().nonnegative(),
+      batch_number: z.string().optional(),
+      expiry_date: z.string().optional(),
     })
   ),
   delivery_date: z.string().optional(),

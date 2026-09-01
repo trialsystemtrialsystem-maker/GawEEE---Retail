@@ -16,6 +16,7 @@ interface Notifications {
   alerts: Alert[]
   pendingApprovals: { itemRequests: number; expenseRequests: number; purchaseOrders: number }
   lowStockCount: number
+  expiringSoonCount: number
 }
 
 const SEVERITY_COLOR: Record<string, string> = {
@@ -60,7 +61,7 @@ export function NotificationBell({ outletId }: { outletId: string }) {
   const totalApprovals = data
     ? data.pendingApprovals.itemRequests + data.pendingApprovals.expenseRequests + data.pendingApprovals.purchaseOrders
     : 0
-  const badgeCount = (data?.alerts.length ?? 0) + totalApprovals + (data?.lowStockCount ?? 0)
+  const badgeCount = (data?.alerts.length ?? 0) + totalApprovals + (data?.lowStockCount ?? 0) + (data?.expiringSoonCount ?? 0)
 
   return (
     <div ref={ref} className="relative">
@@ -115,6 +116,14 @@ export function NotificationBell({ outletId }: { outletId: string }) {
             <div className="border-b border-gray-100 px-4 py-2 text-sm">
               <Link href="/dashboard/inventory?status=low_stock" className="text-amber-700 hover:underline">
                 ⚠️ {data.lowStockCount} produk stok rendah
+              </Link>
+            </div>
+          )}
+
+          {data && data.expiringSoonCount > 0 && (
+            <div className="border-b border-gray-100 px-4 py-2 text-sm">
+              <Link href="/dashboard/inventory/expiry" className="text-amber-700 hover:underline">
+                ⏳ {data.expiringSoonCount} batch akan/sudah kadaluarsa
               </Link>
             </div>
           )}

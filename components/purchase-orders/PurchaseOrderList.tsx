@@ -153,7 +153,9 @@ export function PurchaseOrderList({ outletId }: { outletId: string }) {
         if (input === null) continue
         const qty = Number(input)
         if (!Number.isFinite(qty) || qty <= 0) continue
-        receiveItems.push({ po_item_id: item.id, quantity_received: qty })
+        const batchNumber = window.prompt(`No. Batch untuk ${item.products?.name ?? item.id} (opsional, kosongkan untuk lewati)`) || undefined
+        const expiryDate = window.prompt(`Tanggal kadaluarsa untuk ${item.products?.name ?? item.id}, format YYYY-MM-DD (opsional)`) || undefined
+        receiveItems.push({ po_item_id: item.id, quantity_received: qty, batch_number: batchNumber, expiry_date: expiryDate })
       }
       if (receiveItems.length === 0) return
 

@@ -561,7 +561,18 @@ user approved building all of them. Full plan (including why each does/doesn't t
       live: management UI renders/expands correctly and the base unit displays right; the actual
       create/use round-trip is blocked on migration 034 (`GET`/`POST /api/product-units` both correctly
       500 "table not found" — same expected state as every other Phase 11 item needing a new table).
-- [ ] 11.11 Expiry/Batch Tracking at PO receiving + Expiry Report (scoped down from full FEFO — see plan)
+- [x] 11.11 Expiry/Batch Tracking at PO receiving + Expiry Report (scoped down from full FEFO — see
+      plan) — `update_inventory()` gains 2 optional trailing params (`p_batch_number`, `p_expiry_date`,
+      migration `035`), purely additive so every existing caller (create_invoice, void_invoice, stock
+      transfers, production, returns) is unaffected. PO receiving (`PurchaseOrderList.tsx`) now prompts
+      for batch number + expiry date per line (optional, same `window.prompt` style already used there
+      for quantity). New Expiry Report at `/dashboard/inventory/expiry` (added under Inventory > Manage
+      Stock) lists received batches with an expiry date, soonest-first, color-coded
+      Aman/`N hari lagi`/Kadaluarsa. Notification Center gets an `expiringSoonCount` (batches expiring
+      within 7 days, works today — reads pre-existing columns, no migration needed for this part).
+      Explicitly NOT full FEFO: no per-batch remaining-quantity tracking, no auto-deduction at sale
+      time. Verified live: Expiry Report page and nav link both work today; the actual batch-capture
+      write is blocked on migration 035 (same expected pending-migration state as every new-table item).
 - [ ] 11.12 Petty Cash / Expense Ledger (extends Phase 10's expense_requests, ties into Accounting)
 
 ## Notes on scope

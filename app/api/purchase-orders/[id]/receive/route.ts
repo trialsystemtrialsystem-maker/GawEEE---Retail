@@ -40,6 +40,8 @@ export async function POST(request: Request, ctx: RouteContext<'/api/purchase-or
       p_reference_id: id,
       p_reference_type: 'purchase_order',
       p_unit_cost: poItem.unit_cost,
+      p_batch_number: line.batch_number,
+      p_expiry_date: line.expiry_date,
     })
     if (invError) {
       const { status, message } = handleDatabaseError(invError)
