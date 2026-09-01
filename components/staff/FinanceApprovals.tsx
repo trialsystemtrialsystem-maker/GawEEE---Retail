@@ -15,6 +15,8 @@ interface ExpenseRequest {
   requested_by_name: string
   approved_by_name: string | null
   created_at: string
+  paid_at: string | null
+  payment_method: string | null
 }
 
 const STATUS_COLOR: Record<string, string> = {
@@ -79,6 +81,27 @@ export function FinanceApprovals({ outletId, canDecide }: { outletId: string; ca
     }
   }
 
+  async function markPaid(id: string, paymentMethod: 'cash' | 'bank_transfer') {
+    setBusyId(id)
+    try {
+      const res = await fetch(`/api/expense-requests/${id}/pay`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ payment_method: paymentMethod }),
+      })
+      const data = await res.json()
+      if (res.ok) {
+        showToast(
+          data.journal_entry_id ? 'Ditandai dibayar, jurnal akuntansi tercatat' : 'Ditandai dibayar',
+          'success'
+        )
+        load()
+      }
+    } finally {
+      setBusyId(null)
+    }
+  }
+
   return (
     <div className="space-y-4">
       <div className="flex justify-end">
@@ -138,6 +161,7 @@ export function FinanceApprovals({ outletId, canDecide }: { outletId: string; ca
                   <td className="px-4 py-2 text-right text-gray-900">{formatCurrency(r.amount)}</td>
                   <td className="px-4 py-2">
                     <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_COLOR[r.status]}`}>{r.status}</span>
+                    {r.paid_at && <span className="ml-1 text-xs text-gray-400">· sudah dibayar</span>}
                   </td>
                   {canDecide && (
                     <td className="px-4 py-2">
@@ -156,6 +180,24 @@ export function FinanceApprovals({ outletId, canDecide }: { outletId: string; ca
                             className="text-sm font-medium text-red-500 hover:text-red-700 disabled:opacity-50"
                           >
                             Tolak
+                          </button>
+                        </div>
+                      )}
+                      {r.status === 'approved' && !r.paid_at && (
+                        <div className="flex gap-3">
+                          <button
+                            onClick={() => markPaid(r.id, 'cash')}
+                            disabled={busyId === r.id}
+                            className="text-sm font-medium text-blue-600 hover:text-blue-700 disabled:opacity-50"
+                          >
+                            Bayar Tunai
+                          </button>
+                          <button
+                            onClick={() => markPaid(r.id, 'bank_transfer')}
+                            disabled={busyId === r.id}
+                            className="text-sm font-medium text-blue-600 hover:text-blue-700 disabled:opacity-50"
+                          >
+                            Bayar Transfer
                           </button>
                         </div>
                       )}

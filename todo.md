@@ -573,7 +573,23 @@ user approved building all of them. Full plan (including why each does/doesn't t
       Explicitly NOT full FEFO: no per-batch remaining-quantity tracking, no auto-deduction at sale
       time. Verified live: Expiry Report page and nav link both work today; the actual batch-capture
       write is blocked on migration 035 (same expected pending-migration state as every new-table item).
-- [ ] 11.12 Petty Cash / Expense Ledger (extends Phase 10's expense_requests, ties into Accounting)
+- [x] 11.12 Petty Cash / Expense Ledger — extends `expense_requests` (Phase 10) with `paid_at`/
+      `payment_method` (migration `036`) rather than a new system. A "Bayar Tunai"/"Bayar Transfer"
+      action on an approved request in `FinanceApprovals.tsx` marks it paid and, best-effort, posts a
+      balanced journal entry via the existing `create_journal_entry()`/`post_journal_entry()` (additive
+      calls, no function changes) debiting Beban Operasional (5200) / crediting Kas (1000) or Bank
+      (1010) — both already in every outlet's default chart of accounts. New Petty Cash report at
+      `/dashboard/accounting/petty-cash` (added under Accounting nav) shows a running "Total Kas Keluar"
+      + CSV export. Verified live end-to-end for create→approve (both work today, no migration needed);
+      the pay step itself correctly 500s "Could not find the 'paid_at' column" — same expected
+      pending-migration state as every other Phase 11 item needing new columns/tables.
+
+  **Phase 11 complete — all 12 items shipped** (commits `91b3554` through this one). Every item is
+  code-complete, typechecked/linted/built clean, and live-tested against the demo account to the extent
+  possible without direct DB access; items needing new tables/columns are correctly blocked pending
+  migrations `030`–`036`, which still need to be run in Supabase SQL Editor (in order) before they're
+  live. `database/combined_migration.sql` has the full concatenated set if running them individually is
+  inconvenient.
 
 ## Notes on scope
 This todo tracks the **engineering deliverables** of the PRD (a working Next.js + Supabase codebase

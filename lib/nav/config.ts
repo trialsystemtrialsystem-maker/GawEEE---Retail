@@ -223,6 +223,7 @@ export const PRIMARY_NAV: NavItem[] = [
       { label: 'Buku Besar', href: '/dashboard/accounting/ledger' },
       { label: 'Neraca', href: '/dashboard/accounting/balance-sheet' },
       { label: 'Laba Rugi', href: '/dashboard/accounting/profit-loss' },
+      { label: 'Kas Kecil (Petty Cash)', href: '/dashboard/accounting/petty-cash' },
     ],
   },
   {

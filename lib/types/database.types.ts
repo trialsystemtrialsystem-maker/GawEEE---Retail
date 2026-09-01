@@ -483,6 +483,8 @@ export type ExpenseRequest = {
   status: 'pending' | 'approved' | 'rejected'
   approved_by: string | null
   decided_at: string | null
+  paid_at: string | null
+  payment_method: string | null
   created_at: string
 }
 
