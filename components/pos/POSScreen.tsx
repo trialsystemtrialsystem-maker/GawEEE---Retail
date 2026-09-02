@@ -24,6 +24,8 @@ interface InvoiceResult {
   created_at: string
 }
 
+const QUICK_CASH_STEPS = [5000, 10000, 20000, 50000, 100000]
+
 export function POSScreen({ outletId, cashierName }: { outletId: string; cashierName?: string }) {
   const [step, setStep] = useState<Step>('cart')
   const [error, setError] = useState<string | null>(null)
@@ -153,27 +155,29 @@ export function POSScreen({ outletId, cashierName }: { outletId: string; cashier
 
   if (step === 'success' && invoiceResult) {
     return (
-      <div className="mx-auto max-w-md rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
-        <Receipt
-          invoiceNumber={invoiceResult.invoice_number}
-          total={invoiceResult.total}
-          items={items}
-          createdAt={invoiceResult.created_at}
-        />
-        <Button className="mt-6 w-full" onClick={startNewTransaction}>
-          Transaksi Baru
-        </Button>
+      <div className="mx-auto max-w-md overflow-hidden rounded-2xl border border-[var(--brand-100)] bg-white shadow-lg">
+        <div className="bg-gradient-to-br from-[var(--status-good)] to-[var(--color-secondary-accent)] px-6 py-8 text-center">
+          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-white/20 text-4xl">✅</div>
+          <h2 className="mt-3 text-xl font-bold text-white">Pembayaran Berhasil!</h2>
+          <p className="text-sm text-white/80">{invoiceResult.invoice_number}</p>
+        </div>
+        <div className="p-6">
+          <Receipt invoiceNumber={invoiceResult.invoice_number} total={invoiceResult.total} items={items} createdAt={invoiceResult.created_at} />
+          <Button className="mt-6 w-full !bg-gradient-to-r !from-[var(--brand-600)] !to-[var(--brand-500)]" onClick={startNewTransaction}>
+            Transaksi Baru
+          </Button>
+        </div>
       </div>
     )
   }
 
   if (step === 'processing_cash' && invoiceResult) {
     return (
-      <div className="mx-auto max-w-md space-y-4 rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
-        <h2 className="text-lg font-bold text-gray-900">Pembayaran Tunai</h2>
-        <div className="flex justify-between text-sm">
-          <span>Total</span>
-          <span className="font-semibold">{formatCurrency(invoiceResult.total)}</span>
+      <div className="mx-auto max-w-md space-y-4 rounded-2xl border border-[var(--brand-100)] bg-white p-6 shadow-lg">
+        <h2 className="text-lg font-bold text-[var(--brand-900)]">💵 Pembayaran Tunai</h2>
+        <div className="rounded-xl bg-[var(--brand-50)] p-4 text-center">
+          <p className="text-xs text-[var(--chart-muted)]">Total Tagihan</p>
+          <p className="text-2xl font-extrabold text-[var(--brand-900)]">{formatCurrency(invoiceResult.total)}</p>
         </div>
         <div>
           <label className="mb-1 block text-sm font-medium text-gray-700">Jumlah diterima</label>
@@ -183,15 +187,37 @@ export function POSScreen({ outletId, cashierName }: { outletId: string; cashier
             value={cashReceived}
             onChange={(e) => setCashReceived(e.target.value)}
             placeholder="Jumlah diterima"
-            className="w-full rounded-md border border-gray-200 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full rounded-md border border-gray-300 px-3 py-2 text-lg font-semibold focus:outline-none focus:ring-2 focus:ring-[var(--brand-500)]"
           />
         </div>
-        <div className="flex justify-between text-sm">
-          <span>Kembalian</span>
-          <span className="font-semibold">{formatCurrency(change)}</span>
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={() => setCashReceived(String(invoiceResult.total))}
+            className="rounded-full border border-[var(--brand-500)] px-3 py-1 text-xs font-semibold text-[var(--brand-600)] hover:bg-[var(--brand-50)]"
+          >
+            Uang Pas
+          </button>
+          {Array.from(new Set(QUICK_CASH_STEPS.map((roundTo) => Math.ceil(invoiceResult.total / roundTo) * roundTo)))
+            .filter((amount) => amount > invoiceResult.total)
+            .slice(0, 3)
+            .map((amount) => (
+              <button
+                key={amount}
+                type="button"
+                onClick={() => setCashReceived(String(amount))}
+                className="rounded-full border border-gray-300 px-3 py-1 text-xs font-semibold text-gray-600 hover:border-[var(--brand-500)] hover:text-[var(--brand-600)]"
+              >
+                {formatCurrency(amount)}
+              </button>
+            ))}
+        </div>
+        <div className="flex justify-between rounded-xl bg-[var(--status-good)]/10 p-3 text-sm">
+          <span className="font-medium text-[var(--status-good)]">Kembalian</span>
+          <span className="font-bold text-[var(--status-good)]">{formatCurrency(change)}</span>
         </div>
         <Button
-          className="w-full"
+          className="w-full !bg-gradient-to-r !from-[var(--brand-600)] !to-[var(--brand-500)]"
           disabled={cashReceivedNumber < invoiceResult.total}
           onClick={confirmCashPayment}
         >
@@ -203,22 +229,22 @@ export function POSScreen({ outletId, cashierName }: { outletId: string; cashier
 
   if (step === 'processing_ewallet' && invoiceResult) {
     return (
-      <div className="mx-auto max-w-md space-y-4 rounded-lg border border-gray-200 bg-white p-6 text-center shadow-sm">
-        <h2 className="text-lg font-bold text-gray-900">Pembayaran E-Wallet</h2>
-        <p className="text-sm text-gray-600">Total: {formatCurrency(invoiceResult.total)}</p>
-        {qrCodeData ? (
-          <QrCodeCanvas data={qrCodeData} />
-        ) : (
-          <div className="mx-auto flex h-40 w-40 items-center justify-center rounded-md border-2 border-dashed border-gray-300 text-xs text-gray-400">
-            QR CODE
-          </div>
-        )}
+      <div className="mx-auto max-w-md space-y-4 rounded-2xl border border-[var(--brand-100)] bg-white p-6 text-center shadow-lg">
+        <h2 className="text-lg font-bold text-[var(--brand-900)]">📱 Pembayaran E-Wallet</h2>
+        <p className="text-sm text-gray-600">Total: <span className="font-bold text-[var(--brand-900)]">{formatCurrency(invoiceResult.total)}</span></p>
+        <div className="mx-auto w-fit rounded-xl border-2 border-[var(--brand-100)] p-3">
+          {qrCodeData ? (
+            <QrCodeCanvas data={qrCodeData} />
+          ) : (
+            <div className="flex h-40 w-40 items-center justify-center text-xs text-gray-400">QR CODE</div>
+          )}
+        </div>
         <p className="text-sm text-gray-500">Scan dengan e-wallet Anda</p>
         <Alert variant="info">
           Mode demo — belum terhubung ke Doku Pay. Klik tombol di bawah untuk mensimulasikan
           pembayaran berhasil.
         </Alert>
-        <Button className="w-full" onClick={confirmDigitalPayment}>
+        <Button className="w-full !bg-gradient-to-r !from-[var(--brand-600)] !to-[var(--brand-500)]" onClick={confirmDigitalPayment}>
           Simulasikan Pembayaran Berhasil
         </Button>
         <button type="button" onClick={startNewTransaction} className="text-sm text-gray-500 hover:underline">
@@ -230,19 +256,19 @@ export function POSScreen({ outletId, cashierName }: { outletId: string; cashier
 
   if (step === 'processing_bank' && invoiceResult && vaInfo) {
     return (
-      <div className="mx-auto max-w-md space-y-4 rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
-        <h2 className="text-lg font-bold text-gray-900">Pembayaran Transfer Bank</h2>
-        <p className="text-sm text-gray-600">Total: {formatCurrency(invoiceResult.total)}</p>
-        <div className="space-y-1 rounded-md bg-gray-50 p-3 text-sm">
-          <p>Bank: {vaInfo.bank}</p>
-          <p>Rekening: {vaInfo.number}</p>
+      <div className="mx-auto max-w-md space-y-4 rounded-2xl border border-[var(--brand-100)] bg-white p-6 shadow-lg">
+        <h2 className="text-lg font-bold text-[var(--brand-900)]">🏦 Pembayaran Transfer Bank</h2>
+        <p className="text-sm text-gray-600">Total: <span className="font-bold text-[var(--brand-900)]">{formatCurrency(invoiceResult.total)}</span></p>
+        <div className="space-y-1 rounded-xl bg-[var(--brand-50)] p-4 text-sm">
+          <p>Bank: <span className="font-semibold">{vaInfo.bank}</span></p>
+          <p>Rekening: <span className="font-mono font-semibold">{vaInfo.number}</span></p>
           <p>Atas Nama: PT Berkah Purnama Sewu</p>
         </div>
         <Alert variant="info">
           Mode demo — belum terhubung ke bank aggregator. Klik tombol di bawah untuk
           mensimulasikan transfer diterima.
         </Alert>
-        <Button className="w-full" onClick={confirmDigitalPayment}>
+        <Button className="w-full !bg-gradient-to-r !from-[var(--brand-600)] !to-[var(--brand-500)]" onClick={confirmDigitalPayment}>
           Simulasikan Transfer Diterima
         </Button>
         <button type="button" onClick={startNewTransaction} className="text-sm text-gray-500 hover:underline">
@@ -253,52 +279,52 @@ export function POSScreen({ outletId, cashierName }: { outletId: string; cashier
   }
 
   return (
-    <div className="mx-auto max-w-5xl">
+    <div className="mx-auto max-w-6xl">
       <ShiftStatusBanner outletId={outletId} />
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h1 className="text-xl font-bold text-gray-900">Kasir</h1>
-          {cashierName && <span className="text-sm text-gray-500">Kasir: {cashierName}</span>}
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_380px]">
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h1 className="text-xl font-extrabold text-[var(--brand-900)]">🛒 Kasir</h1>
+            {cashierName && <span className="text-sm text-gray-500">Kasir: {cashierName}</span>}
+          </div>
+          <div className="flex flex-wrap items-start gap-2">
+            <HeldTransactionsPanel outletId={outletId} />
+            <BundleQuickAdd outletId={outletId} />
+          </div>
+          <ProductSearch outletId={outletId} />
         </div>
-        <div className="flex flex-wrap items-start gap-2">
-          <HeldTransactionsPanel outletId={outletId} />
-          <BundleQuickAdd outletId={outletId} />
+
+        <div className="space-y-4 self-start rounded-2xl border border-[var(--brand-100)] bg-white p-4 shadow-lg lg:sticky lg:top-4">
+          {error && <Alert variant="danger">{error}</Alert>}
+          <ShoppingCart />
+
+          <button
+            type="button"
+            onClick={() => {
+              setUseSplitPayment((v) => !v)
+              setSplitLines([])
+            }}
+            className="text-sm font-medium text-[var(--brand-600)] hover:underline"
+          >
+            {useSplitPayment ? 'Gunakan 1 metode pembayaran' : '+ Bayar dengan beberapa metode'}
+          </button>
+
+          {useSplitPayment ? (
+            <SplitPaymentEditor total={total} lines={splitLines} onChange={setSplitLines} />
+          ) : (
+            <PaymentMethod outletId={outletId} />
+          )}
+
+          <Button
+            className="w-full !bg-gradient-to-r !from-[var(--brand-600)] !to-[var(--brand-500)] !shadow-md"
+            size="lg"
+            onClick={handleCheckout}
+            isLoading={isSubmitting}
+            disabled={items.length === 0 || (useSplitPayment && !splitReady)}
+          >
+            Proses Pembayaran{items.length > 0 && ` · ${formatCurrency(total)}`}
+          </Button>
         </div>
-        <ProductSearch outletId={outletId} />
-      </div>
-
-      <div className="space-y-4 rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
-        {error && <Alert variant="danger">{error}</Alert>}
-        <ShoppingCart />
-
-        <button
-          type="button"
-          onClick={() => {
-            setUseSplitPayment((v) => !v)
-            setSplitLines([])
-          }}
-          className="text-sm text-blue-600 hover:underline"
-        >
-          {useSplitPayment ? 'Gunakan 1 metode pembayaran' : 'Bayar dengan beberapa metode'}
-        </button>
-
-        {useSplitPayment ? (
-          <SplitPaymentEditor total={total} lines={splitLines} onChange={setSplitLines} />
-        ) : (
-          <PaymentMethod outletId={outletId} />
-        )}
-
-        <Button
-          className="w-full"
-          size="lg"
-          onClick={handleCheckout}
-          isLoading={isSubmitting}
-          disabled={items.length === 0 || (useSplitPayment && !splitReady)}
-        >
-          Proses Pembayaran
-        </Button>
-      </div>
       </div>
     </div>
   )

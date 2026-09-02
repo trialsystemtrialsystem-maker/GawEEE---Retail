@@ -5,6 +5,7 @@ import { usePosStore } from '@/store/posStore'
 import { formatCurrency } from '@/lib/utils/formatting'
 import { getProductIcon } from '@/lib/utils/productIcon'
 import { UnitPickerModal } from '@/components/pos/UnitPickerModal'
+import { colorForIndex } from '@/lib/utils/chartColors'
 
 interface InventoryItem {
   product_id: string
@@ -110,9 +111,13 @@ export function ProductSearch({ outletId }: { outletId: string }) {
   const needle = query.trim().toLowerCase()
   const visibleProducts = needle ? allProducts.filter((p) => p.name.toLowerCase().includes(needle)) : allProducts
 
+  const categoryNames = Array.from(new Set(allProducts.map((p) => p.category_name ?? '—')))
+  const colorForCategory = (name: string | null) => colorForIndex(categoryNames.indexOf(name ?? '—'))
+
   return (
     <div className="space-y-3">
       <div className="relative">
+        <span aria-hidden className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-lg">🔍</span>
         <input
           ref={inputRef}
           type="text"
@@ -126,11 +131,11 @@ export function ProductSearch({ outletId }: { outletId: string }) {
           }}
           placeholder="Scan barcode atau cari produk"
           autoFocus
-          className="w-full rounded-md border border-gray-200 px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="w-full rounded-xl border-2 border-[var(--brand-100)] py-3 pl-11 pr-4 text-base shadow-sm focus:outline-none focus:ring-2 focus:ring-[var(--brand-500)]"
         />
       </div>
 
-      {notFound && <p className="text-sm text-red-500">{notFound}</p>}
+      {notFound && <p className="text-sm text-[var(--color-danger)]">{notFound}</p>}
 
       {isLoading ? (
         <p className="py-8 text-center text-sm text-gray-400">Memuat produk…</p>
@@ -140,31 +145,41 @@ export function ProductSearch({ outletId }: { outletId: string }) {
         <div className="grid max-h-[32rem] grid-cols-2 gap-3 overflow-y-auto pr-1 sm:grid-cols-3 lg:grid-cols-4">
           {visibleProducts.map((item) => {
             const outOfStock = item.quantity_available <= 0
+            const lowStock = !outOfStock && item.quantity_available <= 10
+            const accent = colorForCategory(item.category_name)
             return (
               <button
                 key={item.product_id}
                 type="button"
                 onClick={() => handleTileClick(item)}
                 disabled={outOfStock}
-                className="flex flex-col items-center gap-2 rounded-lg border border-gray-200 bg-white p-3 text-center transition hover:border-blue-400 hover:shadow-md disabled:opacity-40 disabled:hover:border-gray-200 disabled:hover:shadow-none"
+                style={{ borderColor: outOfStock ? undefined : `color-mix(in srgb, ${accent} 35%, white)` }}
+                className="relative flex flex-col items-center gap-2 rounded-xl border-2 bg-white p-3 text-center shadow-sm transition hover:-translate-y-0.5 hover:shadow-md disabled:opacity-40 disabled:hover:translate-y-0 disabled:hover:shadow-sm"
               >
-                <div className="w-full">
-                  <p className="line-clamp-2 text-sm font-medium text-gray-900">{item.name}</p>
-                  <p className="mt-0.5 text-xs text-gray-500">{formatCurrency(item.unit_price)}</p>
-                  <p className={`text-xs ${outOfStock ? 'text-red-500' : 'text-gray-400'}`}>
-                    {outOfStock ? 'Stok habis' : `Stok ${item.quantity_available}`}
-                  </p>
-                  {(unitsByProduct[item.product_id]?.length ?? 0) > 0 && (
-                    <p className="text-xs text-blue-500">+ satuan lain</p>
-                  )}
-                </div>
-                {/* Category symbol, anchored at the bottom of the tile */}
+                {lowStock && (
+                  <span className="absolute right-1.5 top-1.5 rounded-full bg-[var(--status-warning)] px-1.5 py-0.5 text-[10px] font-bold text-white">
+                    Sisa {item.quantity_available}
+                  </span>
+                )}
                 <span
                   aria-hidden
-                  className="mt-1 flex h-10 w-10 items-center justify-center rounded-full bg-blue-50 text-xl"
+                  style={{ backgroundColor: `color-mix(in srgb, ${accent} 18%, white)` }}
+                  className="flex h-12 w-12 items-center justify-center rounded-full text-2xl"
                 >
                   {getProductIcon({ name: item.name, categoryName: item.category_name })}
                 </span>
+                <div className="w-full">
+                  <p className="line-clamp-2 text-sm font-semibold text-gray-900">{item.name}</p>
+                  <p className="mt-0.5 text-sm font-bold" style={{ color: accent }}>
+                    {formatCurrency(item.unit_price)}
+                  </p>
+                  <p className={`text-xs ${outOfStock ? 'font-semibold text-[var(--color-danger)]' : 'text-gray-400'}`}>
+                    {outOfStock ? 'Stok habis' : `Stok ${item.quantity_available}`}
+                  </p>
+                  {(unitsByProduct[item.product_id]?.length ?? 0) > 0 && (
+                    <p className="text-xs font-medium text-[var(--brand-600)]">+ satuan lain</p>
+                  )}
+                </div>
               </button>
             )
           })}

@@ -5,6 +5,7 @@ import { usePosStore } from '@/store/posStore'
 import { PAYMENT_METHOD_LABELS } from '@/lib/utils/constants'
 
 const ALL_METHODS: Array<'cash' | 'e_wallet' | 'bank_transfer'> = ['cash', 'e_wallet', 'bank_transfer']
+const METHOD_ICON: Record<string, string> = { cash: '💵', e_wallet: '📱', bank_transfer: '🏦' }
 
 export function PaymentMethod({ outletId }: { outletId: string }) {
   const paymentMethod = usePosStore((s) => s.paymentMethod)
@@ -43,9 +44,9 @@ export function PaymentMethod({ outletId }: { outletId: string }) {
         {methods.map((method) => (
           <label
             key={method}
-            className={`cursor-pointer rounded-md border px-3 py-2 text-center text-sm font-medium transition-colors ${
+            className={`flex cursor-pointer flex-col items-center gap-1 rounded-xl border-2 px-3 py-3 text-center text-sm font-semibold transition-colors ${
               paymentMethod === method
-                ? 'border-blue-500 bg-blue-50 text-blue-600'
+                ? 'border-[var(--brand-500)] bg-[var(--brand-50)] text-[var(--brand-700)]'
                 : 'border-gray-200 text-gray-600 hover:bg-gray-50'
             }`}
           >
@@ -57,6 +58,7 @@ export function PaymentMethod({ outletId }: { outletId: string }) {
               onChange={() => setPaymentMethod(method)}
               className="sr-only"
             />
+            <span aria-hidden className="text-xl">{METHOD_ICON[method]}</span>
             {PAYMENT_METHOD_LABELS[method]}
           </label>
         ))}

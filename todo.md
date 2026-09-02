@@ -599,6 +599,37 @@ user approved building all of them. Full plan (including why each does/doesn't t
     receive with batch/expiry prompts → Expiry Report shows the batch correctly, 11.12 mark-paid →
     journal posted → Petty Cash report shows the running total.
 
+## Phase 12 — Best-in-class Cashier Portal + public POS demo
+User pivoted focus to the POS/cashier experience itself: redesign it to be visually striking/colorful/
+chart-rich (not the prior flat blue-and-gray screen), add cashier-support menus that don't exist yet
+(Absensi self-service, Riwayat Kasir, Laporan Harian, Checklist Activity, Pengajuan Izin/Sakit/Libur),
+a receipt reprint capability, and a new public "Coba DEMO POS System Instan" landing-page entry point.
+Full plan (architecture decisions, DB design, batch order):
+`C:\Users\LENOVO\.claude\plans\nifty-tumbling-candy.md`.
+
+- [x] **A — Visual foundation (zero new DB)**: rewrote `app/pos/layout.tsx` into a colorful persistent
+      shell (navy gradient header, cashier identity, `PosPortalNav` tab bar for the 6 portal sections —
+      the other 5 are stub routes not yet built, see Batch B/C). Redesigned `POSScreen.tsx` (category-
+      colored product tiles via new `lib/utils/chartColors.ts` — same `--chart-1..8` slots
+      `CategoryBreakdownChart` uses —, richer cart summary with a gradient total box, quick-cash amount
+      buttons on the cash screen, a celebratory gradient success screen), `ProductSearch.tsx`,
+      `ShoppingCart.tsx`, `PaymentMethod.tsx` (icons + brand tokens), `Receipt.tsx` (removed the
+      redundant "PEMBAYARAN BERHASIL" header now that POSScreen's success card has its own). All on
+      the existing `--brand-*`/`--status-*` design tokens (`app/globals.css`), not a new palette.
+      Verified live via screenshots through a full cash-sale flow — cart, cash entry w/ quick amounts,
+      success/receipt all render correctly and function identically to before visually restyled.
+- [ ] **B — Self-scoped read features (zero new DB)**: Riwayat Kasir (`/pos/riwayat`) — the logged-in
+      cashier's own invoices + reprint via a generalized `Receipt.tsx`; Laporan Harian
+      (`/pos/laporan`) — cashier-scoped daily summary with 2 recharts (sales-by-hour,
+      payment-method breakdown) via new `/api/pos/my-daily-report`.
+- [ ] **C — New HR-lite tables**: migration `038` (`staff_members.user_id` link) + Absensi self-service
+      (`/pos/absensi`); migration `039` (`leave_requests`) + Izin submit (`/pos/izin`) + manager decide
+      view under Employee > Approvals; migration `040` (`checklist_items`/`checklist_completions`) +
+      Checklist Activity (`/pos/checklist`).
+- [ ] **D — Demo entry point**: extend `/api/demo/seed` for an optional cashier-role login (2nd `users`
+      + `staff_members` row on the same demo outlet), new `TryPosDemoButton.tsx` + landing page
+      placement ("🛒 Coba DEMO POS System Instan"), then a full live Playwright pass through every tab.
+
 ## Notes on scope
 This todo tracks the **engineering deliverables** of the PRD (a working Next.js + Supabase codebase
 implementing Phase 1 features, with payment gateways behind a swappable mock interface). Items marked

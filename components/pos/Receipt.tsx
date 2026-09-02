@@ -16,9 +16,6 @@ export function Receipt({
 }) {
   return (
     <div className="space-y-4 text-center">
-      <div className="text-4xl print:hidden">✅</div>
-      <h2 className="text-xl font-bold text-gray-900 print:hidden">PEMBAYARAN BERHASIL</h2>
-
       <div id="receipt-print-area" className="mx-auto">
         <div className="space-y-1 text-center text-sm text-gray-600 print:text-black">
           <p className="font-bold print:text-base">GawEEE</p>
@@ -48,9 +45,9 @@ export function Receipt({
         <button
           type="button"
           onClick={() => window.print()}
-          className="rounded-md border-2 border-blue-500 px-4 py-2 text-sm font-semibold text-blue-500 hover:bg-blue-50"
+          className="rounded-md border-2 border-[var(--brand-500)] px-4 py-2 text-sm font-semibold text-[var(--brand-600)] hover:bg-[var(--brand-50)]"
         >
-          Cetak Struk
+          🖨️ Cetak Struk
         </button>
       </div>
     </div>
