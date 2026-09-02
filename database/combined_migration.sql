@@ -2837,3 +2837,114 @@ alter table expense_requests add column payment_method varchar(50); -- 'cash', '
 -- one (whose 2 new params default to null, so every existing caller behaves
 -- exactly as before).
 drop function if exists update_inventory(uuid, uuid, int, varchar, uuid, uuid, varchar, decimal, text);
+
+
+-- ============================================================
+-- 038_staff_self_service_link.sql
+-- ============================================================
+
+-- 038_staff_self_service_link.sql
+-- Phase 12 — links a login (`users`) account to its HR roster row
+-- (`staff_members`), so a logged-in cashier/staff member can find "my own"
+-- attendance record for self-service clock-in/out (Absensi Harian) without
+-- a manager doing it on their behalf. staff_members has never had this link
+-- (it's a separate payroll/HR roster, not tied to auth) — see Phase 12 plan
+-- for why this is the one self-service feature that reuses the existing
+-- table instead of a parallel one keyed to users(id) directly.
+
+alter table staff_members add column user_id uuid references users(id);
+create index idx_staff_members_user_id on staff_members(user_id);
+
+-- Best-effort backfill: match existing staff_members to users by email
+-- within the same outlet. Safe no-op wherever there's no match.
+update staff_members sm
+set user_id = u.id
+from users u
+where sm.user_id is null
+  and sm.email is not null
+  and u.email = sm.email
+  and u.outlet_id = sm.outlet_id;
+
+
+-- ============================================================
+-- 039_leave_requests.sql
+-- ============================================================
+
+-- 039_leave_requests.sql
+-- Pengajuan Izin/Sakit/Libur — mirrors expense_requests
+-- (018_employee_expansion.sql) exactly: self-service submit, manager+
+-- decide. Keyed to users(id) directly (not staff_members), same
+-- convention expense_requests already uses, so it works for any logged-in
+-- account without needing the staff_members link migration 038 added.
+
+create table leave_requests (
+  id uuid primary key default gen_random_uuid(),
+  outlet_id uuid not null references outlets(id) on delete cascade,
+  leave_type varchar(50) not null, -- 'izin', 'sakit', 'libur'
+  start_date date not null,
+  end_date date not null,
+  reason text not null,
+  status varchar(50) not null default 'pending', -- 'pending', 'approved', 'rejected'
+  requested_by uuid not null references users(id),
+  decided_by uuid references users(id),
+  decided_at timestamptz,
+  created_at timestamptz not null default now(),
+  check (end_date >= start_date)
+);
+
+create index idx_leave_requests_outlet_id_status on leave_requests(outlet_id, status);
+
+alter table leave_requests enable row level security;
+create policy leave_requests_select on leave_requests for select using (user_can_access_outlet(outlet_id));
+create policy leave_requests_insert on leave_requests for insert with check (user_can_access_outlet(outlet_id));
+create policy leave_requests_update on leave_requests for update using (user_can_access_outlet(outlet_id));
+
+
+-- ============================================================
+-- 040_checklist_activity.sql
+-- ============================================================
+
+-- 040_checklist_activity.sql
+-- Checklist Activity — an opening/closing duty checklist. checklist_items
+-- is the manager-defined list (e.g. "Nyalakan freezer", "Hitung kas awal");
+-- checklist_completions records who ticked which item off on which date —
+-- one row per completion, deleting it un-ticks the item. Any cashier can
+-- tick any item (this isn't an assignment/ownership system, just shared
+-- shift duties), so completions carry who/when for visibility, not access
+-- control beyond the outlet.
+
+create table checklist_items (
+  id uuid primary key default gen_random_uuid(),
+  outlet_id uuid not null references outlets(id) on delete cascade,
+  label varchar(255) not null,
+  category varchar(50) not null default 'opening', -- 'opening', 'closing'
+  sort_order int not null default 0,
+  is_active boolean not null default true,
+  created_by uuid not null references users(id),
+  created_at timestamptz not null default now()
+);
+
+create index idx_checklist_items_outlet_id on checklist_items(outlet_id);
+
+create table checklist_completions (
+  id uuid primary key default gen_random_uuid(),
+  outlet_id uuid not null references outlets(id) on delete cascade,
+  item_id uuid not null references checklist_items(id) on delete cascade,
+  completed_by uuid not null references users(id),
+  shift_date date not null default current_date,
+  completed_at timestamptz not null default now(),
+  note text
+);
+
+create index idx_checklist_completions_outlet_date on checklist_completions(outlet_id, shift_date);
+
+alter table checklist_items enable row level security;
+create policy checklist_items_select on checklist_items for select using (user_can_access_outlet(outlet_id));
+create policy checklist_items_insert on checklist_items for insert with check (user_can_access_outlet(outlet_id));
+create policy checklist_items_update on checklist_items for update using (user_can_access_outlet(outlet_id));
+create policy checklist_items_delete on checklist_items for delete using (user_can_access_outlet(outlet_id));
+
+alter table checklist_completions enable row level security;
+create policy checklist_completions_select on checklist_completions for select using (user_can_access_outlet(outlet_id));
+create policy checklist_completions_insert on checklist_completions for insert with check (user_can_access_outlet(outlet_id));
+create policy checklist_completions_delete on checklist_completions for delete using (user_can_access_outlet(outlet_id));

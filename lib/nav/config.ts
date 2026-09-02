@@ -209,6 +209,7 @@ export const PRIMARY_NAV: NavItem[] = [
       { label: 'Notifikasi', href: '/dashboard/staff/notifications' },
       { label: 'Persetujuan Pembelian', href: '/dashboard/staff/approvals/purchasing' },
       { label: 'Persetujuan Keuangan', href: '/dashboard/staff/approvals/finance' },
+      { label: 'Persetujuan Izin/Cuti', href: '/dashboard/staff/approvals/leave' },
     ],
   },
   {

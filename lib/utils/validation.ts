@@ -422,6 +422,30 @@ export const expenseRequestSchema = z.object({
   amount: z.number().positive('Nominal harus lebih dari 0'),
 })
 
+export const leaveRequestSchema = z
+  .object({
+    outlet_id: z.string().uuid(),
+    leave_type: z.enum(['izin', 'sakit', 'libur']),
+    start_date: z.string().min(1),
+    end_date: z.string().min(1),
+    reason: z.string().min(3, 'Alasan wajib diisi'),
+  })
+  .refine((d) => d.end_date >= d.start_date, { message: 'Tanggal selesai harus setelah tanggal mulai', path: ['end_date'] })
+
+export const checklistItemSchema = z.object({
+  outlet_id: z.string().uuid(),
+  label: z.string().min(1, 'Nama checklist wajib diisi'),
+  category: z.enum(['opening', 'closing']),
+  sort_order: z.number().int().nonnegative().optional(),
+})
+
+export const checklistCompletionSchema = z.object({
+  outlet_id: z.string().uuid(),
+  item_id: z.string().uuid(),
+  shift_date: z.string().min(1),
+  note: z.string().optional(),
+})
+
 export const outletGeofenceSchema = z.object({
   geofence_lat: z.number().min(-90).max(90).optional(),
   geofence_lng: z.number().min(-180).max(180).optional(),

@@ -629,10 +629,23 @@ Full plan (architecture decisions, DB design, batch order):
       token conventions as `SalesTrendChart`) + reused `CategoryBreakdownChart` for payment-method
       breakdown. Verified live with real screenshots: empty-state correctly shows Rp 0 for a day with no
       sales yet, and a date with real data renders correct totals + real bar charts.
-- [ ] **C — New HR-lite tables**: migration `038` (`staff_members.user_id` link) + Absensi self-service
-      (`/pos/absensi`); migration `039` (`leave_requests`) + Izin submit (`/pos/izin`) + manager decide
-      view under Employee > Approvals; migration `040` (`checklist_items`/`checklist_completions`) +
-      Checklist Activity (`/pos/checklist`).
+- [x] **C — New HR-lite tables (migrations 038-040 pending — not yet run by the user)**:
+  - Migration `038`: nullable `staff_members.user_id` link (+ best-effort email backfill), so a login
+    can resolve "my staff row." New `GET /api/attendance/me` (resolves the link, returns today's status
+    + 7-day history) + `SelfAttendance.tsx` at `/pos/absensi` — reuses the *existing*
+    `POST /api/attendance/clock-in|clock-out` unchanged, gracefully shows "belum ditautkan" if no
+    staff_members row is linked yet.
+  - Migration `039`: `leave_requests` table, mirrors `expense_requests` exactly (keyed to `users(id)`,
+    same pending/approved/rejected shape). `GET/POST /api/leave-requests` (+ new `requested_by=me`
+    filter, same convention as invoices' `cashier_id=me`) and `POST /api/leave-requests/[id]/decide`.
+    Self-service submit form at `/pos/izin` (`LeaveRequestForm.tsx`) + manager decide view at
+    `/dashboard/staff/approvals/leave` (`LeaveApprovals.tsx`, added to the Employee > Approvals nav).
+  - Migration `040`: `checklist_items` (manager-defined opening/closing duties) +
+    `checklist_completions` (who ticked what, when — deleting un-ticks). `ChecklistActivity.tsx` at
+    `/pos/checklist`: today's items as checkboxes with who/when completed, plus a manager-only inline
+    "Kelola Checklist" editor (same expandable pattern as `ProductUnitsEditor`).
+  - Verified live: all 3 new `/pos/*` pages load and render correctly (empty states, not crashes) ahead
+    of their migrations — same expected pending-migration behavior established throughout Phase 11.
 - [ ] **D — Demo entry point**: extend `/api/demo/seed` for an optional cashier-role login (2nd `users`
       + `staff_members` row on the same demo outlet), new `TryPosDemoButton.tsx` + landing page
       placement ("🛒 Coba DEMO POS System Instan"), then a full live Playwright pass through every tab.

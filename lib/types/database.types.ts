@@ -414,6 +414,7 @@ export type StaffMember = {
   commission_rate: number
   position_level_id: string | null
   pin_code: string | null
+  user_id: string | null
   created_at: string
   updated_at: string
   deleted_at: string | null
@@ -695,6 +696,41 @@ export type ProductUnit = {
   created_at: string
 }
 
+export type LeaveRequest = {
+  id: string
+  outlet_id: string
+  leave_type: 'izin' | 'sakit' | 'libur'
+  start_date: string
+  end_date: string
+  reason: string
+  status: 'pending' | 'approved' | 'rejected'
+  requested_by: string
+  decided_by: string | null
+  decided_at: string | null
+  created_at: string
+}
+
+export type ChecklistItem = {
+  id: string
+  outlet_id: string
+  label: string
+  category: 'opening' | 'closing'
+  sort_order: number
+  is_active: boolean
+  created_by: string
+  created_at: string
+}
+
+export type ChecklistCompletion = {
+  id: string
+  outlet_id: string
+  item_id: string
+  completed_by: string
+  shift_date: string
+  completed_at: string
+  note: string | null
+}
+
 export type Stocktake = {
   id: string
   outlet_id: string
@@ -944,6 +980,9 @@ export type Database = {
       customer_refunds: Table<CustomerRefund>
       customer_refund_items: Table<CustomerRefundItem>
       product_units: Table<ProductUnit>
+      leave_requests: Table<LeaveRequest>
+      checklist_items: Table<ChecklistItem>
+      checklist_completions: Table<ChecklistCompletion>
       stocktakes: Table<Stocktake>
       stocktake_details: Table<StocktakeDetail>
       item_requests: Table<ItemRequest>
