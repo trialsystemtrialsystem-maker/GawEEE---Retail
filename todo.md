@@ -658,12 +658,13 @@ Full plan (architecture decisions, DB design, batch order):
       → all 6 portal tabs (Kasir, Riwayat Kasir, Laporan Harian, Absensi, Checklist, Izin) click through
       without crashing.
 
-  **Phase 12 complete — all 4 batches shipped.** Batches A/B fully live-verified working end-to-end
-  (visual redesign, Riwayat Kasir + reprint, Laporan Harian with real charts). Batch C's 3 features
-  (Absensi, Izin, Checklist) are code-complete and verified to degrade gracefully, but need migrations
-  `038`, `039`, `040` run in Supabase before they're actually usable — same as every other
-  new-table Phase 11/12 item. Batch D's demo entry point works today for Kasir/Riwayat/Laporan; once
-  038-040 run, the same demo button will also exercise Absensi/Checklist/Izin with real data.
+  **Phase 12 complete — all 4 batches shipped and fully live-verified** after the user ran migrations
+  038-040: Absensi self-service clock-in confirmed via direct network trace (`staff` correctly resolved
+  via the `user_id` link, `POST /api/attendance/clock-in` → 201 → reload shows it), Izin submit shows up
+  immediately in "Riwayat Pengajuan Saya", Checklist confirmed both ends — a manager (`master_admin`
+  demo login) can add/remove items via "Kelola Checklist", and ticking one off correctly records
+  who/when ("oleh Demo Owner · HH:MM"). Also confirmed the cashier demo login correctly does NOT see
+  "Kelola Checklist" (manager-gated as designed) — test item cleaned up afterward.
 
 ## Notes on scope
 This todo tracks the **engineering deliverables** of the PRD (a working Next.js + Supabase codebase
