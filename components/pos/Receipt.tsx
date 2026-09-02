@@ -1,7 +1,19 @@
 'use client'
 
 import { formatCurrency, formatDateTime } from '@/lib/utils/formatting'
-import type { CartItem } from '@/store/posStore'
+
+// Deliberately more general than store/posStore's CartItem so this same
+// component can render a receipt from either live checkout state or a past
+// invoice's fetched invoice_items (Riwayat Kasir reprint) — both shapes
+// satisfy this.
+export interface ReceiptItem {
+  product_id: string
+  name: string
+  unit_price: number
+  quantity: number
+  unit_label?: string | null
+  unit_quantity?: number | null
+}
 
 export function Receipt({
   invoiceNumber,
@@ -11,7 +23,7 @@ export function Receipt({
 }: {
   invoiceNumber: string
   total: number
-  items: CartItem[]
+  items: ReceiptItem[]
   createdAt: string
 }) {
   return (

@@ -618,10 +618,17 @@ Full plan (architecture decisions, DB design, batch order):
       the existing `--brand-*`/`--status-*` design tokens (`app/globals.css`), not a new palette.
       Verified live via screenshots through a full cash-sale flow — cart, cash entry w/ quick amounts,
       success/receipt all render correctly and function identically to before visually restyled.
-- [ ] **B — Self-scoped read features (zero new DB)**: Riwayat Kasir (`/pos/riwayat`) — the logged-in
-      cashier's own invoices + reprint via a generalized `Receipt.tsx`; Laporan Harian
-      (`/pos/laporan`) — cashier-scoped daily summary with 2 recharts (sales-by-hour,
-      payment-method breakdown) via new `/api/pos/my-daily-report`.
+- [x] **B — Self-scoped read features (zero new DB)**: `GET /api/invoices` gained a `cashier_id=me`
+      filter (resolves server-side to `auth.authUserId`, matching what `create_invoice()` writes) — used
+      by new **Riwayat Kasir** (`/pos/riwayat`, `CashierHistory.tsx`): today's total/count stat cards +
+      a full transaction table with status badges, click "Cetak Ulang" to reprint via a generalized
+      `Receipt.tsx` (now takes a `ReceiptItem[]` shape satisfied by both live cart state and fetched
+      `invoice_items`). New **Laporan Harian Saya** (`/pos/laporan`, `MyDailyReport.tsx`) via new
+      `GET /api/pos/my-daily-report?date=` (cashier + date scoped, existing outlet-wide
+      `/api/invoices/daily-summary` untouched): stat cards + a new `SalesByHourChart` (recharts, same
+      token conventions as `SalesTrendChart`) + reused `CategoryBreakdownChart` for payment-method
+      breakdown. Verified live with real screenshots: empty-state correctly shows Rp 0 for a day with no
+      sales yet, and a date with real data renders correct totals + real bar charts.
 - [ ] **C — New HR-lite tables**: migration `038` (`staff_members.user_id` link) + Absensi self-service
       (`/pos/absensi`); migration `039` (`leave_requests`) + Izin submit (`/pos/izin`) + manager decide
       view under Employee > Approvals; migration `040` (`checklist_items`/`checklist_completions`) +

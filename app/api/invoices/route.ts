@@ -96,6 +96,7 @@ export async function GET(request: NextRequest) {
   const toDate = searchParams.get('to_date')
   const paymentStatus = searchParams.get('payment_status')
   const outletId = searchParams.get('outlet_id')
+  const cashierIdParam = searchParams.get('cashier_id')
 
   let query = auth.supabase.from('invoices').select('*', { count: 'exact' }).order('created_at', { ascending: false })
 
@@ -109,6 +110,12 @@ export async function GET(request: NextRequest) {
   if (toDate) query = query.lte('created_at', toDate)
   if (paymentStatus) {
     query = query.eq('payment_status', paymentStatus as 'pending' | 'partial' | 'paid')
+  }
+  // "me" resolves server-side to the caller's own id — used by the Riwayat
+  // Kasir self-service view so a cashier only ever sees their own sales,
+  // without the client needing to know/pass its own user id.
+  if (cashierIdParam) {
+    query = query.eq('cashier_id', cashierIdParam === 'me' ? auth.authUserId : cashierIdParam) // create_invoice() writes cashier_id = p_cashier_id = auth.authUserId (see app/api/invoices POST)
   }
 
   const from = (page - 1) * limit
