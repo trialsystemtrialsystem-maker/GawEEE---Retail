@@ -646,9 +646,24 @@ Full plan (architecture decisions, DB design, batch order):
     "Kelola Checklist" editor (same expandable pattern as `ProductUnitsEditor`).
   - Verified live: all 3 new `/pos/*` pages load and render correctly (empty states, not crashes) ahead
     of their migrations — same expected pending-migration behavior established throughout Phase 11.
-- [ ] **D — Demo entry point**: extend `/api/demo/seed` for an optional cashier-role login (2nd `users`
-      + `staff_members` row on the same demo outlet), new `TryPosDemoButton.tsx` + landing page
-      placement ("🛒 Coba DEMO POS System Instan"), then a full live Playwright pass through every tab.
+- [x] **D — Demo entry point**: `POST /api/demo/seed` now accepts an optional `{role: 'cashier'}` body —
+      finds-or-creates a second `users` row (`kasir-demo@gaweee.app`, fixed in `lib/demo/catalog.ts`)
+      role='cashier' on the SAME demo outlet, plus a linked `staff_members` row (`user_id` set, so
+      Absensi works once migration 038 lands), reusing the admin's already-seeded 90-day history rather
+      than duplicating it. Existing admin `TryDemoButton` unchanged/untouched (still posts no body).
+      New `TryPosDemoButton.tsx` (distinct green-gradient styling) posts `{role:'cashier'}` and redirects
+      to `/pos` instead of `/dashboard`, placed on the landing page hero right below the existing demo
+      button as a clearly labeled second option: "🛒 Coba DEMO POS System Instan (Sudah Terisi Data)".
+      **Verified live end-to-end**: landing click → cashier login → lands on `/pos` showing "Kasir Demo"
+      → all 6 portal tabs (Kasir, Riwayat Kasir, Laporan Harian, Absensi, Checklist, Izin) click through
+      without crashing.
+
+  **Phase 12 complete — all 4 batches shipped.** Batches A/B fully live-verified working end-to-end
+  (visual redesign, Riwayat Kasir + reprint, Laporan Harian with real charts). Batch C's 3 features
+  (Absensi, Izin, Checklist) are code-complete and verified to degrade gracefully, but need migrations
+  `038`, `039`, `040` run in Supabase before they're actually usable — same as every other
+  new-table Phase 11/12 item. Batch D's demo entry point works today for Kasir/Riwayat/Laporan; once
+  038-040 run, the same demo button will also exercise Absensi/Checklist/Izin with real data.
 
 ## Notes on scope
 This todo tracks the **engineering deliverables** of the PRD (a working Next.js + Supabase codebase

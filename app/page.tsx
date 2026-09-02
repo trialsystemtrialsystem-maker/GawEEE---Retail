@@ -1,6 +1,7 @@
 import { PRICING_TIERS } from '@/lib/utils/constants'
 import { formatCurrency } from '@/lib/utils/formatting'
 import { TryDemoButton } from '@/components/common/TryDemoButton'
+import { TryPosDemoButton } from '@/components/common/TryPosDemoButton'
 
 const FEATURES = [
   { icon: '🛒', title: 'Real-time POS', desc: 'Proses transaksi cepat dengan barcode scanning dan multiple payment methods.', color: 'var(--chart-1)' },
@@ -95,12 +96,21 @@ export default function LandingPage() {
               </a>
             </div>
 
-            <div className="rounded-xl border border-white/20 bg-white/10 p-4 backdrop-blur-sm">
-              <p className="mb-2 text-sm text-blue-100">
-                Ingin lihat dulu tanpa daftar? Coba dashboard yang sudah terisi 3 bulan data toko
-                frozen food sungguhan — POS, inventori, supplier, sampai laporan keuangan.
-              </p>
-              <TryDemoButton />
+            <div className="space-y-3 rounded-xl border border-white/20 bg-white/10 p-4 backdrop-blur-sm">
+              <div>
+                <p className="mb-2 text-sm text-blue-100">
+                  Ingin lihat dulu tanpa daftar? Coba dashboard yang sudah terisi 3 bulan data toko
+                  frozen food sungguhan — POS, inventori, supplier, sampai laporan keuangan.
+                </p>
+                <TryDemoButton />
+              </div>
+              <div className="border-t border-white/20 pt-3">
+                <p className="mb-2 text-sm text-blue-100">
+                  Khusus ingin coba pengalaman kasirnya saja? Langsung masuk ke Cashier Portal —
+                  Kasir, Riwayat, Laporan Harian, Absensi, Checklist, sampai Izin — semua sudah terisi.
+                </p>
+                <TryPosDemoButton />
+              </div>
             </div>
           </div>
 

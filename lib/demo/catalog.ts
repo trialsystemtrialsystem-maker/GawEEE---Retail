@@ -6,6 +6,14 @@ export const DEMO_COMPANY_NAME = 'Toko Frozen Fresh Demo'
 export const DEMO_EMAIL = 'demo@gaweee.app'
 export const DEMO_PASSWORD = 'DemoGawEEE2026!'
 
+// Second demo login, same tenant/outlet as DEMO_EMAIL but role='cashier' —
+// used by the "Coba DEMO POS System Instan" landing button (Phase 12) so a
+// visitor lands straight in the Cashier Portal instead of the full admin
+// dashboard.
+export const DEMO_CASHIER_EMAIL = 'kasir-demo@gaweee.app'
+export const DEMO_CASHIER_PASSWORD = 'DemoKasirGawEEE2026!'
+export const DEMO_CASHIER_NAME = 'Kasir Demo'
+
 export const DEMO_CATEGORIES = [
   'Ayam & Unggas Beku',
   'Daging Beku',

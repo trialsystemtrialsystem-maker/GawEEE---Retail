@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/server'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '@/lib/types/database.types'
@@ -10,6 +10,9 @@ import {
   DEMO_COMPANY_NAME,
   DEMO_EMAIL,
   DEMO_PASSWORD,
+  DEMO_CASHIER_EMAIL,
+  DEMO_CASHIER_PASSWORD,
+  DEMO_CASHIER_NAME,
 } from '@/lib/demo/catalog'
 
 // POST /api/demo/seed — public, unauthenticated (this is the landing page's
@@ -48,8 +51,10 @@ function weightedPickProduct<T extends { popularity: number }>(products: T[]): T
   return products[products.length - 1]
 }
 
-export async function POST() {
+export async function POST(request: NextRequest) {
   const admin = createAdminClient()
+  const body = await request.json().catch(() => ({}))
+  const wantsCashierLogin = body?.role === 'cashier'
 
   // 1) Find or create the demo tenant (owner user + company + outlet).
   let companyId: string
@@ -91,6 +96,62 @@ export async function POST() {
     outletId = provisioned.outlet_id
   }
 
+  // 1a2) If a cashier-role login was requested (the "Coba DEMO POS System
+  // Instan" landing button — Phase 12), find-or-create a second users row +
+  // a linked staff_members row (via the user_id column from migration 038)
+  // on the SAME outlet, so the Absensi self-service page works out of the
+  // box in the demo too. Reuses the admin's already-seeded 90 days of
+  // history — the point is showing off a fully-populated POS, not a
+  // cashier-specific sales history.
+  let loginEmail = DEMO_EMAIL
+  let loginPassword = DEMO_PASSWORD
+  if (wantsCashierLogin) {
+    const { data: existingCashier } = await admin.from('users').select('id').eq('email', DEMO_CASHIER_EMAIL).maybeSingle()
+    let cashierUserId: string
+    if (existingCashier) {
+      cashierUserId = existingCashier.id
+    } else {
+      const { data: createdCashier, error: createCashierError } = await admin.auth.admin.createUser({
+        email: DEMO_CASHIER_EMAIL,
+        password: DEMO_CASHIER_PASSWORD,
+        email_confirm: true,
+      })
+      if (createCashierError || !createdCashier.user) {
+        return NextResponse.json({ error: createCashierError?.message ?? 'Gagal membuat akun kasir demo' }, { status: 500 })
+      }
+      cashierUserId = createdCashier.user.id
+      const { error: insertCashierError } = await admin.from('users').insert({
+        id: cashierUserId,
+        company_id: companyId,
+        outlet_id: outletId,
+        email: DEMO_CASHIER_EMAIL,
+        full_name: DEMO_CASHIER_NAME,
+        phone: '081200000001',
+        role: 'cashier',
+      })
+      if (insertCashierError) {
+        await admin.auth.admin.deleteUser(cashierUserId).catch(() => {})
+        return NextResponse.json({ error: insertCashierError.message }, { status: 500 })
+      }
+    }
+
+    const { data: existingStaffRow } = await admin.from('staff_members').select('id').eq('user_id', cashierUserId).maybeSingle()
+    if (!existingStaffRow) {
+      await admin.from('staff_members').insert({
+        outlet_id: outletId,
+        first_name: DEMO_CASHIER_NAME,
+        email: DEMO_CASHIER_EMAIL,
+        position: 'cashier',
+        hire_date: new Date().toISOString().slice(0, 10),
+        status: 'active',
+        user_id: cashierUserId,
+      })
+    }
+
+    loginEmail = DEMO_CASHIER_EMAIL
+    loginPassword = DEMO_CASHIER_PASSWORD
+  }
+
   // 1b) Fast path: the seeder always backdates its most recent invoice to
   // "today" (see the day-by-day loop in regenerateDemoData), so if that's
   // still true the existing data is fresh — skip the ~20s wipe-and-regenerate
@@ -106,8 +167,8 @@ export async function POST() {
 
   if (latestInvoice && latestInvoice.created_at.slice(0, 10) === todayStr) {
     return NextResponse.json({
-      email: DEMO_EMAIL,
-      password: DEMO_PASSWORD,
+      email: loginEmail,
+      password: loginPassword,
       company_id: companyId,
       outlet_id: outletId,
       stats: { reused_existing_data: true },
@@ -119,7 +180,7 @@ export async function POST() {
   if (!latestInvoice) {
     try {
       const stats = await regenerateDemoData(admin, companyId, outletId, userId)
-      return NextResponse.json({ email: DEMO_EMAIL, password: DEMO_PASSWORD, company_id: companyId, outlet_id: outletId, stats })
+      return NextResponse.json({ email: loginEmail, password: loginPassword, company_id: companyId, outlet_id: outletId, stats })
     } catch (err) {
       return NextResponse.json({ error: err instanceof Error ? err.message : 'Gagal menyimpan data demo' }, { status: 500 })
     }
@@ -137,8 +198,8 @@ export async function POST() {
   })
 
   return NextResponse.json({
-    email: DEMO_EMAIL,
-    password: DEMO_PASSWORD,
+    email: loginEmail,
+    password: loginPassword,
     company_id: companyId,
     outlet_id: outletId,
     stats: { reused_existing_data: true, refreshing_in_background: true },
