@@ -18,25 +18,36 @@ export default async function POSLayout({ children }: { children: React.ReactNod
 
   return (
     <div className="min-h-screen bg-[var(--background)]">
-      <div className="bg-gradient-to-r from-[var(--brand-900)] to-[var(--brand-700)]">
-        <div className="flex items-center justify-between px-4 pt-3 sm:px-6">
-          <div className="flex items-center gap-3">
-            <Link href="/dashboard" className="text-sm font-medium text-white/70 hover:text-white">
-              ← Dashboard
-            </Link>
-            <span className="hidden text-sm text-white/50 sm:inline">|</span>
-            <span className="hidden text-sm font-semibold text-white sm:inline">{outlet?.name ?? 'GawEEE POS'}</span>
+      <div className="bg-gradient-to-r from-emerald-800 to-emerald-600 px-4 py-2.5 sm:px-6">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <span className="text-lg font-extrabold text-white">GawEEE.com</span>
+            <span className="rounded-full bg-white/20 px-2.5 py-1 text-xs font-semibold text-white">Mode Kasir</span>
           </div>
-          <div className="flex items-center gap-2 text-sm text-white">
-            <span aria-hidden className="flex h-7 w-7 items-center justify-center rounded-full bg-white/20 text-xs font-bold">
+          <div className="flex items-center gap-3">
+            <Link
+              href="/dashboard"
+              className="flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1.5 text-sm font-medium text-white hover:bg-white/25"
+            >
+              <span aria-hidden>▦</span> Menu Lengkap
+            </Link>
+            <span
+              aria-hidden
+              className="flex h-8 w-8 items-center justify-center rounded-full bg-white/20 text-xs font-bold text-white"
+              title={profile?.full_name ?? 'Kasir'}
+            >
               {(profile?.full_name ?? '?').charAt(0).toUpperCase()}
             </span>
-            <span className="hidden sm:inline">{profile?.full_name ?? 'Kasir'}</span>
           </div>
         </div>
+      </div>
+      <div className="border-b border-gray-200 bg-white">
         <PosPortalNav />
       </div>
-      <div className="p-4 sm:p-6">{children}</div>
+      <div className="p-4 sm:p-6">
+        {outlet?.name && <p className="mb-3 hidden text-xs text-gray-400 sm:block">{outlet.name}</p>}
+        {children}
+      </div>
     </div>
   )
 }

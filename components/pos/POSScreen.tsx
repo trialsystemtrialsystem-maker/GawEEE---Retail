@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Link from 'next/link'
 import { usePosStore } from '@/store/posStore'
 import { ProductSearch } from '@/components/pos/ProductSearch'
 import { ShoppingCart } from '@/components/pos/ShoppingCart'
@@ -11,11 +12,14 @@ import { HeldTransactionsPanel } from '@/components/pos/HeldTransactionsPanel'
 import { BundleQuickAdd } from '@/components/pos/BundleQuickAdd'
 import { QrCodeCanvas } from '@/components/pos/QrCodeCanvas'
 import { SplitPaymentEditor, type SplitLine } from '@/components/pos/SplitPaymentEditor'
+import { KasirStatsHeader } from '@/components/pos/KasirStatsHeader'
+import { CustomerPicker, type PickedCustomer } from '@/components/pos/CustomerPicker'
 import { Button } from '@/components/ui/Button'
 import { Alert } from '@/components/ui/Alert'
 import { formatCurrency } from '@/lib/utils/formatting'
+import { useNotificationStore } from '@/store/notificationStore'
 
-type Step = 'cart' | 'processing_cash' | 'processing_ewallet' | 'processing_bank' | 'success'
+type Step = 'cart' | 'processing_cash' | 'processing_ewallet' | 'processing_bank' | 'success' | 'pending_receipt'
 
 interface InvoiceResult {
   invoice_id: string
@@ -37,11 +41,44 @@ export function POSScreen({ outletId, cashierName }: { outletId: string; cashier
   const [cashReceived, setCashReceived] = useState('')
   const [useSplitPayment, setUseSplitPayment] = useState(false)
   const [splitLines, setSplitLines] = useState<SplitLine[]>([])
+  const [customer, setCustomer] = useState<PickedCustomer | null>(null)
+  const [payLater, setPayLater] = useState(false)
+  const [couponCode, setCouponCode] = useState('')
+  const [isApplyingCoupon, setIsApplyingCoupon] = useState(false)
+  const showToast = useNotificationStore((s) => s.show)
 
   const items = usePosStore((s) => s.items)
   const paymentMethod = usePosStore((s) => s.paymentMethod)
   const clearCart = usePosStore((s) => s.clearCart)
   const total = usePosStore((s) => s.total())
+  const subtotal = usePosStore((s) => s.subtotal())
+  const discountAmount = usePosStore((s) => s.discountAmount)
+  const discountReason = usePosStore((s) => s.discountReason)
+  const setDiscount = usePosStore((s) => s.setDiscount)
+
+  async function applyCoupon() {
+    if (!couponCode.trim()) return
+    setIsApplyingCoupon(true)
+    try {
+      const res = await fetch('/api/coupons/redeem', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ outlet_id: outletId, code: couponCode.trim() }),
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        showToast(typeof data.error === 'string' ? data.error : 'Kode promo tidak valid', 'danger')
+        return
+      }
+      const coupon = data.coupon as { code: string; discount_type: 'percentage' | 'fixed'; discount_value: number }
+      const amount = coupon.discount_type === 'percentage' ? Math.round((subtotal * coupon.discount_value) / 100) : coupon.discount_value
+      setDiscount(discountAmount + amount, discountReason ? `${discountReason}; Promo: ${coupon.code}` : `Promo: ${coupon.code}`)
+      showToast(`Promo "${coupon.code}" diterapkan`, 'success')
+      setCouponCode('')
+    } finally {
+      setIsApplyingCoupon(false)
+    }
+  }
 
   const splitPaid = splitLines.reduce((sum, l) => sum + (Number(l.amount) || 0), 0)
   const splitReady = useSplitPayment && splitLines.length > 0 && Math.round(splitPaid) === Math.round(total)
@@ -51,7 +88,7 @@ export function POSScreen({ outletId, cashierName }: { outletId: string; cashier
       setError('Keranjang tidak boleh kosong')
       return
     }
-    if (useSplitPayment && !splitReady) {
+    if (!payLater && useSplitPayment && !splitReady) {
       setError('Sisa bayar harus 0 sebelum memproses pembayaran')
       return
     }
@@ -63,6 +100,8 @@ export function POSScreen({ outletId, cashierName }: { outletId: string; cashier
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           outlet_id: outletId,
+          customer_name: customer?.name,
+          customer_phone: customer?.phone,
           items: items.map((i) => ({
             product_id: i.product_id,
             quantity: i.quantity,
@@ -70,7 +109,9 @@ export function POSScreen({ outletId, cashierName }: { outletId: string; cashier
             unit_label: i.unit_label,
             unit_quantity: i.unit_quantity,
           })),
-          payment_method: useSplitPayment ? (splitLines.find((l) => l.payment_method !== 'cash')?.payment_method ?? 'cash') : paymentMethod,
+          discount_amount: discountAmount,
+          discount_reason: discountReason || undefined,
+          payment_method: payLater ? 'pay_later' : useSplitPayment ? (splitLines.find((l) => l.payment_method !== 'cash')?.payment_method ?? 'cash') : paymentMethod,
         }),
       })
       const data = await res.json()
@@ -85,6 +126,16 @@ export function POSScreen({ outletId, cashierName }: { outletId: string; cashier
         total: data.total,
         created_at: new Date().toISOString(),
       })
+
+      if (payLater) {
+        // No payment collected yet — the invoice was created with
+        // payment_status left 'pending' by create_invoice() (any
+        // non-'cash' p_payment_method lands as pending), so there's
+        // nothing to hand to /api/payments/initiate. Settle it later from
+        // Riwayat Kasir once the customer actually pays.
+        setStep('pending_receipt')
+        return
+      }
 
       const payments = useSplitPayment
         ? splitLines.map((l) => ({ payment_method: l.payment_method, amount: Number(l.amount) || 0 }))
@@ -147,6 +198,8 @@ export function POSScreen({ outletId, cashierName }: { outletId: string; cashier
     setCashReceived('')
     setUseSplitPayment(false)
     setSplitLines([])
+    setCustomer(null)
+    setPayLater(false)
     setStep('cart')
   }
 
@@ -164,6 +217,27 @@ export function POSScreen({ outletId, cashierName }: { outletId: string; cashier
         <div className="p-6">
           <Receipt invoiceNumber={invoiceResult.invoice_number} total={invoiceResult.total} items={items} createdAt={invoiceResult.created_at} />
           <Button className="mt-6 w-full !bg-gradient-to-r !from-[var(--brand-600)] !to-[var(--brand-500)]" onClick={startNewTransaction}>
+            Transaksi Baru
+          </Button>
+        </div>
+      </div>
+    )
+  }
+
+  if (step === 'pending_receipt' && invoiceResult) {
+    return (
+      <div className="mx-auto max-w-md overflow-hidden rounded-2xl border border-[var(--brand-100)] bg-white shadow-lg">
+        <div className="bg-gradient-to-br from-amber-500 to-amber-400 px-6 py-8 text-center">
+          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-white/20 text-4xl">⏳</div>
+          <h2 className="mt-3 text-xl font-bold text-white">Menunggu Pembayaran</h2>
+          <p className="text-sm text-white/80">{invoiceResult.invoice_number} — bayar nanti</p>
+        </div>
+        <div className="p-6">
+          <Receipt invoiceNumber={invoiceResult.invoice_number} total={invoiceResult.total} items={items} createdAt={invoiceResult.created_at} />
+          <div className="mt-4">
+            <Alert variant="warning">Transaksi tersimpan sebagai belum dibayar. Selesaikan pembayarannya nanti dari Riwayat Kasir.</Alert>
+          </div>
+          <Button className="mt-4 w-full !bg-gradient-to-r !from-[var(--brand-600)] !to-[var(--brand-500)]" onClick={startNewTransaction}>
             Transaksi Baru
           </Button>
         </div>
@@ -281,12 +355,26 @@ export function POSScreen({ outletId, cashierName }: { outletId: string; cashier
   return (
     <div className="mx-auto max-w-6xl">
       <ShiftStatusBanner outletId={outletId} />
+
+      <div className="mb-4 flex items-center justify-between">
+        <div>
+          <h1 className="text-xl font-extrabold text-[var(--brand-900)]">🛒 Kasir</h1>
+          <p className="text-sm text-gray-500">
+            {cashierName ? `Kasir: ${cashierName}` : 'Kelola transaksi penjualan'}
+          </p>
+        </div>
+        <Link
+          href="/dashboard/staff/cashier-shifts"
+          className="flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-600 shadow-sm hover:bg-gray-50"
+        >
+          🗄️ Tutup Kasir
+        </Link>
+      </div>
+
+      <KasirStatsHeader />
+
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_380px]">
         <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h1 className="text-xl font-extrabold text-[var(--brand-900)]">🛒 Kasir</h1>
-            {cashierName && <span className="text-sm text-gray-500">Kasir: {cashierName}</span>}
-          </div>
           <div className="flex flex-wrap items-start gap-2">
             <HeldTransactionsPanel outletId={outletId} />
             <BundleQuickAdd outletId={outletId} />
@@ -298,31 +386,72 @@ export function POSScreen({ outletId, cashierName }: { outletId: string; cashier
           {error && <Alert variant="danger">{error}</Alert>}
           <ShoppingCart />
 
-          <button
-            type="button"
-            onClick={() => {
-              setUseSplitPayment((v) => !v)
-              setSplitLines([])
-            }}
-            className="text-sm font-medium text-[var(--brand-600)] hover:underline"
-          >
-            {useSplitPayment ? 'Gunakan 1 metode pembayaran' : '+ Bayar dengan beberapa metode'}
-          </button>
+          <CustomerPicker outletId={outletId} value={customer} onChange={setCustomer} />
 
-          {useSplitPayment ? (
-            <SplitPaymentEditor total={total} lines={splitLines} onChange={setSplitLines} />
-          ) : (
-            <PaymentMethod outletId={outletId} />
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={couponCode}
+              onChange={(e) => setCouponCode(e.target.value)}
+              placeholder="Kode Promo"
+              className="min-w-0 flex-1 rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+            />
+            <Button type="button" variant="secondary" size="sm" isLoading={isApplyingCoupon} onClick={applyCoupon}>
+              Pakai
+            </Button>
+          </div>
+
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              onClick={() => setPayLater(false)}
+              className={`rounded-xl border-2 py-2.5 text-sm font-semibold transition-colors ${
+                !payLater ? 'border-emerald-500 bg-emerald-50 text-emerald-700' : 'border-gray-200 text-gray-500'
+              }`}
+            >
+              ⚡ Bayar Sekarang
+            </button>
+            <button
+              type="button"
+              onClick={() => setPayLater(true)}
+              className={`rounded-xl border-2 py-2.5 text-sm font-semibold transition-colors ${
+                payLater ? 'border-amber-500 bg-amber-50 text-amber-700' : 'border-gray-200 text-gray-500'
+              }`}
+            >
+              🕐 Bayar Nanti
+            </button>
+          </div>
+
+          {!payLater && (
+            <>
+              <button
+                type="button"
+                onClick={() => {
+                  setUseSplitPayment((v) => !v)
+                  setSplitLines([])
+                }}
+                className="text-sm font-medium text-[var(--brand-600)] hover:underline"
+              >
+                {useSplitPayment ? 'Gunakan 1 metode pembayaran' : '+ Bayar dengan beberapa metode'}
+              </button>
+
+              {useSplitPayment ? (
+                <SplitPaymentEditor total={total} lines={splitLines} onChange={setSplitLines} />
+              ) : (
+                <PaymentMethod outletId={outletId} />
+              )}
+            </>
           )}
 
           <Button
-            className="w-full !bg-gradient-to-r !from-[var(--brand-600)] !to-[var(--brand-500)] !shadow-md"
+            className={`w-full !shadow-md ${payLater ? '!bg-gradient-to-r !from-amber-600 !to-amber-500' : '!bg-gradient-to-r !from-[var(--brand-600)] !to-[var(--brand-500)]'}`}
             size="lg"
             onClick={handleCheckout}
             isLoading={isSubmitting}
-            disabled={items.length === 0 || (useSplitPayment && !splitReady)}
+            disabled={items.length === 0 || (!payLater && useSplitPayment && !splitReady)}
           >
-            Proses Pembayaran{items.length > 0 && ` · ${formatCurrency(total)}`}
+            {payLater ? 'Simpan Transaksi' : 'Proses Pembayaran'}
+            {items.length > 0 && ` · ${formatCurrency(total)}`}
           </Button>
         </div>
       </div>

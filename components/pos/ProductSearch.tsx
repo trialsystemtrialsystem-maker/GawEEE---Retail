@@ -26,6 +26,7 @@ interface ProductUnit {
 
 export function ProductSearch({ outletId }: { outletId: string }) {
   const [query, setQuery] = useState('')
+  const [activeCategory, setActiveCategory] = useState<string | null>(null)
   const [allProducts, setAllProducts] = useState<InventoryItem[]>([])
   const [unitsByProduct, setUnitsByProduct] = useState<Record<string, ProductUnit[]>>({})
   const [unitPickerItem, setUnitPickerItem] = useState<InventoryItem | null>(null)
@@ -109,13 +110,40 @@ export function ProductSearch({ outletId }: { outletId: string }) {
   }
 
   const needle = query.trim().toLowerCase()
-  const visibleProducts = needle ? allProducts.filter((p) => p.name.toLowerCase().includes(needle)) : allProducts
+  const categoryFiltered = activeCategory ? allProducts.filter((p) => (p.category_name ?? 'Lainnya') === activeCategory) : allProducts
+  const visibleProducts = needle ? categoryFiltered.filter((p) => p.name.toLowerCase().includes(needle)) : categoryFiltered
 
   const categoryNames = Array.from(new Set(allProducts.map((p) => p.category_name ?? '—')))
   const colorForCategory = (name: string | null) => colorForIndex(categoryNames.indexOf(name ?? '—'))
 
   return (
     <div className="space-y-3">
+      {categoryNames.length > 1 && (
+        <div className="flex gap-1.5 overflow-x-auto pb-1">
+          <button
+            type="button"
+            onClick={() => setActiveCategory(null)}
+            className={`shrink-0 rounded-full px-3.5 py-1.5 text-xs font-semibold transition-colors ${
+              activeCategory === null ? 'bg-emerald-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+            }`}
+          >
+            Semua
+          </button>
+          {categoryNames.map((cat) => (
+            <button
+              key={cat}
+              type="button"
+              onClick={() => setActiveCategory(cat)}
+              className={`shrink-0 rounded-full px-3.5 py-1.5 text-xs font-semibold transition-colors ${
+                activeCategory === cat ? 'bg-emerald-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              }`}
+            >
+              {cat}
+            </button>
+          ))}
+        </div>
+      )}
+
       <div className="relative">
         <span aria-hidden className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-lg">🔍</span>
         <input
@@ -153,8 +181,8 @@ export function ProductSearch({ outletId }: { outletId: string }) {
                 type="button"
                 onClick={() => handleTileClick(item)}
                 disabled={outOfStock}
-                style={{ borderColor: outOfStock ? undefined : `color-mix(in srgb, ${accent} 35%, white)` }}
-                className="relative flex flex-col items-center gap-2 rounded-xl border-2 bg-white p-3 text-center shadow-sm transition hover:-translate-y-0.5 hover:shadow-md disabled:opacity-40 disabled:hover:translate-y-0 disabled:hover:shadow-sm"
+                style={{ borderTopColor: outOfStock ? '#e5e7eb' : accent }}
+                className="relative flex flex-col items-center gap-2 rounded-xl border border-gray-100 border-t-4 bg-white p-3 text-center shadow-sm transition hover:-translate-y-0.5 hover:shadow-md disabled:opacity-40 disabled:hover:translate-y-0 disabled:hover:shadow-sm"
               >
                 {lowStock && (
                   <span className="absolute right-1.5 top-1.5 rounded-full bg-[var(--status-warning)] px-1.5 py-0.5 text-[10px] font-bold text-white">

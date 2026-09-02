@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
 
   const { data: invoices, error } = await auth.supabase
     .from('invoices')
-    .select('id, total, order_status, created_at')
+    .select('id, total, order_status, payment_status, created_at')
     .eq('outlet_id', auth.outlet_id)
     .eq('cashier_id', auth.authUserId)
     .gte('created_at', dayStart)
@@ -32,6 +32,7 @@ export async function GET(request: NextRequest) {
   const voidedCount = (invoices ?? []).length - activeInvoices.length
   const totalSales = activeInvoices.reduce((sum, i) => sum + i.total, 0)
   const transactionCount = activeInvoices.length
+  const pendingCount = activeInvoices.filter((i) => i.payment_status === 'pending').length
 
   const hourBuckets = new Map<number, number>()
   for (const inv of activeInvoices) {
@@ -64,6 +65,7 @@ export async function GET(request: NextRequest) {
     transaction_count: transactionCount,
     avg_transaction: transactionCount ? totalSales / transactionCount : 0,
     voided_count: voidedCount,
+    pending_count: pendingCount,
     sales_by_hour: salesByHour,
     payment_breakdown: paymentBreakdown,
   })

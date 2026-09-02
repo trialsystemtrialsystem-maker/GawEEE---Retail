@@ -46,7 +46,7 @@ export const createInvoiceSchema = z.object({
   items: z.array(invoiceItemSchema).min(1, 'Keranjang tidak boleh kosong'),
   discount_amount: z.number().min(0).default(0),
   discount_reason: z.string().optional(),
-  payment_method: z.enum(['cash', 'e_wallet', 'bank_transfer', 'card']),
+  payment_method: z.enum(['cash', 'e_wallet', 'bank_transfer', 'card', 'pay_later']),
 })
 
 export type CreateInvoiceInput = z.infer<typeof createInvoiceSchema>

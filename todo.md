@@ -666,6 +666,46 @@ Full plan (architecture decisions, DB design, batch order):
   who/when ("oleh Demo Owner · HH:MM"). Also confirmed the cashier demo login correctly does NOT see
   "Kelola Checklist" (manager-gated as designed) — test item cleaned up afterward.
 
+## Phase 12b — Kasir screen matched to user-provided mockup + catalog expansion
+User attached 3 screenshots of a mockup (from a sibling GawEEE app's own "Mode Kasir") and asked for the
+Kasir screen's placement/visual to match it, filled with a genuinely complete frozen-food catalog.
+Adopted the green theme + layout, not a new architecture — same `/pos/*` portal from Phase 12.
+
+- [x] Green re-theme: `app/pos/layout.tsx` header now has "GawEEE.com" + "Mode Kasir" badge + "Menu
+      Lengkap" link + avatar on a green gradient bar; `PosPortalNav` restyled as pill tabs (active =
+      filled emerald) on a white bar; added a 7th tab, **Daftar Harga** (`/pos/harga`,
+      `PriceList.tsx`) — full catalog grouped by category with CSV export, reusing the existing
+      `/api/inventory/[outletId]` endpoint.
+- [x] `KasirStatsHeader.tsx`: 4 colored stat cards (Omzet Hari Ini/Transaksi/Rata-rata/Menunggu
+      Pembayaran) + `SalesByHourChart` + new `PaymentMethodDonutChart` (recharts, same `--chart-1..8`
+      token convention) rendered directly on the Kasir screen itself, reusing
+      `/api/pos/my-daily-report` (extended with a `pending_count` field for the 4th card).
+- [x] `ProductSearch.tsx`: category filter tabs above the grid; product tiles restyled with a colored
+      top-border strip (was a full colored border) to match the mockup.
+- [x] `CustomerPicker.tsx` (new): search existing customers (`GET /api/customers?search=`) or
+      quick-create with just name+phone (`POST /api/customers`, already supported it), wired into
+      checkout's `customer_name`/`customer_phone`.
+- [x] Coupon/promo code input wired to the **already-existing** `POST /api/coupons/redeem` (built in an
+      earlier phase, never had a UI) — computes the discount client-side from `discount_type`/
+      `discount_value` and applies it via the store's `setDiscount`.
+- [x] "Bayar Sekarang / Bayar Nanti" toggle: pay-later adds `'pay_later'` to `createInvoiceSchema`'s
+      payment_method enum (→ `create_invoice()` already maps any non-`'cash'` method to
+      `payment_status='pending'`, zero SQL changes) and skips `/api/payments/initiate` entirely, landing
+      on a new amber "Menunggu Pembayaran" receipt variant instead of the green success screen.
+- [x] **Real pre-existing bug fixed while wiring the coupon feature**: `discountAmount`/`discountReason`
+      (used by Product Bundling's "hemat Rp X") were tracked in `posStore` and shown in the cart, but
+      `handleCheckout` never actually sent `discount_amount`/`discount_reason` in the `POST /api/invoices`
+      body — so a bundle discount displayed in the cart was **never actually applied** to the charged
+      total. Now included in every checkout call.
+- [x] `lib/demo/catalog.ts` expanded from 24 to 64 products across 8 categories (added Bumbu & Pelengkap
+      Beku, Camilan & Snack Beku) — kept the 2 intentionally-lean-stock items unchanged by name so the
+      low-stock-alert demo path still works.
+- Verified live end-to-end (forced a full reseed via service-role invoice wipe to pick up the new
+  catalog): stat cards/charts render with real data, category tabs filter correctly, customer
+  quick-create + select confirmed via network trace, coupon apply confirmed exact math (10% off:
+  Rp 41.800 → Rp 37.620), Bayar Nanti confirmed creating a `payment_status='pending'` invoice and the
+  Menunggu Pembayaran stat correctly incrementing.
+
 ## Notes on scope
 This todo tracks the **engineering deliverables** of the PRD (a working Next.js + Supabase codebase
 implementing Phase 1 features, with payment gateways behind a swappable mock interface). Items marked
