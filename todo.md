@@ -714,8 +714,10 @@ each does/doesn't touch `create_invoice()`, batch order):
 `C:\Users\LENOVO\.claude\plans\nifty-tumbling-candy.md`.
 
 - [x] **A — Product/category structure**: 1. Department List, 2. Notes Category List, 3. Extra Product
-      (modifiers). Code-complete, typecheck/lint/build clean, committed. Migrations 041-043 pending —
-      user needs to run them in Supabase SQL Editor before this batch can be live-verified.
+      (modifiers). Migrations 041-043 run by user; live-verified end-to-end via Playwright against the
+      demo account — department creation + category assignment, note preset creation + POS "+ Catatan"
+      attachment + receipt display, and modifier groups (priced option -> its own cart line, unpriced
+      option -> note on the base line) all confirmed working through a real checkout.
 - [ ] **B — Customer-adjacent**: 4. Customer Data Setting, 5. Customer Summary Report, 6. Customer
       Satisfaction
 - [ ] **C — Pricing**: 7. Price Scheduler, 8. Time-Based Pricing, 9. Ojek Online Price List
