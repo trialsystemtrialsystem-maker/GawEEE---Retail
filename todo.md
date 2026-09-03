@@ -719,8 +719,10 @@ each does/doesn't touch `create_invoice()`, batch order):
       attachment + receipt display, and modifier groups (priced option -> its own cart line, unpriced
       option -> note on the base line) all confirmed working through a real checkout.
 - [x] **B — Customer-adjacent**: 4. Customer Data Setting, 5. Customer Summary Report, 6. Customer
-      Satisfaction. Code-complete, typecheck/lint/build clean, committed. Migrations 044-045 pending —
-      user needs to run them before this batch can be live-verified.
+      Satisfaction. Migrations 044-045 run; live-verified end-to-end via Playwright — require-phone +
+      default-group settings persist and are honored by CustomerList's create form, custom field
+      required-toggle/delete persist, a logged review updates the avg-rating/distribution chart and
+      deletes cleanly, and the summary report renders.
       - Item 4 turned out to overlap heavily with the already-built "Customer Custom Fields" page
         (`CustomerFieldDefinitionManager` + `custom_fields` jsonb wiring into `CustomerList` already
         existed, contrary to the plan's assumption it was UI-less). Kept both nav items distinct:
