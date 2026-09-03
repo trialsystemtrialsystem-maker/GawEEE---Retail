@@ -5,6 +5,7 @@ import { usePosStore } from '@/store/posStore'
 import { formatCurrency } from '@/lib/utils/formatting'
 import { getProductIcon } from '@/lib/utils/productIcon'
 import { UnitPickerModal } from '@/components/pos/UnitPickerModal'
+import { ModifierPickerModal } from '@/components/pos/ModifierPickerModal'
 import { colorForIndex } from '@/lib/utils/chartColors'
 
 interface InventoryItem {
@@ -23,25 +24,45 @@ interface ProductUnit {
   conversion_to_base: number
   unit_price: number
 }
+interface ModifierOption {
+  id: string
+  label: string
+  linked_product_id: string | null
+  products: { name: string; sku: string; selling_price: number } | null
+}
+interface ModifierGroup {
+  id: string
+  product_id: string
+  name: string
+  product_modifier_options: ModifierOption[]
+}
 
 export function ProductSearch({ outletId }: { outletId: string }) {
   const [query, setQuery] = useState('')
   const [activeCategory, setActiveCategory] = useState<string | null>(null)
   const [allProducts, setAllProducts] = useState<InventoryItem[]>([])
   const [unitsByProduct, setUnitsByProduct] = useState<Record<string, ProductUnit[]>>({})
+  const [modifiersByProduct, setModifiersByProduct] = useState<Record<string, ModifierGroup[]>>({})
   const [unitPickerItem, setUnitPickerItem] = useState<InventoryItem | null>(null)
+  const [modifierPickerItem, setModifierPickerItem] = useState<InventoryItem | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [notFound, setNotFound] = useState<string | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const addItem = usePosStore((s) => s.addItem)
+  const setItemNotes = usePosStore((s) => s.setItemNotes)
   const cartItems = usePosStore((s) => s.items)
 
   const loadAll = useCallback(async () => {
     setIsLoading(true)
     try {
-      const [invRes, unitsRes] = await Promise.all([fetch(`/api/inventory/${outletId}`), fetch('/api/product-units')])
+      const [invRes, unitsRes, modifiersRes] = await Promise.all([
+        fetch(`/api/inventory/${outletId}`),
+        fetch('/api/product-units'),
+        fetch('/api/product-modifiers'),
+      ])
       const invData = await invRes.json()
       const unitsData = await unitsRes.json()
+      const modifiersData = await modifiersRes.json()
       setAllProducts(invData.inventory ?? [])
       if (unitsRes.ok) {
         const grouped: Record<string, ProductUnit[]> = {}
@@ -49,6 +70,13 @@ export function ProductSearch({ outletId }: { outletId: string }) {
           ;(grouped[u.product_id] ??= []).push(u)
         }
         setUnitsByProduct(grouped)
+      }
+      if (modifiersRes.ok) {
+        const grouped: Record<string, ModifierGroup[]> = {}
+        for (const g of (modifiersData.groups ?? []) as ModifierGroup[]) {
+          ;(grouped[g.product_id] ??= []).push(g)
+        }
+        setModifiersByProduct(grouped)
       }
     } finally {
       setIsLoading(false)
@@ -81,14 +109,39 @@ export function ProductSearch({ outletId }: { outletId: string }) {
   }
 
   // Tile clicks (unlike a barcode scan, which always resolves to the base
-  // unit) offer a unit picker when the product has extra units defined.
+  // unit) offer a modifier picker first (if the product has modifier groups
+  // defined), then a unit picker (if it has extra units defined).
   function handleTileClick(item: InventoryItem) {
+    const modifierGroups = modifiersByProduct[item.product_id]
+    if (modifierGroups?.length) {
+      setModifierPickerItem(item)
+      return
+    }
     const units = unitsByProduct[item.product_id]
     if (units?.length) {
       setUnitPickerItem(item)
       return
     }
     handleAdd(item)
+  }
+
+  // Priced options (linked_product_id set) are added as their own real cart
+  // line — pricing flows through normal checkout with zero function changes.
+  // Unpriced options are folded into a note on the base product's line.
+  function handleModifierConfirm(selectedOptions: ModifierOption[]) {
+    if (!modifierPickerItem) return
+    const base = modifierPickerItem
+    handleAdd(base)
+    const unpricedLabels = selectedOptions.filter((o) => !o.linked_product_id).map((o) => o.label)
+    if (unpricedLabels.length > 0) {
+      setItemNotes(base.product_id, unpricedLabels.join(', '))
+    }
+    for (const option of selectedOptions) {
+      if (option.linked_product_id && option.products) {
+        addItem({ product_id: option.linked_product_id, name: option.products.name, sku: option.products.sku, unit_price: option.products.selling_price })
+      }
+    }
+    setModifierPickerItem(null)
   }
 
   function handleUnitPick(args: { unitPrice: number; quantity: number; discount?: number; unitLabel?: string; unitQuantity?: number }) {
@@ -212,8 +265,12 @@ export function ProductSearch({ outletId }: { outletId: string }) {
                   <p className={`text-xs ${outOfStock ? 'font-semibold text-[var(--color-danger)]' : 'text-gray-400'}`}>
                     {outOfStock ? 'Stok habis' : `Stok ${stock}`}
                   </p>
-                  {(unitsByProduct[item.product_id]?.length ?? 0) > 0 && (
-                    <p className="text-xs font-medium text-[var(--brand-600)]">+ satuan lain</p>
+                  {(modifiersByProduct[item.product_id]?.length ?? 0) > 0 ? (
+                    <p className="text-xs font-medium text-[var(--brand-600)]">+ pilihan tambahan</p>
+                  ) : (
+                    (unitsByProduct[item.product_id]?.length ?? 0) > 0 && (
+                      <p className="text-xs font-medium text-[var(--brand-600)]">+ satuan lain</p>
+                    )
                   )}
                 </div>
               </button>
@@ -228,6 +285,15 @@ export function ProductSearch({ outletId }: { outletId: string }) {
           units={unitsByProduct[unitPickerItem.product_id] ?? []}
           onPick={handleUnitPick}
           onClose={() => setUnitPickerItem(null)}
+        />
+      )}
+
+      {modifierPickerItem && (
+        <ModifierPickerModal
+          item={modifierPickerItem}
+          groups={modifiersByProduct[modifierPickerItem.product_id] ?? []}
+          onConfirm={({ selectedOptions }) => handleModifierConfirm(selectedOptions)}
+          onClose={() => setModifierPickerItem(null)}
         />
       )}
     </div>

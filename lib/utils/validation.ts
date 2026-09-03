@@ -37,6 +37,8 @@ export const invoiceItemSchema = z.object({
   // read by create_invoice(), applied via a follow-up UPDATE afterward.
   unit_label: z.string().optional(),
   unit_quantity: z.number().int().positive().optional(),
+  // Same cosmetic/follow-up-UPDATE treatment (Phase 13 Batch A item 2).
+  notes: z.string().optional(),
 })
 
 export const createInvoiceSchema = z.object({
@@ -72,6 +74,33 @@ export const productSchema = z.object({
   reorder_level: z.number().int().nonnegative(),
   reorder_quantity: z.number().int().nonnegative(),
   supplier_id: z.string().uuid().optional(),
+})
+
+export const productDepartmentSchema = z.object({
+  name: z.string().min(1, 'Nama departemen wajib diisi'),
+  sort_order: z.number().int().nonnegative().optional(),
+})
+
+export const productCategorySchema = z.object({
+  name: z.string().min(1, 'Nama kategori wajib diisi'),
+  description: z.string().optional(),
+  department_id: z.string().uuid().nullable().optional(),
+})
+
+export const notePresetSchema = z.object({
+  outlet_id: z.string().uuid(),
+  label: z.string().min(1, 'Label catatan wajib diisi'),
+})
+
+export const productModifierGroupSchema = z.object({
+  product_id: z.string().uuid(),
+  name: z.string().min(1, 'Nama grup wajib diisi'),
+})
+
+export const productModifierOptionSchema = z.object({
+  group_id: z.string().uuid(),
+  label: z.string().min(1, 'Label pilihan wajib diisi'),
+  linked_product_id: z.string().uuid().optional(),
 })
 
 export type ProductInput = z.infer<typeof productSchema>

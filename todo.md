@@ -706,6 +706,30 @@ Adopted the green theme + layout, not a new architecture — same `/pos/*` porta
   Rp 41.800 → Rp 37.620), Bayar Nanti confirmed creating a `payment_status='pending'` invoice and the
   Menunggu Pembayaran stat correctly incrementing.
 
+## Phase 13 — Fill in the remaining 24 ComingSoon menu items
+Audit found 24 stub pages under Sales/Inventory. User asked to fill in all of them, including the 12 that
+an earlier session had deliberately left as business-model exclusions ("Tetap bangun semuanya" — expands
+GawEEE beyond pure retail into F&B/services/facility-booking too). Full plan (schema for each item, why
+each does/doesn't touch `create_invoice()`, batch order):
+`C:\Users\LENOVO\.claude\plans\nifty-tumbling-candy.md`.
+
+- [x] **A — Product/category structure**: 1. Department List, 2. Notes Category List, 3. Extra Product
+      (modifiers). Code-complete, typecheck/lint/build clean, committed. Migrations 041-043 pending —
+      user needs to run them in Supabase SQL Editor before this batch can be live-verified.
+- [ ] **B — Customer-adjacent**: 4. Customer Data Setting, 5. Customer Summary Report, 6. Customer
+      Satisfaction
+- [ ] **C — Pricing**: 7. Price Scheduler, 8. Time-Based Pricing, 9. Ojek Online Price List
+- [ ] **D — Deposits**: 10. Product Deposits, 11. Deposit Report
+- [ ] **E — Service Products + Kitchen** (the one `create_invoice()` change this phase — needs a full
+      checkout regression pass afterward): 12. Service Products, 13. Service Report, 14. Kitchen Report
+- [ ] **F — Facility/Booking**: 15. Product Facility, 16. Facility Report
+- [ ] **G — Sales document workflow**: 17. Sales Quotation List, 18. Sales Order List, 19. Sales
+      Delivery List
+- [ ] **H — New-aggregation reports**: 20. Promo & Loyalty Report, 21. Purchase Return Reconciliation
+- [ ] **I — Marketing budget tracker**: 22. Buy Marketing Campaign
+- [ ] **J — Recipe change scheduling**: 23. Scheduling Recipe Changes
+- [ ] **K — Trivial fix**: 24. Purchase Delivery (redirect to existing PO page, no new feature)
+
 ## Notes on scope
 This todo tracks the **engineering deliverables** of the PRD (a working Next.js + Supabase codebase
 implementing Phase 1 features, with payment gateways behind a swappable mock interface). Items marked

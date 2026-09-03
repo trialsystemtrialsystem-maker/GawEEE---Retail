@@ -10,6 +10,7 @@ export interface CartItem {
   discount?: number // per-item discount passed through to create_invoice() — see Multi-UOM
   unit_label?: string // display only, e.g. "2 Dus" — cleared on merge if the unit differs
   unit_quantity?: number // display only, how many of unit_label
+  notes?: string // e.g. "tanpa MSG" — cosmetic, stamped onto invoice_items via follow-up UPDATE
 }
 
 interface PosState {
@@ -23,6 +24,7 @@ interface PosState {
   incrementItem: (productId: string) => void
   decrementItem: (productId: string) => void
   removeItem: (productId: string) => void
+  setItemNotes: (productId: string, notes: string) => void
   setDiscount: (amount: number, reason?: string) => void
   setPaymentMethod: (method: PosState['paymentMethod']) => void
   clearCart: () => void
@@ -77,6 +79,9 @@ export const usePosStore = create<PosState>((set, get) => ({
 
   removeItem: (productId) =>
     set((state) => ({ items: state.items.filter((i) => i.product_id !== productId) })),
+
+  setItemNotes: (productId, notes) =>
+    set((state) => ({ items: state.items.map((i) => (i.product_id === productId ? { ...i, notes } : i)) })),
 
   setDiscount: (amount, reason = '') => set({ discountAmount: amount, discountReason: reason }),
 

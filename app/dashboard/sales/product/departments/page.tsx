@@ -1,10 +1,13 @@
-import { ComingSoon } from '@/components/common/ComingSoon'
+import { DepartmentManager } from '@/components/products/DepartmentManager'
 
-export default function DepartmentListPage() {
+export default function DepartmentsPage() {
   return (
-    <ComingSoon
-      title="Department List"
-      description="Belum tersedia — GawEEE saat ini hanya punya satu level kategori produk. Lihat menu Category List."
-    />
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold text-gray-900">Department List</h1>
+        <p className="text-gray-500">Kelompokkan beberapa kategori produk ke dalam satu departemen.</p>
+      </div>
+      <DepartmentManager />
+    </div>
   )
 }

@@ -2948,3 +2948,110 @@ alter table checklist_completions enable row level security;
 create policy checklist_completions_select on checklist_completions for select using (user_can_access_outlet(outlet_id));
 create policy checklist_completions_insert on checklist_completions for insert with check (user_can_access_outlet(outlet_id));
 create policy checklist_completions_delete on checklist_completions for delete using (user_can_access_outlet(outlet_id));
+
+-- ============================================================
+-- 041_product_departments.sql
+-- ============================================================
+
+-- 041_product_departments.sql
+-- Phase 13 Batch A item 1 — Department List: a grouping level ABOVE the
+-- existing single-level product_categories (confirmed no parent/department
+-- concept existed anywhere in the schema). Purely additive: a new table +
+-- one nullable FK column, existing category/product behavior unaffected.
+
+create table product_departments (
+  id uuid primary key default gen_random_uuid(),
+  company_id uuid not null references companies(id) on delete cascade,
+  name varchar(255) not null,
+  sort_order int not null default 0,
+  created_at timestamptz not null default now()
+);
+
+alter table product_categories add column department_id uuid references product_departments(id);
+
+alter table product_departments enable row level security;
+create policy product_departments_access on product_departments
+  for all using (company_id = current_user_company_id());
+
+-- ============================================================
+-- 042_notes_category.sql
+-- ============================================================
+
+-- 042_notes_category.sql
+-- Phase 13 Batch A item 2 — Notes Category List: a manager-curated list of
+-- selectable notes (e.g. "tanpa MSG", "extra pedas") attachable to a cart
+-- line. invoice_items never had a notes column (confirmed) — added here.
+-- create_invoice() itself is untouched: notes are stamped onto the created
+-- invoice_items rows via a non-atomic follow-up UPDATE from the API route,
+-- the exact same pattern already used for Multi-UOM's sold_unit_label
+-- (Phase 11) — cosmetic/informational only, never financially load-bearing.
+
+create table note_presets (
+  id uuid primary key default gen_random_uuid(),
+  outlet_id uuid not null references outlets(id) on delete cascade,
+  label varchar(100) not null,
+  is_active boolean not null default true,
+  created_by uuid not null references users(id),
+  created_at timestamptz not null default now()
+);
+
+create index idx_note_presets_outlet_id on note_presets(outlet_id);
+
+alter table invoice_items add column notes text;
+
+alter table note_presets enable row level security;
+create policy note_presets_select on note_presets for select using (user_can_access_outlet(outlet_id));
+create policy note_presets_insert on note_presets for insert with check (user_can_access_outlet(outlet_id));
+create policy note_presets_update on note_presets for update using (user_can_access_outlet(outlet_id));
+create policy note_presets_delete on note_presets for delete using (user_can_access_outlet(outlet_id));
+
+-- ============================================================
+-- 043_product_modifiers.sql
+-- ============================================================
+
+-- 043_product_modifiers.sql
+-- Phase 13 Batch A item 3 — Extra Product (modifiers), e.g. "Level Pedas:
+-- Sedang" or "Tambahan: Extra Keju". An option is either:
+--   - a PRICED add-on (linked_product_id set) — selecting it adds that real
+--     product as its own cart line via the existing addItem(), so pricing
+--     flows through normal checkout with zero create_invoice() changes;
+--   - an UNPRICED choice (linked_product_id null) — attaches a note to the
+--     parent line via the note_presets/invoice_items.notes mechanism
+--     (migration 042), also zero create_invoice() changes.
+-- Groups/options are scoped through their product's company_id (products
+-- are company-scoped, not outlet-scoped — same pattern as special_prices'
+-- group-scoping and every other products-adjacent table in this codebase).
+
+create table product_modifier_groups (
+  id uuid primary key default gen_random_uuid(),
+  product_id uuid not null references products(id) on delete cascade,
+  name varchar(100) not null,
+  sort_order int not null default 0,
+  created_at timestamptz not null default now()
+);
+
+create index idx_product_modifier_groups_product_id on product_modifier_groups(product_id);
+
+create table product_modifier_options (
+  id uuid primary key default gen_random_uuid(),
+  group_id uuid not null references product_modifier_groups(id) on delete cascade,
+  label varchar(100) not null,
+  linked_product_id uuid references products(id),
+  sort_order int not null default 0
+);
+
+create index idx_product_modifier_options_group_id on product_modifier_options(group_id);
+
+alter table product_modifier_groups enable row level security;
+create policy product_modifier_groups_access on product_modifier_groups
+  for all using (exists (select 1 from products p where p.id = product_id and p.company_id = current_user_company_id()));
+
+alter table product_modifier_options enable row level security;
+create policy product_modifier_options_access on product_modifier_options
+  for all using (
+    exists (
+      select 1 from product_modifier_groups g
+      join products p on p.id = g.product_id
+      where g.id = group_id and p.company_id = current_user_company_id()
+    )
+  );

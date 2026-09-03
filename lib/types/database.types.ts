@@ -89,6 +89,15 @@ export type ProductCategory = {
   description: string | null
   sort_order: number | null
   status: string
+  department_id: string | null
+  created_at: string
+}
+
+export type ProductDepartment = {
+  id: string
+  company_id: string
+  name: string
+  sort_order: number
   created_at: string
 }
 
@@ -185,6 +194,7 @@ export type InvoiceItem = {
   cost_of_goods_sold: number | null
   sold_unit_label: string | null
   sold_unit_quantity: number | null
+  notes: string | null
   created_at: string
 }
 
@@ -731,6 +741,31 @@ export type ChecklistCompletion = {
   note: string | null
 }
 
+export type NotePreset = {
+  id: string
+  outlet_id: string
+  label: string
+  is_active: boolean
+  created_by: string
+  created_at: string
+}
+
+export type ProductModifierGroup = {
+  id: string
+  product_id: string
+  name: string
+  sort_order: number
+  created_at: string
+}
+
+export type ProductModifierOption = {
+  id: string
+  group_id: string
+  label: string
+  linked_product_id: string | null
+  sort_order: number
+}
+
 export type Stocktake = {
   id: string
   outlet_id: string
@@ -946,6 +981,10 @@ export type Database = {
       outlets: Table<Outlet>
       users: Table<AppUser>
       product_categories: Table<ProductCategory>
+      product_departments: Table<ProductDepartment>
+      note_presets: Table<NotePreset>
+      product_modifier_groups: Table<ProductModifierGroup>
+      product_modifier_options: Table<ProductModifierOption>
       products: Table<Product>
       inventory: Table<Inventory>
       inventory_ledger: Table<InventoryLedgerEntry>

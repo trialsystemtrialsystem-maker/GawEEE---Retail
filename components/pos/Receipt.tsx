@@ -13,6 +13,7 @@ export interface ReceiptItem {
   quantity: number
   unit_label?: string | null
   unit_quantity?: number | null
+  notes?: string | null
 }
 
 export function Receipt({
@@ -37,11 +38,14 @@ export function Receipt({
 
         <div className="mt-3 rounded-md border border-gray-200 p-4 text-left text-sm print:mt-2 print:rounded-none print:border-0 print:border-t print:border-b print:border-dashed print:border-black print:p-1 print:font-mono print:text-xs">
           {items.map((item) => (
-            <div key={item.product_id} className="flex justify-between py-0.5">
-              <span>
-                {item.name} × {item.unit_label ? `${item.unit_quantity} ${item.unit_label}` : item.quantity}
-              </span>
-              <span>{formatCurrency(item.unit_price * item.quantity)}</span>
+            <div key={item.product_id} className="py-0.5">
+              <div className="flex justify-between">
+                <span>
+                  {item.name} × {item.unit_label ? `${item.unit_quantity} ${item.unit_label}` : item.quantity}
+                </span>
+                <span>{formatCurrency(item.unit_price * item.quantity)}</span>
+              </div>
+              {item.notes && <p className="text-xs text-gray-500 print:text-black">↳ {item.notes}</p>}
             </div>
           ))}
           <div className="mt-2 flex justify-between border-t border-gray-200 pt-2 font-bold print:border-black">

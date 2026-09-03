@@ -108,6 +108,7 @@ export function POSScreen({ outletId, cashierName }: { outletId: string; cashier
             discount: i.discount,
             unit_label: i.unit_label,
             unit_quantity: i.unit_quantity,
+            notes: i.notes,
           })),
           discount_amount: discountAmount,
           discount_reason: discountReason || undefined,
@@ -384,7 +385,7 @@ export function POSScreen({ outletId, cashierName }: { outletId: string; cashier
 
         <div className="space-y-4 self-start rounded-2xl border border-[var(--brand-100)] bg-white p-4 shadow-lg lg:sticky lg:top-4">
           {error && <Alert variant="danger">{error}</Alert>}
-          <ShoppingCart />
+          <ShoppingCart outletId={outletId} />
 
           <CustomerPicker outletId={outletId} value={customer} onChange={setCustomer} />
 
