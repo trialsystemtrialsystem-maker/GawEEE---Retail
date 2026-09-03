@@ -338,10 +338,30 @@ export const specialPriceSchema = z.object({
 export const customerFieldDefinitionSchema = z.object({
   outlet_id: z.string().uuid(),
   label: z.string().min(1, 'Label wajib diisi'),
+  is_required: z.boolean().optional(),
+})
+
+export const customerFieldDefinitionUpdateSchema = z.object({
+  is_required: z.boolean(),
 })
 
 export const customerCustomFieldsSchema = z.object({
   custom_fields: z.record(z.string(), z.string()),
+})
+
+export const customerModuleSettingsSchema = z.object({
+  outlet_id: z.string().uuid(),
+  require_phone_on_checkout: z.boolean().optional(),
+  default_group_id: z.string().uuid().nullable().optional(),
+})
+
+export const customerReviewSchema = z.object({
+  outlet_id: z.string().uuid(),
+  invoice_id: z.string().uuid().optional(),
+  customer_name: z.string().optional(),
+  customer_phone: z.string().optional(),
+  rating: z.number().int().min(1).max(5),
+  comment: z.string().optional(),
 })
 
 export const recipeIngredientInputSchema = z.object({

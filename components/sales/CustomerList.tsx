@@ -23,12 +23,14 @@ interface Group {
 interface FieldDefinition {
   id: string
   label: string
+  is_required: boolean
 }
 
 export function CustomerList({ outletId }: { outletId: string }) {
   const [customers, setCustomers] = useState<Customer[]>([])
   const [groups, setGroups] = useState<Group[]>([])
   const [fieldDefinitions, setFieldDefinitions] = useState<FieldDefinition[]>([])
+  const [requirePhone, setRequirePhone] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [showForm, setShowForm] = useState(false)
@@ -39,17 +41,25 @@ export function CustomerList({ outletId }: { outletId: string }) {
 
   const load = useCallback(async () => {
     setIsLoading(true)
-    const [custRes, groupRes, fieldRes] = await Promise.all([
+    const [custRes, groupRes, fieldRes, settingsRes] = await Promise.all([
       fetch(`/api/customers?outlet_id=${outletId}`),
       fetch(`/api/customer-groups?outlet_id=${outletId}`),
       fetch(`/api/customer-field-definitions?outlet_id=${outletId}`),
+      fetch(`/api/customer-module-settings?outlet_id=${outletId}`),
     ])
     const custData = await custRes.json()
     const groupData = await groupRes.json()
     const fieldData = await fieldRes.json()
+    const settingsData = await settingsRes.json()
     if (custRes.ok) setCustomers(custData.customers ?? [])
     if (groupRes.ok) setGroups(groupData.groups ?? [])
     if (fieldRes.ok) setFieldDefinitions(fieldData.definitions ?? [])
+    if (settingsRes.ok) {
+      setRequirePhone(!!settingsData.settings?.require_phone_on_checkout)
+      if (settingsData.settings?.default_group_id) {
+        setForm((f) => ({ ...f, group_id: f.group_id || settingsData.settings.default_group_id }))
+      }
+    }
     setIsLoading(false)
   }, [outletId])
 
@@ -109,6 +119,7 @@ export function CustomerList({ outletId }: { outletId: string }) {
           />
           <Input
             label="Telepon"
+            required={requirePhone}
             value={form.phone}
             onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
           />
@@ -142,6 +153,7 @@ export function CustomerList({ outletId }: { outletId: string }) {
             <Input
               key={fd.id}
               label={fd.label}
+              required={fd.is_required}
               value={customFieldValues[fd.label] ?? ''}
               onChange={(e) => setCustomFieldValues((v) => ({ ...v, [fd.label]: e.target.value }))}
             />

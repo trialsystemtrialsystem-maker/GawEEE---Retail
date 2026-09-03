@@ -718,8 +718,15 @@ each does/doesn't touch `create_invoice()`, batch order):
       demo account — department creation + category assignment, note preset creation + POS "+ Catatan"
       attachment + receipt display, and modifier groups (priced option -> its own cart line, unpriced
       option -> note on the base line) all confirmed working through a real checkout.
-- [ ] **B — Customer-adjacent**: 4. Customer Data Setting, 5. Customer Summary Report, 6. Customer
-      Satisfaction
+- [x] **B — Customer-adjacent**: 4. Customer Data Setting, 5. Customer Summary Report, 6. Customer
+      Satisfaction. Code-complete, typecheck/lint/build clean, committed. Migrations 044-045 pending —
+      user needs to run them before this batch can be live-verified.
+      - Item 4 turned out to overlap heavily with the already-built "Customer Custom Fields" page
+        (`CustomerFieldDefinitionManager` + `custom_fields` jsonb wiring into `CustomerList` already
+        existed, contrary to the plan's assumption it was UI-less). Kept both nav items distinct:
+        Custom Fields = per-customer data schema (also gained is_required + delete this batch); Data
+        Setting = new outlet-wide module toggles (`customer_module_settings`: require phone at
+        checkout, default walk-in group), both now wired live into `CustomerList`'s create form.
 - [ ] **C — Pricing**: 7. Price Scheduler, 8. Time-Based Pricing, 9. Ojek Online Price List
 - [ ] **D — Deposits**: 10. Product Deposits, 11. Deposit Report
 - [ ] **E — Service Products + Kitchen** (the one `create_invoice()` change this phase — needs a full

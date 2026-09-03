@@ -895,6 +895,26 @@ export type CustomerFieldDefinition = {
   outlet_id: string
   label: string
   sort_order: number
+  is_required: boolean
+  created_at: string
+}
+
+export type CustomerModuleSettings = {
+  outlet_id: string
+  require_phone_on_checkout: boolean
+  default_group_id: string | null
+  updated_at: string
+}
+
+export type CustomerReview = {
+  id: string
+  outlet_id: string
+  invoice_id: string | null
+  customer_name: string | null
+  customer_phone: string | null
+  rating: number
+  comment: string | null
+  created_by: string
   created_at: string
 }
 
@@ -1006,6 +1026,8 @@ export type Database = {
       customer_groups: Table<CustomerGroup>
       special_prices: Table<SpecialPrice>
       customer_field_definitions: Table<CustomerFieldDefinition>
+      customer_module_settings: Table<CustomerModuleSettings>
+      customer_reviews: Table<CustomerReview>
       recipes: Table<Recipe>
       recipe_ingredients: Table<RecipeIngredient>
       production_runs: Table<ProductionRun>

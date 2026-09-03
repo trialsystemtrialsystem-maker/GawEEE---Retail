@@ -3055,3 +3055,62 @@ create policy product_modifier_options_access on product_modifier_options
       where g.id = group_id and p.company_id = current_user_company_id()
     )
   );
+
+-- ============================================================
+-- 044_customer_data_setting.sql
+-- ============================================================
+
+-- 044_customer_data_setting.sql
+-- Phase 13 Batch B item 4 — Customer Data Setting. Two additive pieces:
+--   - customer_field_definitions gets is_required (was add-only, no
+--     update/delete path) + update/delete RLS so the manager UI can edit and
+--     remove a custom field definition, not just create one.
+--   - a new outlet-level customer_module_settings row (require phone at
+--     checkout, default walk-in group) — genuinely distinct from Customer
+--     Custom Fields (which defines per-customer data columns): this is
+--     module-wide behavior, not a data schema.
+
+alter table customer_field_definitions add column is_required boolean not null default false;
+
+create policy customer_field_definitions_update on customer_field_definitions for update using (user_can_access_outlet(outlet_id));
+create policy customer_field_definitions_delete on customer_field_definitions for delete using (user_can_access_outlet(outlet_id));
+
+create table customer_module_settings (
+  outlet_id uuid primary key references outlets(id) on delete cascade,
+  require_phone_on_checkout boolean not null default false,
+  default_group_id uuid references customer_groups(id) on delete set null,
+  updated_at timestamptz not null default now()
+);
+
+alter table customer_module_settings enable row level security;
+create policy customer_module_settings_access on customer_module_settings
+  for all using (user_can_access_outlet(outlet_id));
+
+-- ============================================================
+-- 045_customer_reviews.sql
+-- ============================================================
+
+-- 045_customer_reviews.sql
+-- Phase 13 Batch B item 6 — Customer Satisfaction. No live review-collection
+-- channel exists (confirmed) — this is a staff-entry log of feedback given
+-- verbally or via WhatsApp, disclosed as such in the UI, same honesty
+-- convention as the WhatsApp broadcast simulation and online-order log.
+
+create table customer_reviews (
+  id uuid primary key default gen_random_uuid(),
+  outlet_id uuid not null references outlets(id) on delete cascade,
+  invoice_id uuid references invoices(id) on delete set null,
+  customer_name varchar(255),
+  customer_phone varchar(20),
+  rating smallint not null check (rating between 1 and 5),
+  comment text,
+  created_by uuid not null references users(id),
+  created_at timestamptz not null default now()
+);
+
+create index idx_customer_reviews_outlet_id on customer_reviews(outlet_id);
+
+alter table customer_reviews enable row level security;
+create policy customer_reviews_select on customer_reviews for select using (user_can_access_outlet(outlet_id));
+create policy customer_reviews_insert on customer_reviews for insert with check (user_can_access_outlet(outlet_id));
+create policy customer_reviews_delete on customer_reviews for delete using (user_can_access_outlet(outlet_id));
