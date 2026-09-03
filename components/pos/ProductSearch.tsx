@@ -34,6 +34,7 @@ export function ProductSearch({ outletId }: { outletId: string }) {
   const [notFound, setNotFound] = useState<string | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const addItem = usePosStore((s) => s.addItem)
+  const cartItems = usePosStore((s) => s.items)
 
   const loadAll = useCallback(async () => {
     setIsLoading(true)
@@ -77,7 +78,6 @@ export function ProductSearch({ outletId }: { outletId: string }) {
     setQuery('')
     setNotFound(null)
     inputRef.current?.focus()
-    loadAll() // refresh so stock counts on the grid reflect the new cart draw-down risk at a glance
   }
 
   // Tile clicks (unlike a barcode scan, which always resolves to the base
@@ -106,7 +106,6 @@ export function ProductSearch({ outletId }: { outletId: string }) {
       args.quantity
     )
     setUnitPickerItem(null)
-    loadAll()
   }
 
   const needle = query.trim().toLowerCase()
@@ -115,6 +114,14 @@ export function ProductSearch({ outletId }: { outletId: string }) {
 
   const categoryNames = Array.from(new Set(allProducts.map((p) => p.category_name ?? '—')))
   const colorForCategory = (name: string | null) => colorForIndex(categoryNames.indexOf(name ?? '—'))
+
+  // Derived, not stored: available stock shown on each tile is server stock
+  // minus whatever's already in the cart for that product. Self-corrects on
+  // every cart change (add, remove, clear, hold/resume) with no re-fetch —
+  // avoids both the old "reload the whole grid on every tap" flash and the
+  // staleness a one-shot local decrement would drift into on removal.
+  const cartQtyByProduct = new Map(cartItems.map((i) => [i.product_id, i.quantity]))
+  const availableStock = (item: InventoryItem) => item.quantity_available - (cartQtyByProduct.get(item.product_id) ?? 0)
 
   return (
     <div className="space-y-3">
@@ -172,8 +179,9 @@ export function ProductSearch({ outletId }: { outletId: string }) {
       ) : (
         <div className="grid max-h-[32rem] grid-cols-2 gap-3 overflow-y-auto pr-1 sm:grid-cols-3 lg:grid-cols-4">
           {visibleProducts.map((item) => {
-            const outOfStock = item.quantity_available <= 0
-            const lowStock = !outOfStock && item.quantity_available <= 10
+            const stock = availableStock(item)
+            const outOfStock = stock <= 0
+            const lowStock = !outOfStock && stock <= 10
             const accent = colorForCategory(item.category_name)
             return (
               <button
@@ -186,7 +194,7 @@ export function ProductSearch({ outletId }: { outletId: string }) {
               >
                 {lowStock && (
                   <span className="absolute right-1.5 top-1.5 rounded-full bg-[var(--status-warning)] px-1.5 py-0.5 text-[10px] font-bold text-white">
-                    Sisa {item.quantity_available}
+                    Sisa {stock}
                   </span>
                 )}
                 <span
@@ -202,7 +210,7 @@ export function ProductSearch({ outletId }: { outletId: string }) {
                     {formatCurrency(item.unit_price)}
                   </p>
                   <p className={`text-xs ${outOfStock ? 'font-semibold text-[var(--color-danger)]' : 'text-gray-400'}`}>
-                    {outOfStock ? 'Stok habis' : `Stok ${item.quantity_available}`}
+                    {outOfStock ? 'Stok habis' : `Stok ${stock}`}
                   </p>
                   {(unitsByProduct[item.product_id]?.length ?? 0) > 0 && (
                     <p className="text-xs font-medium text-[var(--brand-600)]">+ satuan lain</p>
