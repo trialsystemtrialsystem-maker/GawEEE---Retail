@@ -826,6 +826,37 @@ export type SpecialPrice = {
   created_at: string
 }
 
+export type PriceSchedule = {
+  id: string
+  product_id: string
+  new_price: number
+  effective_date: string
+  applied: boolean
+  created_by: string
+  created_at: string
+}
+
+export type TimeBasedPrice = {
+  id: string
+  product_id: string
+  price: number
+  day_of_week: number | null
+  start_time: string
+  end_time: string
+  is_active: boolean
+  created_by: string
+  created_at: string
+}
+
+export type ChannelPrice = {
+  id: string
+  product_id: string
+  channel: 'gofood' | 'grabfood' | 'shopeefood' | 'other'
+  price: number
+  created_by: string
+  created_at: string
+}
+
 export type Recipe = {
   id: string
   outlet_id: string
@@ -1028,6 +1059,9 @@ export type Database = {
       customer_field_definitions: Table<CustomerFieldDefinition>
       customer_module_settings: Table<CustomerModuleSettings>
       customer_reviews: Table<CustomerReview>
+      price_schedules: Table<PriceSchedule>
+      time_based_prices: Table<TimeBasedPrice>
+      channel_prices: Table<ChannelPrice>
       recipes: Table<Recipe>
       recipe_ingredients: Table<RecipeIngredient>
       production_runs: Table<ProductionRun>

@@ -355,6 +355,26 @@ export const customerModuleSettingsSchema = z.object({
   default_group_id: z.string().uuid().nullable().optional(),
 })
 
+export const priceScheduleSchema = z.object({
+  product_id: z.string().uuid(),
+  new_price: z.number().positive(),
+  effective_date: z.string().min(1),
+})
+
+export const timeBasedPriceSchema = z.object({
+  product_id: z.string().uuid(),
+  price: z.number().positive(),
+  day_of_week: z.number().int().min(0).max(6).optional(),
+  start_time: z.string().min(1),
+  end_time: z.string().min(1),
+})
+
+export const channelPriceSchema = z.object({
+  product_id: z.string().uuid(),
+  channel: z.enum(['gofood', 'grabfood', 'shopeefood', 'other']),
+  price: z.number().positive(),
+})
+
 export const customerReviewSchema = z.object({
   outlet_id: z.string().uuid(),
   invoice_id: z.string().uuid().optional(),

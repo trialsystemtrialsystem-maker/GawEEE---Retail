@@ -729,7 +729,11 @@ each does/doesn't touch `create_invoice()`, batch order):
         Custom Fields = per-customer data schema (also gained is_required + delete this batch); Data
         Setting = new outlet-wide module toggles (`customer_module_settings`: require phone at
         checkout, default walk-in group), both now wired live into `CustomerList`'s create form.
-- [ ] **C — Pricing**: 7. Price Scheduler, 8. Time-Based Pricing, 9. Ojek Online Price List
+- [x] **C — Pricing**: 7. Price Scheduler, 8. Time-Based Pricing, 9. Ojek Online Price List.
+      Code-complete, typecheck/lint/build clean, committed. Migration 046 pending — user needs to run it
+      before this batch can be live-verified. Item 8 wired live into `ProductSearch.tsx`: an active
+      time window is applied as a per-item discount at add-time (strikethrough price + "⏰ Promo" badge
+      on the tile), zero `create_invoice()` changes.
 - [ ] **D — Deposits**: 10. Product Deposits, 11. Deposit Report
 - [ ] **E — Service Products + Kitchen** (the one `create_invoice()` change this phase — needs a full
       checkout regression pass afterward): 12. Service Products, 13. Service Report, 14. Kitchen Report

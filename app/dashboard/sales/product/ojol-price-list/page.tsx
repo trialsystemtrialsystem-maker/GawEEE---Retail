@@ -1,10 +1,13 @@
-import { ComingSoon } from '@/components/common/ComingSoon'
+import { OjolPriceListManager } from '@/components/products/OjolPriceListManager'
 
 export default function OjolPriceListPage() {
   return (
-    <ComingSoon
-      title="Ojek Online Price List"
-      description="Belum tersedia — belum ada integrasi harga khusus platform ojek online (GoFood/GrabFood/dll)."
-    />
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold text-gray-900">Ojek Online Price List</h1>
+        <p className="text-gray-500">Referensi harga produk di masing-masing platform ojek online.</p>
+      </div>
+      <OjolPriceListManager />
+    </div>
   )
 }

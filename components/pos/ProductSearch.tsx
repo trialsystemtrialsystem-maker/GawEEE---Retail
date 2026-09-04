@@ -36,6 +36,14 @@ interface ModifierGroup {
   name: string
   product_modifier_options: ModifierOption[]
 }
+interface TimeBasedPrice {
+  id: string
+  product_id: string
+  price: number
+  day_of_week: number | null
+  start_time: string
+  end_time: string
+}
 
 export function ProductSearch({ outletId }: { outletId: string }) {
   const [query, setQuery] = useState('')
@@ -43,6 +51,7 @@ export function ProductSearch({ outletId }: { outletId: string }) {
   const [allProducts, setAllProducts] = useState<InventoryItem[]>([])
   const [unitsByProduct, setUnitsByProduct] = useState<Record<string, ProductUnit[]>>({})
   const [modifiersByProduct, setModifiersByProduct] = useState<Record<string, ModifierGroup[]>>({})
+  const [timePricesByProduct, setTimePricesByProduct] = useState<Record<string, TimeBasedPrice[]>>({})
   const [unitPickerItem, setUnitPickerItem] = useState<InventoryItem | null>(null)
   const [modifierPickerItem, setModifierPickerItem] = useState<InventoryItem | null>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -55,14 +64,16 @@ export function ProductSearch({ outletId }: { outletId: string }) {
   const loadAll = useCallback(async () => {
     setIsLoading(true)
     try {
-      const [invRes, unitsRes, modifiersRes] = await Promise.all([
+      const [invRes, unitsRes, modifiersRes, timePricesRes] = await Promise.all([
         fetch(`/api/inventory/${outletId}`),
         fetch('/api/product-units'),
         fetch('/api/product-modifiers'),
+        fetch('/api/time-based-prices'),
       ])
       const invData = await invRes.json()
       const unitsData = await unitsRes.json()
       const modifiersData = await modifiersRes.json()
+      const timePricesData = await timePricesRes.json()
       setAllProducts(invData.inventory ?? [])
       if (unitsRes.ok) {
         const grouped: Record<string, ProductUnit[]> = {}
@@ -77,6 +88,13 @@ export function ProductSearch({ outletId }: { outletId: string }) {
           ;(grouped[g.product_id] ??= []).push(g)
         }
         setModifiersByProduct(grouped)
+      }
+      if (timePricesRes.ok) {
+        const grouped: Record<string, TimeBasedPrice[]> = {}
+        for (const tp of (timePricesData.prices ?? []) as TimeBasedPrice[]) {
+          ;(grouped[tp.product_id] ??= []).push(tp)
+        }
+        setTimePricesByProduct(grouped)
       }
     } finally {
       setIsLoading(false)
@@ -101,8 +119,22 @@ export function ProductSearch({ outletId }: { outletId: string }) {
     }
   }
 
+  // Active window at "now" for a product, if any (day_of_week null = every
+  // day). Applied as a per-item discount at add-time, never a markup — zero
+  // create_invoice() changes. See Phase 13 Batch C item 8.
+  function activeTimePrice(productId: string): TimeBasedPrice | undefined {
+    const windows = timePricesByProduct[productId]
+    if (!windows?.length) return undefined
+    const now = new Date()
+    const day = now.getDay()
+    const hhmm = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`
+    return windows.find((w) => (w.day_of_week === null || w.day_of_week === day) && w.start_time.slice(0, 5) <= hhmm && hhmm <= w.end_time.slice(0, 5))
+  }
+
   function handleAdd(item: InventoryItem) {
-    addItem({ product_id: item.product_id, name: item.name, sku: item.sku, unit_price: item.unit_price })
+    const window = activeTimePrice(item.product_id)
+    const discount = window && window.price < item.unit_price ? item.unit_price - window.price : undefined
+    addItem({ product_id: item.product_id, name: item.name, sku: item.sku, unit_price: item.unit_price, discount })
     setQuery('')
     setNotFound(null)
     inputRef.current?.focus()
@@ -236,6 +268,8 @@ export function ProductSearch({ outletId }: { outletId: string }) {
             const outOfStock = stock <= 0
             const lowStock = !outOfStock && stock <= 10
             const accent = colorForCategory(item.category_name)
+            const window = activeTimePrice(item.product_id)
+            const hasSpecialPrice = !!window && window.price < item.unit_price
             return (
               <button
                 key={item.product_id}
@@ -250,6 +284,9 @@ export function ProductSearch({ outletId }: { outletId: string }) {
                     Sisa {stock}
                   </span>
                 )}
+                {hasSpecialPrice && (
+                  <span className="absolute left-1.5 top-1.5 rounded-full bg-rose-500 px-1.5 py-0.5 text-[10px] font-bold text-white">⏰ Promo</span>
+                )}
                 <span
                   aria-hidden
                   style={{ backgroundColor: `color-mix(in srgb, ${accent} 18%, white)` }}
@@ -259,9 +296,16 @@ export function ProductSearch({ outletId }: { outletId: string }) {
                 </span>
                 <div className="w-full">
                   <p className="line-clamp-2 text-sm font-semibold text-gray-900">{item.name}</p>
-                  <p className="mt-0.5 text-sm font-bold" style={{ color: accent }}>
-                    {formatCurrency(item.unit_price)}
-                  </p>
+                  {hasSpecialPrice ? (
+                    <p className="mt-0.5 text-sm font-bold">
+                      <span className="mr-1 text-xs font-normal text-gray-400 line-through">{formatCurrency(item.unit_price)}</span>
+                      <span className="text-rose-600">{formatCurrency(window!.price)}</span>
+                    </p>
+                  ) : (
+                    <p className="mt-0.5 text-sm font-bold" style={{ color: accent }}>
+                      {formatCurrency(item.unit_price)}
+                    </p>
+                  )}
                   <p className={`text-xs ${outOfStock ? 'font-semibold text-[var(--color-danger)]' : 'text-gray-400'}`}>
                     {outOfStock ? 'Stok habis' : `Stok ${stock}`}
                   </p>
