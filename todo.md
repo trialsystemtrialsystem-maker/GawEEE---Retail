@@ -730,10 +730,21 @@ each does/doesn't touch `create_invoice()`, batch order):
         Setting = new outlet-wide module toggles (`customer_module_settings`: require phone at
         checkout, default walk-in group), both now wired live into `CustomerList`'s create form.
 - [x] **C — Pricing**: 7. Price Scheduler, 8. Time-Based Pricing, 9. Ojek Online Price List.
-      Code-complete, typecheck/lint/build clean, committed. Migration 046 pending — user needs to run it
-      before this batch can be live-verified. Item 8 wired live into `ProductSearch.tsx`: an active
-      time window is applied as a per-item discount at add-time (strikethrough price + "⏰ Promo" badge
-      on the tile), zero `create_invoice()` changes.
+      Migrations 046-047 run; live-verified end-to-end via Playwright — a same-day schedule applies on
+      page-open and updates `products.selling_price`, an active time window shows the promo badge and
+      correctly discounted price in the POS cart AND survives through a real cash checkout (receipt
+      total matched exactly), and the ojol reference list saves/lists correctly.
+      - **Real bug found and fixed while verifying**: `product_modifier_options.linked_product_id` had
+        no `ON DELETE` action, so once any modifier option linked to a real product, that product could
+        never be deleted — broke the demo reseed route entirely. Fixed via migration
+        `047_fix_modifier_option_fk.sql` (`ON DELETE SET NULL`).
+      - **Real bug found and fixed while verifying**: my initial Time-Based Pricing implementation kept
+        `unit_price` at the catalog price and only passed a separate `discount` field — but
+        `posStore`'s client-side `subtotal()`/`total()` never subtracts per-item `discount` (only
+        Multi-UOM worked because it bakes the discount directly into `unit_price`). Fixed
+        `ProductSearch.tsx`'s `handleAdd` to set `unit_price` to the already-discounted price, matching
+        the established Multi-UOM pattern, so the cashier-facing total always matches what
+        `create_invoice()` actually charges.
 - [ ] **D — Deposits**: 10. Product Deposits, 11. Deposit Report
 - [ ] **E — Service Products + Kitchen** (the one `create_invoice()` change this phase — needs a full
       checkout regression pass afterward): 12. Service Products, 13. Service Report, 14. Kitchen Report

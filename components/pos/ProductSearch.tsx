@@ -133,8 +133,20 @@ export function ProductSearch({ outletId }: { outletId: string }) {
 
   function handleAdd(item: InventoryItem) {
     const window = activeTimePrice(item.product_id)
-    const discount = window && window.price < item.unit_price ? item.unit_price - window.price : undefined
-    addItem({ product_id: item.product_id, name: item.name, sku: item.sku, unit_price: item.unit_price, discount })
+    const hasDiscount = !!window && window.price < item.unit_price
+    // unit_price carries the DISPLAYED/charged price (discounted, if
+    // active) so the client-side cart total already matches what
+    // create_invoice() will charge — same dual-encoding as Multi-UOM's
+    // UnitPickerModal. discount is the gap, still passed through so the
+    // server (which looks up its own catalog price, not this unit_price)
+    // lands on the same discounted total.
+    addItem({
+      product_id: item.product_id,
+      name: item.name,
+      sku: item.sku,
+      unit_price: hasDiscount ? window.price : item.unit_price,
+      discount: hasDiscount ? item.unit_price - window.price : undefined,
+    })
     setQuery('')
     setNotFound(null)
     inputRef.current?.focus()
