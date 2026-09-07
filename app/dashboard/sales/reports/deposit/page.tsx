@@ -1,10 +1,10 @@
-import { ComingSoon } from '@/components/common/ComingSoon'
+import { DepositReport } from '@/components/sales/DepositReport'
 
 export default function DepositReportPage() {
   return (
-    <ComingSoon
-      title="Deposit Report"
-      description="Belum tersedia — belum ada konsep deposit pelanggan di sistem."
-    />
+    <div className="space-y-6">
+      <h1 className="text-2xl font-bold text-gray-900">Deposit Report</h1>
+      <DepositReport />
+    </div>
   )
 }

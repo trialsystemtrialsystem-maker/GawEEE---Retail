@@ -355,6 +355,20 @@ export const customerModuleSettingsSchema = z.object({
   default_group_id: z.string().uuid().nullable().optional(),
 })
 
+export const productDepositSchema = z.object({
+  outlet_id: z.string().uuid(),
+  customer_name: z.string().min(1, 'Nama pelanggan wajib diisi'),
+  customer_phone: z.string().optional(),
+  product_id: z.string().uuid(),
+  quantity: z.number().int().positive(),
+  deposit_amount: z.number().nonnegative(),
+  total_price: z.number().positive(),
+})
+
+export const productDepositStatusSchema = z.object({
+  status: z.enum(['pending', 'fulfilled', 'cancelled']),
+})
+
 export const priceScheduleSchema = z.object({
   product_id: z.string().uuid(),
   new_price: z.number().positive(),

@@ -857,6 +857,20 @@ export type ChannelPrice = {
   created_at: string
 }
 
+export type ProductDeposit = {
+  id: string
+  outlet_id: string
+  customer_name: string
+  customer_phone: string | null
+  product_id: string
+  quantity: number
+  deposit_amount: number
+  total_price: number
+  status: 'pending' | 'fulfilled' | 'cancelled'
+  created_by: string
+  created_at: string
+}
+
 export type Recipe = {
   id: string
   outlet_id: string
@@ -1059,6 +1073,7 @@ export type Database = {
       customer_field_definitions: Table<CustomerFieldDefinition>
       customer_module_settings: Table<CustomerModuleSettings>
       customer_reviews: Table<CustomerReview>
+      product_deposits: Table<ProductDeposit>
       price_schedules: Table<PriceSchedule>
       time_based_prices: Table<TimeBasedPrice>
       channel_prices: Table<ChannelPrice>
