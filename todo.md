@@ -745,10 +745,11 @@ each does/doesn't touch `create_invoice()`, batch order):
         `ProductSearch.tsx`'s `handleAdd` to set `unit_price` to the already-discounted price, matching
         the established Multi-UOM pattern, so the cashier-facing total always matches what
         `create_invoice()` actually charges.
-- [x] **D — Deposits**: 10. Product Deposits, 11. Deposit Report. Code-complete, typecheck/lint/build
-      clean, committed. Migration 048 pending — user needs to run it before this batch can be
-      live-verified. Fulfilling a deposit is a manual status change, not an automatic invoice — the
-      real sale still goes through the normal POS at pickup, same scoping as Bookings.
+- [x] **D — Deposits**: 10. Product Deposits, 11. Deposit Report. Migration 048 run; live-verified
+      end-to-end via Playwright — deposit creation with auto-filled total, marking
+      fulfilled/cancelled, and the report's KPIs/donut chart/list all confirmed working. Fulfilling a
+      deposit is a manual status change, not an automatic invoice — the real sale still goes through
+      the normal POS at pickup, same scoping as Bookings.
 - [ ] **E — Service Products + Kitchen** (the one `create_invoice()` change this phase — needs a full
       checkout regression pass afterward): 12. Service Products, 13. Service Report, 14. Kitchen Report
 - [ ] **F — Facility/Booking**: 15. Product Facility, 16. Facility Report
