@@ -56,7 +56,13 @@ export const usePosStore = create<PosState>((set, get) => ({
                   ...item,
                   quantity: i.quantity + quantity,
                   discount: (i.discount ?? 0) + (item.discount ?? 0),
-                  unit_quantity: sameUnit ? (i.unit_quantity ?? 0) + (item.unit_quantity ?? 0) : item.unit_quantity,
+                  // Only sum when a real bulk unit is involved (item.unit_label
+                  // set) — two plain taps of the same product both have
+                  // unit_label/unit_quantity undefined, so sameUnit is true by
+                  // coincidence (undefined === undefined) and summing would
+                  // produce 0 + 0 = 0, which then fails invoiceItemSchema's
+                  // unit_quantity .positive() check at checkout.
+                  unit_quantity: item.unit_label && sameUnit ? (i.unit_quantity ?? 0) + (item.unit_quantity ?? 0) : item.unit_quantity,
                 }
               : i
           ),

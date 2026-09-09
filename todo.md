@@ -751,13 +751,20 @@ each does/doesn't touch `create_invoice()`, batch order):
       deposit is a manual status change, not an automatic invoice — the real sale still goes through
       the normal POS at pickup, same scoping as Bookings.
 - [x] **E — Service Products + Kitchen**: 12. Service Products, 13. Service Report, 14. Kitchen Report.
-      Code-complete, typecheck/lint/build clean, committed. Migration 049 pending — user needs to run it
-      before this batch can be live-verified. The deliberate `create_invoice()`/`void_invoice()` change:
-      both skip stock validation/deduction/restore when `products.product_type = 'service'`; 'goods'
-      (the default, every existing product) is byte-for-byte unchanged. Services are deliberately kept
-      OUT of the `inventory` table entirely (no fake stock number) — the POS grid merges them in
-      separately as always-available under a "Layanan" tab. **Requires a full checkout regression pass
-      (cash/e-wallet/split payment) after migration 049 runs, before moving to Batch F.**
+      Migrations 049-050 run; live-verified end-to-end via Playwright, including the required full
+      checkout regression pass (cash/e-wallet/split payment for normal goods — all confirmed correct,
+      including stock deduction and void-restores-stock) plus the new service flow (creation with no
+      inventory row, POS "Layanan" tab always-available tile, cash checkout, Kitchen kanban
+      Menunggu→Diproses→Siap, Service Report, and voiding a service invoice with no stock side effects).
+      Two real bugs found and fixed during this verification:
+      - `product_deposits.product_id` had no `ON DELETE` action (same class as the Batch C modifier bug)
+        — broke the demo reseed route again. Fixed via `050_fix_product_deposits_fk.sql`.
+      - **Pre-existing bug, unrelated to Batch E**: `posStore.addItem`'s merge reducer computed
+        `unit_quantity: sameUnit ? (i.unit_quantity ?? 0) + (item.unit_quantity ?? 0) : item.unit_quantity`
+        — tapping the same *plain* (non-bulk-unit) product tile twice merges two `undefined` unit_quantity
+        values as `0 + 0 = 0`, which then fails `invoiceItemSchema`'s `.positive()` check at checkout,
+        blocking a completely ordinary "add 2 of the same item" cashier action. Fixed in `store/posStore.ts`
+        to only sum when a real bulk unit is involved.
 - [ ] **F — Facility/Booking**: 15. Product Facility, 16. Facility Report
 - [ ] **G — Sales document workflow**: 17. Sales Quotation List, 18. Sales Order List, 19. Sales
       Delivery List
