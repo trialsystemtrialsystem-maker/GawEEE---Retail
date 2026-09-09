@@ -40,27 +40,32 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: message }, { status: isStockError ? 409 : status })
   }
 
-  // Cosmetic-only follow-up (Multi-UOM Phase 11 + Notes Category Phase 13):
-  // create_invoice() doesn't know about unit_label/unit_quantity/notes
-  // (they're not read from the jsonb items it received), so stamp them onto
-  // the newly created invoice_items rows here. Non-atomic with the RPC above
-  // on purpose — same trade-off already used for PO receiving — since this
-  // only affects how the receipt displays a line, never what was charged.
-  const itemsNeedingFollowUp = items.filter((i) => i.unit_label || i.notes)
-  if (itemsNeedingFollowUp.length > 0) {
-    const { data: createdItems } = await auth.supabase
+  // Cosmetic-only follow-up (Multi-UOM Phase 11 + Notes Category/Kitchen
+  // Report Phase 13): create_invoice() doesn't know about
+  // unit_label/unit_quantity/notes/prep_status (they're not read from the
+  // jsonb items it received), so stamp them onto the newly created
+  // invoice_items rows here. Non-atomic with the RPC above on purpose — same
+  // trade-off already used for PO receiving — since this never affects what
+  // was charged, only how the receipt/kitchen board displays a line.
+  const { data: createdItemsRaw } = await auth.supabase
+    .from('invoice_items')
+    .select('id, product_id, products(product_type)')
+    .eq('invoice_id', data!.invoice_id)
+  const createdItems = createdItemsRaw as unknown as { id: string; product_id: string; products: { product_type: string } | null }[] | null
+  for (const line of items) {
+    const match = createdItems?.find((ci) => ci.product_id === line.product_id)
+    if (!match) continue
+    const isService = match.products?.product_type === 'service'
+    if (!line.unit_label && !line.notes && !isService) continue
+    await auth.supabase
       .from('invoice_items')
-      .select('id, product_id')
-      .eq('invoice_id', data!.invoice_id)
-    for (const line of itemsNeedingFollowUp) {
-      const match = createdItems?.find((ci) => ci.product_id === line.product_id)
-      if (match) {
-        await auth.supabase
-          .from('invoice_items')
-          .update({ sold_unit_label: line.unit_label, sold_unit_quantity: line.unit_quantity, notes: line.notes })
-          .eq('id', match.id)
-      }
-    }
+      .update({
+        sold_unit_label: line.unit_label,
+        sold_unit_quantity: line.unit_quantity,
+        notes: line.notes,
+        prep_status: isService ? 'pending' : undefined,
+      })
+      .eq('id', match.id)
   }
 
   const nextStep =

@@ -750,8 +750,14 @@ each does/doesn't touch `create_invoice()`, batch order):
       fulfilled/cancelled, and the report's KPIs/donut chart/list all confirmed working. Fulfilling a
       deposit is a manual status change, not an automatic invoice — the real sale still goes through
       the normal POS at pickup, same scoping as Bookings.
-- [ ] **E — Service Products + Kitchen** (the one `create_invoice()` change this phase — needs a full
-      checkout regression pass afterward): 12. Service Products, 13. Service Report, 14. Kitchen Report
+- [x] **E — Service Products + Kitchen**: 12. Service Products, 13. Service Report, 14. Kitchen Report.
+      Code-complete, typecheck/lint/build clean, committed. Migration 049 pending — user needs to run it
+      before this batch can be live-verified. The deliberate `create_invoice()`/`void_invoice()` change:
+      both skip stock validation/deduction/restore when `products.product_type = 'service'`; 'goods'
+      (the default, every existing product) is byte-for-byte unchanged. Services are deliberately kept
+      OUT of the `inventory` table entirely (no fake stock number) — the POS grid merges them in
+      separately as always-available under a "Layanan" tab. **Requires a full checkout regression pass
+      (cash/e-wallet/split payment) after migration 049 runs, before moving to Batch F.**
 - [ ] **F — Facility/Booking**: 15. Product Facility, 16. Facility Report
 - [ ] **G — Sales document workflow**: 17. Sales Quotation List, 18. Sales Order List, 19. Sales
       Delivery List

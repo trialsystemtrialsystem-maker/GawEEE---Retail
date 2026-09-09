@@ -124,6 +124,7 @@ export type Product = {
   supplier_id: string | null
   is_active: boolean
   image_url: string | null
+  product_type: 'goods' | 'service'
   created_at: string
   updated_at: string
   deleted_at: string | null
@@ -195,6 +196,7 @@ export type InvoiceItem = {
   sold_unit_label: string | null
   sold_unit_quantity: number | null
   notes: string | null
+  prep_status: 'pending' | 'preparing' | 'ready' | null
   created_at: string
 }
 

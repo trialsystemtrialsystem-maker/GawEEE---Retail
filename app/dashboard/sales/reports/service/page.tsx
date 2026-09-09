@@ -1,10 +1,10 @@
-import { ComingSoon } from '@/components/common/ComingSoon'
+import { ServiceReport } from '@/components/sales/ServiceReport'
 
 export default function ServiceReportPage() {
   return (
-    <ComingSoon
-      title="Service Report"
-      description="Belum tersedia — belum ada modul produk/layanan jasa di GawEEE."
-    />
+    <div className="space-y-6">
+      <h1 className="text-2xl font-bold text-gray-900">Service Report</h1>
+      <ServiceReport />
+    </div>
   )
 }

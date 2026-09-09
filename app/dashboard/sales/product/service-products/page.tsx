@@ -1,10 +1,13 @@
-import { ComingSoon } from '@/components/common/ComingSoon'
+import { ServiceProductManager } from '@/components/products/ServiceProductManager'
 
 export default function ServiceProductsPage() {
   return (
-    <ComingSoon
-      title="Service Products"
-      description="Belum tersedia — belum ada tipe produk jasa di GawEEE."
-    />
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold text-gray-900">Service Products</h1>
+        <p className="text-gray-500">Produk berupa jasa (mis. potong rambut, cuci sepatu) — tanpa konsep stok.</p>
+      </div>
+      <ServiceProductManager />
+    </div>
   )
 }

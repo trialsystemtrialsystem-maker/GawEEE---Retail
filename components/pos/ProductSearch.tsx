@@ -64,17 +64,33 @@ export function ProductSearch({ outletId }: { outletId: string }) {
   const loadAll = useCallback(async () => {
     setIsLoading(true)
     try {
-      const [invRes, unitsRes, modifiersRes, timePricesRes] = await Promise.all([
+      const [invRes, unitsRes, modifiersRes, timePricesRes, servicesRes] = await Promise.all([
         fetch(`/api/inventory/${outletId}`),
         fetch('/api/product-units'),
         fetch('/api/product-modifiers'),
         fetch('/api/time-based-prices'),
+        fetch('/api/products?product_type=service&status=active&limit=200'),
       ])
       const invData = await invRes.json()
       const unitsData = await unitsRes.json()
       const modifiersData = await modifiersRes.json()
       const timePricesData = await timePricesRes.json()
-      setAllProducts(invData.inventory ?? [])
+      const servicesData = await servicesRes.json()
+      // Services have no stock — deliberately kept out of the inventory
+      // table entirely (see ServiceProductManager) — merged in here as
+      // always-available so the POS grid can still sell them.
+      const serviceItems: InventoryItem[] = servicesRes.ok
+        ? (servicesData.data ?? []).map((p: { id: string; name: string; sku: string; selling_price: number }) => ({
+            product_id: p.id,
+            name: p.name,
+            sku: p.sku,
+            barcode: null,
+            category_name: 'Layanan',
+            unit_price: p.selling_price,
+            quantity_available: Number.MAX_SAFE_INTEGER,
+          }))
+        : []
+      setAllProducts([...(invData.inventory ?? []), ...serviceItems])
       if (unitsRes.ok) {
         const grouped: Record<string, ProductUnit[]> = {}
         for (const u of (unitsData.units ?? []) as ProductUnit[]) {
@@ -276,9 +292,10 @@ export function ProductSearch({ outletId }: { outletId: string }) {
       ) : (
         <div className="grid max-h-[32rem] grid-cols-2 gap-3 overflow-y-auto pr-1 sm:grid-cols-3 lg:grid-cols-4">
           {visibleProducts.map((item) => {
+            const isService = item.category_name === 'Layanan'
             const stock = availableStock(item)
-            const outOfStock = stock <= 0
-            const lowStock = !outOfStock && stock <= 10
+            const outOfStock = !isService && stock <= 0
+            const lowStock = !isService && !outOfStock && stock <= 10
             const accent = colorForCategory(item.category_name)
             const window = activeTimePrice(item.product_id)
             const hasSpecialPrice = !!window && window.price < item.unit_price
@@ -319,7 +336,7 @@ export function ProductSearch({ outletId }: { outletId: string }) {
                     </p>
                   )}
                   <p className={`text-xs ${outOfStock ? 'font-semibold text-[var(--color-danger)]' : 'text-gray-400'}`}>
-                    {outOfStock ? 'Stok habis' : `Stok ${stock}`}
+                    {isService ? '🛎️ Layanan' : outOfStock ? 'Stok habis' : `Stok ${stock}`}
                   </p>
                   {(modifiersByProduct[item.product_id]?.length ?? 0) > 0 ? (
                     <p className="text-xs font-medium text-[var(--brand-600)]">+ pilihan tambahan</p>

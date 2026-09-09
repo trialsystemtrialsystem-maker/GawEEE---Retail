@@ -74,6 +74,7 @@ export const productSchema = z.object({
   reorder_level: z.number().int().nonnegative(),
   reorder_quantity: z.number().int().nonnegative(),
   supplier_id: z.string().uuid().optional(),
+  product_type: z.enum(['goods', 'service']).optional(),
 })
 
 export const productDepartmentSchema = z.object({
@@ -387,6 +388,10 @@ export const channelPriceSchema = z.object({
   product_id: z.string().uuid(),
   channel: z.enum(['gofood', 'grabfood', 'shopeefood', 'other']),
   price: z.number().positive(),
+})
+
+export const prepStatusSchema = z.object({
+  prep_status: z.enum(['pending', 'preparing', 'ready']),
 })
 
 export const customerReviewSchema = z.object({

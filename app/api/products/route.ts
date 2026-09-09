@@ -14,6 +14,7 @@ export async function GET(request: NextRequest) {
   const search = searchParams.get('search')
   const categoryId = searchParams.get('category_id')
   const status = searchParams.get('status')
+  const productType = searchParams.get('product_type')
 
   let query = ctx.supabase
     .from('products')
@@ -24,6 +25,7 @@ export async function GET(request: NextRequest) {
   if (search) query = query.ilike('name', `%${search}%`)
   if (categoryId) query = query.eq('category_id', categoryId)
   if (status) query = query.eq('is_active', status === 'active')
+  if (productType === 'goods' || productType === 'service') query = query.eq('product_type', productType)
 
   const from = (page - 1) * limit
   const { data, error, count } = await query.range(from, from + limit - 1)
