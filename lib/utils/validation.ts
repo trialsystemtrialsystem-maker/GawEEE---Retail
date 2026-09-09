@@ -546,6 +546,7 @@ export const createBookingSchema = z.object({
   customer_phone: z.string().optional(),
   item_description: z.string().min(1, 'Deskripsi wajib diisi'),
   staff_id: z.string().uuid().optional(),
+  facility_id: z.string().uuid().optional(),
   scheduled_date: z.string().min(1, 'Tanggal wajib diisi'),
   scheduled_start_time: z.string().min(1, 'Jam wajib diisi'),
   scheduled_end_time: z.string().optional(),
@@ -553,6 +554,13 @@ export const createBookingSchema = z.object({
 })
 
 export type CreateBookingInput = z.infer<typeof createBookingSchema>
+
+export const facilitySchema = z.object({
+  outlet_id: z.string().uuid(),
+  name: z.string().min(1, 'Nama fasilitas wajib diisi'),
+  capacity: z.number().int().positive().optional(),
+  description: z.string().optional(),
+})
 
 const BOOKING_STATUSES = ['pending', 'confirmed', 'in_progress', 'completed', 'cancelled'] as const
 export const bookingStatusSchema = z.object({ status: z.enum(BOOKING_STATUSES) })

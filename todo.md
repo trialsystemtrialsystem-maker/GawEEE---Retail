@@ -765,7 +765,10 @@ each does/doesn't touch `create_invoice()`, batch order):
         values as `0 + 0 = 0`, which then fails `invoiceItemSchema`'s `.positive()` check at checkout,
         blocking a completely ordinary "add 2 of the same item" cashier action. Fixed in `store/posStore.ts`
         to only sum when a real bulk unit is involved.
-- [ ] **F — Facility/Booking**: 15. Product Facility, 16. Facility Report
+- [x] **F — Facility/Booking**: 15. Product Facility, 16. Facility Report. Code-complete, typecheck/
+      lint/build clean, committed. Migration 051 pending — user needs to run it before this batch can
+      be live-verified. Extends the existing Bookings module with a `facilities` table + nullable
+      `bookings.facility_id`, rather than a separate booking system.
 - [ ] **G — Sales document workflow**: 17. Sales Quotation List, 18. Sales Order List, 19. Sales
       Delivery List
 - [ ] **H — New-aggregation reports**: 20. Promo & Loyalty Report, 21. Purchase Return Reconciliation

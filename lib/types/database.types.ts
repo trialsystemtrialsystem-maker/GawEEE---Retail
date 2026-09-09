@@ -568,9 +568,21 @@ export type Booking = {
   scheduled_end_time: string | null
   status: BookingStatus
   notes: string | null
+  facility_id: string | null
   created_by: string
   created_at: string
   updated_at: string
+}
+
+export type Facility = {
+  id: string
+  outlet_id: string
+  name: string
+  capacity: number | null
+  description: string | null
+  is_active: boolean
+  created_by: string
+  created_at: string
 }
 
 export type ItemRequest = {
@@ -1069,6 +1081,7 @@ export type Database = {
       system_alerts: Table<SystemAlert>
       bulk_admin_operations: Table<BulkAdminOperation>
       bookings: Table<Booking>
+      facilities: Table<Facility>
       customers: Table<Customer>
       customer_groups: Table<CustomerGroup>
       special_prices: Table<SpecialPrice>
