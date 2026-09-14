@@ -103,7 +103,17 @@ export function BookingsManager({ outletId }: { outletId: string }) {
       const res = await fetch('/api/bookings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...form, outlet_id: outletId, staff_id: form.staff_id || undefined, facility_id: form.facility_id || undefined }),
+        body: JSON.stringify({
+          ...form,
+          outlet_id: outletId,
+          customer_phone: form.customer_phone || undefined,
+          staff_id: form.staff_id || undefined,
+          facility_id: form.facility_id || undefined,
+          // an empty string is a valid optional-string value to Zod but
+          // Postgres rejects "" for a `time` column — must be omitted
+          // entirely when left blank, not sent as ''.
+          scheduled_end_time: form.scheduled_end_time || undefined,
+        }),
       })
       const data = await res.json()
       if (!res.ok) {

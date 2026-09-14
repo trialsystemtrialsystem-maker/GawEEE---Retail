@@ -765,10 +765,16 @@ each does/doesn't touch `create_invoice()`, batch order):
         values as `0 + 0 = 0`, which then fails `invoiceItemSchema`'s `.positive()` check at checkout,
         blocking a completely ordinary "add 2 of the same item" cashier action. Fixed in `store/posStore.ts`
         to only sum when a real bulk unit is involved.
-- [x] **F — Facility/Booking**: 15. Product Facility, 16. Facility Report. Code-complete, typecheck/
-      lint/build clean, committed. Migration 051 pending — user needs to run it before this batch can
-      be live-verified. Extends the existing Bookings module with a `facilities` table + nullable
-      `bookings.facility_id`, rather than a separate booking system.
+- [x] **F — Facility/Booking**: 15. Product Facility, 16. Facility Report. Migration 051 run;
+      live-verified end-to-end via Playwright — facility creation, booking linked to a facility, status
+      flow through to Completed, and Facility Report's counts/chart all confirmed working. Extends the
+      existing Bookings module with a `facilities` table + nullable `bookings.facility_id`, rather than
+      a separate booking system.
+      - **Real pre-existing bug found and fixed**: `BookingsManager`'s create form always sent
+        `scheduled_end_time` as `''` when left blank (a legitimately optional field) — Zod's
+        `.optional()` accepts an empty string as valid, but Postgres rejects `''` for a `time` column,
+        so creating ANY booking without an end time has always 500'd. Fixed client-side to omit the
+        field entirely when blank, matching the `staff_id`/`facility_id` pattern already used nearby.
 - [ ] **G — Sales document workflow**: 17. Sales Quotation List, 18. Sales Order List, 19. Sales
       Delivery List
 - [ ] **H — New-aggregation reports**: 20. Promo & Loyalty Report, 21. Purchase Return Reconciliation
