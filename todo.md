@@ -776,8 +776,9 @@ each does/doesn't touch `create_invoice()`, batch order):
         so creating ANY booking without an end time has always 500'd. Fixed client-side to omit the
         field entirely when blank, matching the `staff_id`/`facility_id` pattern already used nearby.
 - [x] **G — Sales document workflow**: 17. Sales Quotation List, 18. Sales Order List, 19. Sales
-      Delivery List. Code-complete, typecheck/lint/build clean, committed. Migration 052 pending — user
-      needs to run it before this batch can be live-verified. New `sales_quotations`/
+      Delivery List. Migration 052 run; live-verified end-to-end via Playwright — quotation
+      draft→sent→accepted→Convert to Invoice, order-from-quotation→confirmed→Fulfill→invoice, and
+      delivery preparing→shipped→delivered all confirmed working. New `sales_quotations`/
       `sales_quotation_items` and `sales_orders`/`sales_order_items` tables mirror `purchase_orders`'
       header+line-items shape (unlike `purchase_orders` itself, these DO get proper RLS, consistent
       with every other table added this phase). "Convert to Invoice" (quotations) and "Fulfill"
