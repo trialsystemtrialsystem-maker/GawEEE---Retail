@@ -202,6 +202,7 @@ export const createPurchaseReturnSchema = z.object({
   outlet_id: z.string().uuid(),
   supplier_id: z.string().uuid(),
   po_id: z.string().uuid().optional(),
+  purchase_invoice_id: z.string().uuid().optional(),
   return_date: z.string().min(1),
   reason: z.string().min(3, 'Alasan wajib diisi'),
   items: z.array(purchaseReturnItemSchema).min(1, 'Minimal 1 item'),

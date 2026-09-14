@@ -786,7 +786,12 @@ each does/doesn't touch `create_invoice()`, batch order):
       existing per-item discount mechanism (current catalog price minus quoted price) — zero
       `create_invoice()` changes. Sales Delivery is a manual courier-tracking log against any invoice,
       no courier API (disclosed in the UI).
-- [ ] **H — New-aggregation reports**: 20. Promo & Loyalty Report, 21. Purchase Return Reconciliation
+- [x] **H — New-aggregation reports**: 20. Promo & Loyalty Report, 21. Purchase Return Reconciliation.
+      Code-complete, typecheck/lint/build clean, committed. Migration 053 pending — user needs to run it
+      before this batch can be live-verified. No new core tables for item 20 (pure aggregation over
+      existing coupons/loyalty_ledger/promotions, honestly disclosing that promotions have no usage
+      tracking). Item 21 adds one nullable `purchase_returns.purchase_invoice_id` column, wired into the
+      existing Purchase Return creation form as an optional "Kaitkan ke Invoice" dropdown.
 - [ ] **I — Marketing budget tracker**: 22. Buy Marketing Campaign
 - [ ] **J — Recipe change scheduling**: 23. Scheduling Recipe Changes
 - [ ] **K — Trivial fix**: 24. Purchase Delivery (redirect to existing PO page, no new feature)

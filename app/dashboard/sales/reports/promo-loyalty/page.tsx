@@ -1,10 +1,10 @@
-import { ComingSoon } from '@/components/common/ComingSoon'
+import { PromoLoyaltyReport } from '@/components/sales/PromoLoyaltyReport'
 
 export default function PromoLoyaltyReportPage() {
   return (
-    <ComingSoon
-      title="Promo & Loyalty Report"
-      description="Belum tersedia — modul promosi & loyalty (lihat menu Promotion) belum dibangun."
-    />
+    <div className="space-y-6">
+      <h1 className="text-2xl font-bold text-gray-900">Promo & Loyalty Report</h1>
+      <PromoLoyaltyReport />
+    </div>
   )
 }

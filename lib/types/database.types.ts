@@ -603,6 +603,7 @@ export type PurchaseReturn = {
   outlet_id: string
   supplier_id: string
   po_id: string | null
+  purchase_invoice_id: string | null
   return_date: string
   reason: string
   status: 'draft' | 'completed'

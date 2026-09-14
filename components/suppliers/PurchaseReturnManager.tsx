@@ -18,6 +18,14 @@ interface Product {
   purchase_price: number
 }
 
+interface PurchaseInvoiceOption {
+  id: string
+  invoice_number: string
+  total: number
+  suppliers: { name: string } | null
+  purchase_orders: { po_number: string } | null
+}
+
 interface PurchaseReturnRow {
   id: string
   return_date: string
@@ -33,9 +41,10 @@ export function PurchaseReturnManager({ outletId, canManage }: { outletId: strin
   const [returns, setReturns] = useState<PurchaseReturnRow[]>([])
   const [suppliers, setSuppliers] = useState<Supplier[]>([])
   const [products, setProducts] = useState<Product[]>([])
+  const [purchaseInvoices, setPurchaseInvoices] = useState<(PurchaseInvoiceOption & { supplier_id: string })[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
-  const [form, setForm] = useState({ supplier_id: '', return_date: new Date().toISOString().slice(0, 10), reason: '' })
+  const [form, setForm] = useState({ supplier_id: '', purchase_invoice_id: '', return_date: new Date().toISOString().slice(0, 10), reason: '' })
   const [lines, setLines] = useState<Line[]>([{ product_id: '', quantity: '1', unit_cost: '' }])
   const [error, setError] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -44,17 +53,20 @@ export function PurchaseReturnManager({ outletId, canManage }: { outletId: strin
 
   const load = useCallback(async () => {
     setIsLoading(true)
-    const [retRes, supRes, prodRes] = await Promise.all([
+    const [retRes, supRes, prodRes, invRes] = await Promise.all([
       fetch(`/api/purchase-returns?outlet_id=${outletId}`),
       fetch('/api/suppliers'),
       fetch('/api/products?limit=200'),
+      fetch(`/api/purchase-invoices?outlet_id=${outletId}`),
     ])
     const retData = await retRes.json()
     const supData = await supRes.json()
     const prodData = await prodRes.json()
+    const invData = await invRes.json()
     if (retRes.ok) setReturns(retData.returns ?? [])
     if (supRes.ok) setSuppliers(supData.suppliers ?? [])
     if (prodRes.ok) setProducts(prodData.data ?? [])
+    if (invRes.ok) setPurchaseInvoices(invData.invoices ?? [])
     setIsLoading(false)
   }, [outletId])
 
@@ -78,6 +90,7 @@ export function PurchaseReturnManager({ outletId, canManage }: { outletId: strin
         body: JSON.stringify({
           ...form,
           outlet_id: outletId,
+          purchase_invoice_id: form.purchase_invoice_id || undefined,
           items: lines
             .filter((l) => l.product_id && Number(l.quantity) > 0)
             .map((l) => ({ product_id: l.product_id, quantity: Number(l.quantity), unit_cost: Number(l.unit_cost) || 0 })),
@@ -89,7 +102,7 @@ export function PurchaseReturnManager({ outletId, canManage }: { outletId: strin
         return
       }
       showToast('Retur pembelian (draft) berhasil dibuat', 'success')
-      setForm({ supplier_id: '', return_date: new Date().toISOString().slice(0, 10), reason: '' })
+      setForm({ supplier_id: '', purchase_invoice_id: '', return_date: new Date().toISOString().slice(0, 10), reason: '' })
       setLines([{ product_id: '', quantity: '1', unit_cost: '' }])
       setShowForm(false)
       load()
@@ -147,6 +160,23 @@ export function PurchaseReturnManager({ outletId, canManage }: { outletId: strin
             </div>
             <Input label="Tanggal Retur" type="date" required value={form.return_date} onChange={(e) => setForm((f) => ({ ...f, return_date: e.target.value }))} />
             <Input label="Alasan" required value={form.reason} onChange={(e) => setForm((f) => ({ ...f, reason: e.target.value }))} />
+            <div className="space-y-1">
+              <label className="block text-sm font-medium text-gray-700">Kaitkan ke Invoice Pembelian (opsional)</label>
+              <select
+                value={form.purchase_invoice_id}
+                onChange={(e) => setForm((f) => ({ ...f, purchase_invoice_id: e.target.value }))}
+                className="w-full rounded-sm border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="">Tanpa invoice tertentu</option>
+                {purchaseInvoices
+                  .filter((inv) => !form.supplier_id || inv.supplier_id === form.supplier_id)
+                  .map((inv) => (
+                    <option key={inv.id} value={inv.id}>
+                      {inv.invoice_number} — {inv.suppliers?.name} ({formatCurrency(inv.total)})
+                    </option>
+                  ))}
+              </select>
+            </div>
           </div>
 
           <div className="space-y-2">
