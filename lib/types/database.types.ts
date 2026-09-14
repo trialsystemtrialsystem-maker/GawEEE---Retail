@@ -885,6 +885,72 @@ export type ProductDeposit = {
   created_at: string
 }
 
+export type SalesQuotationStatus = 'draft' | 'sent' | 'accepted' | 'rejected' | 'expired'
+export type SalesQuotation = {
+  id: string
+  outlet_id: string
+  customer_name: string
+  customer_phone: string | null
+  quotation_number: string
+  quotation_date: string
+  valid_until: string | null
+  status: SalesQuotationStatus
+  invoice_id: string | null
+  notes: string | null
+  created_by: string
+  created_at: string
+  updated_at: string
+}
+export type SalesQuotationItem = {
+  id: string
+  quotation_id: string
+  product_id: string
+  quantity: number
+  unit_price: number
+  subtotal: number
+  created_at: string
+}
+
+export type SalesOrderStatus = 'draft' | 'confirmed' | 'fulfilled' | 'cancelled'
+export type SalesOrder = {
+  id: string
+  outlet_id: string
+  customer_name: string
+  customer_phone: string | null
+  order_number: string
+  order_date: string
+  quotation_id: string | null
+  status: SalesOrderStatus
+  invoice_id: string | null
+  notes: string | null
+  created_by: string
+  created_at: string
+  updated_at: string
+}
+export type SalesOrderItem = {
+  id: string
+  order_id: string
+  product_id: string
+  quantity: number
+  unit_price: number
+  subtotal: number
+  created_at: string
+}
+
+export type SalesDeliveryStatus = 'preparing' | 'shipped' | 'delivered'
+export type SalesDelivery = {
+  id: string
+  invoice_id: string
+  courier_name: string | null
+  tracking_number: string | null
+  status: SalesDeliveryStatus
+  shipped_at: string | null
+  delivered_at: string | null
+  notes: string | null
+  created_by: string
+  created_at: string
+}
+
 export type Recipe = {
   id: string
   outlet_id: string
@@ -1082,6 +1148,11 @@ export type Database = {
       bulk_admin_operations: Table<BulkAdminOperation>
       bookings: Table<Booking>
       facilities: Table<Facility>
+      sales_quotations: Table<SalesQuotation>
+      sales_quotation_items: Table<SalesQuotationItem>
+      sales_orders: Table<SalesOrder>
+      sales_order_items: Table<SalesOrderItem>
+      sales_deliveries: Table<SalesDelivery>
       customers: Table<Customer>
       customer_groups: Table<CustomerGroup>
       special_prices: Table<SpecialPrice>

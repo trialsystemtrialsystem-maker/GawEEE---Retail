@@ -555,6 +555,49 @@ export const createBookingSchema = z.object({
 
 export type CreateBookingInput = z.infer<typeof createBookingSchema>
 
+export const documentLineSchema = z.object({
+  product_id: z.string().uuid(),
+  quantity: z.number().int().positive(),
+  unit_price: z.number().nonnegative(),
+})
+
+export const createQuotationSchema = z.object({
+  outlet_id: z.string().uuid(),
+  customer_name: z.string().min(1, 'Nama pelanggan wajib diisi'),
+  customer_phone: z.string().optional(),
+  valid_until: z.string().optional(),
+  notes: z.string().optional(),
+  items: z.array(documentLineSchema).min(1, 'Minimal 1 item'),
+})
+
+export const createOrderSchema = z.object({
+  outlet_id: z.string().uuid(),
+  customer_name: z.string().min(1, 'Nama pelanggan wajib diisi'),
+  customer_phone: z.string().optional(),
+  quotation_id: z.string().uuid().optional(),
+  notes: z.string().optional(),
+  items: z.array(documentLineSchema).min(1, 'Minimal 1 item'),
+})
+
+export const quotationStatusSchema = z.object({
+  status: z.enum(['draft', 'sent', 'accepted', 'rejected', 'expired']),
+})
+
+export const orderStatusSchema = z.object({
+  status: z.enum(['draft', 'confirmed', 'fulfilled', 'cancelled']),
+})
+
+export const salesDeliverySchema = z.object({
+  invoice_id: z.string().uuid(),
+  courier_name: z.string().optional(),
+  tracking_number: z.string().optional(),
+  notes: z.string().optional(),
+})
+
+export const salesDeliveryStatusSchema = z.object({
+  status: z.enum(['preparing', 'shipped', 'delivered']),
+})
+
 export const facilitySchema = z.object({
   outlet_id: z.string().uuid(),
   name: z.string().min(1, 'Nama fasilitas wajib diisi'),

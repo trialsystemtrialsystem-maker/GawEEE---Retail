@@ -775,8 +775,16 @@ each does/doesn't touch `create_invoice()`, batch order):
         `.optional()` accepts an empty string as valid, but Postgres rejects `''` for a `time` column,
         so creating ANY booking without an end time has always 500'd. Fixed client-side to omit the
         field entirely when blank, matching the `staff_id`/`facility_id` pattern already used nearby.
-- [ ] **G — Sales document workflow**: 17. Sales Quotation List, 18. Sales Order List, 19. Sales
-      Delivery List
+- [x] **G — Sales document workflow**: 17. Sales Quotation List, 18. Sales Order List, 19. Sales
+      Delivery List. Code-complete, typecheck/lint/build clean, committed. Migration 052 pending — user
+      needs to run it before this batch can be live-verified. New `sales_quotations`/
+      `sales_quotation_items` and `sales_orders`/`sales_order_items` tables mirror `purchase_orders`'
+      header+line-items shape (unlike `purchase_orders` itself, these DO get proper RLS, consistent
+      with every other table added this phase). "Convert to Invoice" (quotations) and "Fulfill"
+      (orders) both call `create_invoice()` directly, honoring the quoted/ordered price via the
+      existing per-item discount mechanism (current catalog price minus quoted price) — zero
+      `create_invoice()` changes. Sales Delivery is a manual courier-tracking log against any invoice,
+      no courier API (disclosed in the UI).
 - [ ] **H — New-aggregation reports**: 20. Promo & Loyalty Report, 21. Purchase Return Reconciliation
 - [ ] **I — Marketing budget tracker**: 22. Buy Marketing Campaign
 - [ ] **J — Recipe change scheduling**: 23. Scheduling Recipe Changes
