@@ -803,8 +803,8 @@ each does/doesn't touch `create_invoice()`, batch order):
       build clean, committed. Migration 055 pending — user needs to run it before this batch can be
       live-verified. Same check-on-page-load apply pattern as Price Scheduler (item 7) — a due schedule
       replaces the recipe's `recipe_ingredients` rows with the scheduled snapshot when the page opens.
-- [x] **K — Trivial fix**: 24. Purchase Delivery (redirect to existing PO page, no new feature). Done —
-      no migration needed. Typecheck/lint/build clean, committed.
+- [x] **K — Trivial fix**: 24. Purchase Delivery (redirect to existing PO page, no new feature). Done
+      and live-verified — no migration needed, confirmed redirecting to Purchase Order correctly.
 
 ## Notes on scope
 This todo tracks the **engineering deliverables** of the PRD (a working Next.js + Supabase codebase
