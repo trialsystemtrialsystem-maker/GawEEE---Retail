@@ -599,6 +599,12 @@ export const salesDeliveryStatusSchema = z.object({
   status: z.enum(['preparing', 'shipped', 'delivered']),
 })
 
+export const recipeChangeScheduleSchema = z.object({
+  recipe_id: z.string().uuid(),
+  new_ingredients: z.array(recipeIngredientInputSchema).min(1, 'Minimal 1 bahan'),
+  effective_date: z.string().min(1),
+})
+
 export const campaignRequestSchema = z.object({
   outlet_id: z.string().uuid(),
   campaign_name: z.string().min(1, 'Nama kampanye wajib diisi'),

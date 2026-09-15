@@ -799,8 +799,12 @@ each does/doesn't touch `create_invoice()`, batch order):
       working. Mirrors `expense_requests`' exact submit/approve/reject shape (new
       `campaign_requests` table), plus a "Tandai Selesai" action once approved. Explicitly labeled in
       the UI as an internal budget tracker — not connected to any ad-platform API.
-- [ ] **J — Recipe change scheduling**: 23. Scheduling Recipe Changes
-- [ ] **K — Trivial fix**: 24. Purchase Delivery (redirect to existing PO page, no new feature)
+- [x] **J — Recipe change scheduling**: 23. Scheduling Recipe Changes. Code-complete, typecheck/lint/
+      build clean, committed. Migration 055 pending — user needs to run it before this batch can be
+      live-verified. Same check-on-page-load apply pattern as Price Scheduler (item 7) — a due schedule
+      replaces the recipe's `recipe_ingredients` rows with the scheduled snapshot when the page opens.
+- [x] **K — Trivial fix**: 24. Purchase Delivery (redirect to existing PO page, no new feature). Done —
+      no migration needed. Typecheck/lint/build clean, committed.
 
 ## Notes on scope
 This todo tracks the **engineering deliverables** of the PRD (a working Next.js + Supabase codebase

@@ -1,10 +1,8 @@
-import { ComingSoon } from '@/components/common/ComingSoon'
+import { redirect } from 'next/navigation'
 
+// Purchase Delivery — no separate feature needed: PO receiving already
+// handles this from the Purchase Order page (Phase 13 Batch K). Redirect
+// so the menu item isn't a dead end.
 export default function PurchaseDeliveryPage() {
-  return (
-    <ComingSoon
-      title="Purchase Delivery"
-      description="Belum tersedia sebagai halaman terpisah — penerimaan barang PO saat ini dilakukan langsung dari menu Purchase Order (PO)."
-    />
-  )
+  redirect('/dashboard/suppliers/purchase-orders')
 }

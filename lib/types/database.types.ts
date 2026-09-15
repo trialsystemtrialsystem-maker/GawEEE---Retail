@@ -968,6 +968,17 @@ export type CampaignRequest = {
   created_at: string
 }
 
+export type RecipeChangeScheduleIngredient = { ingredient_product_id: string; quantity: number }
+export type RecipeChangeSchedule = {
+  id: string
+  recipe_id: string
+  new_ingredients: RecipeChangeScheduleIngredient[]
+  effective_date: string
+  applied: boolean
+  created_by: string
+  created_at: string
+}
+
 export type Recipe = {
   id: string
   outlet_id: string
@@ -1171,6 +1182,7 @@ export type Database = {
       sales_order_items: Table<SalesOrderItem>
       sales_deliveries: Table<SalesDelivery>
       campaign_requests: Table<CampaignRequest>
+      recipe_change_schedules: Table<RecipeChangeSchedule>
       customers: Table<Customer>
       customer_groups: Table<CustomerGroup>
       special_prices: Table<SpecialPrice>
