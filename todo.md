@@ -794,7 +794,11 @@ each does/doesn't touch `create_invoice()`, batch order):
       existing coupons/loyalty_ledger/promotions, honestly disclosing that promotions have no usage
       tracking). Item 21 adds one nullable `purchase_returns.purchase_invoice_id` column, wired into the
       existing Purchase Return creation form as an optional "Kaitkan ke Invoice" dropdown.
-- [ ] **I — Marketing budget tracker**: 22. Buy Marketing Campaign
+- [x] **I — Marketing budget tracker**: 22. Buy Marketing Campaign. Code-complete, typecheck/lint/build
+      clean, committed. Migration 054 pending — user needs to run it before this batch can be
+      live-verified. Mirrors `expense_requests`' exact submit/approve/reject shape (new
+      `campaign_requests` table), plus a "Tandai Selesai" action once approved. Explicitly labeled in
+      the UI as an internal budget tracker — not connected to any ad-platform API.
 - [ ] **J — Recipe change scheduling**: 23. Scheduling Recipe Changes
 - [ ] **K — Trivial fix**: 24. Purchase Delivery (redirect to existing PO page, no new feature)
 

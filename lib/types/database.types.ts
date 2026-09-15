@@ -952,6 +952,22 @@ export type SalesDelivery = {
   created_at: string
 }
 
+export type CampaignPlatform = 'meta' | 'google' | 'tiktok' | 'other'
+export type CampaignRequestStatus = 'pending' | 'approved' | 'rejected' | 'completed'
+export type CampaignRequest = {
+  id: string
+  outlet_id: string
+  campaign_name: string
+  platform: CampaignPlatform
+  budget_amount: number
+  notes: string | null
+  requested_by: string
+  status: CampaignRequestStatus
+  approved_by: string | null
+  decided_at: string | null
+  created_at: string
+}
+
 export type Recipe = {
   id: string
   outlet_id: string
@@ -1154,6 +1170,7 @@ export type Database = {
       sales_orders: Table<SalesOrder>
       sales_order_items: Table<SalesOrderItem>
       sales_deliveries: Table<SalesDelivery>
+      campaign_requests: Table<CampaignRequest>
       customers: Table<Customer>
       customer_groups: Table<CustomerGroup>
       special_prices: Table<SpecialPrice>

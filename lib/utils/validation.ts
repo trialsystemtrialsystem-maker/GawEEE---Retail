@@ -599,6 +599,14 @@ export const salesDeliveryStatusSchema = z.object({
   status: z.enum(['preparing', 'shipped', 'delivered']),
 })
 
+export const campaignRequestSchema = z.object({
+  outlet_id: z.string().uuid(),
+  campaign_name: z.string().min(1, 'Nama kampanye wajib diisi'),
+  platform: z.enum(['meta', 'google', 'tiktok', 'other']),
+  budget_amount: z.number().positive(),
+  notes: z.string().optional(),
+})
+
 export const facilitySchema = z.object({
   outlet_id: z.string().uuid(),
   name: z.string().min(1, 'Nama fasilitas wajib diisi'),
