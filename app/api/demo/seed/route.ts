@@ -35,6 +35,24 @@ import {
 const DAYS_OF_HISTORY = 90
 const TAX_RATE = 0.1
 
+// There's exactly one demo tenant (see the comment above), so a single
+// in-flight promise is enough to guard it: without this, two overlapping
+// calls to regenerateDemoData() (e.g. rapid repeated clicks/requests, since
+// the "stale" path below responds immediately and reseeds in the
+// background) each take their own snapshot of invoiceIds/etc. at slightly
+// different times — the later one's wipe misses rows the earlier one just
+// inserted, leaving orphans that then fail the products delete with a
+// foreign key violation. Concurrent calls now just await the same run.
+let activeReseed: Promise<Awaited<ReturnType<typeof regenerateDemoData>>> | null = null
+function reseedOnce(admin: SupabaseClient<Database>, companyId: string, outletId: string, userId: string) {
+  if (!activeReseed) {
+    activeReseed = regenerateDemoData(admin, companyId, outletId, userId).finally(() => {
+      activeReseed = null
+    })
+  }
+  return activeReseed
+}
+
 function randomInt(min: number, max: number) {
   return Math.floor(Math.random() * (max - min + 1)) + min
 }
@@ -179,7 +197,7 @@ export async function POST(request: NextRequest) {
   // yet) has nothing to show — must block on the full regenerate.
   if (!latestInvoice) {
     try {
-      const stats = await regenerateDemoData(admin, companyId, outletId, userId)
+      const stats = await reseedOnce(admin, companyId, outletId, userId)
       return NextResponse.json({ email: loginEmail, password: loginPassword, company_id: companyId, outlet_id: outletId, stats })
     } catch (err) {
       return NextResponse.json({ error: err instanceof Error ? err.message : 'Gagal menyimpan data demo' }, { status: 500 })
@@ -193,7 +211,7 @@ export async function POST(request: NextRequest) {
   // this would need to move to a scheduled job or a `waitUntil()`-style API,
   // since the process isn't guaranteed to keep running after the response is
   // sent — fine for the current self-hosted/Node deployment.)
-  void regenerateDemoData(admin, companyId, outletId, userId).catch((err) => {
+  void reseedOnce(admin, companyId, outletId, userId).catch((err) => {
     console.error('[demo-seed] background reseed failed:', err)
   })
 
@@ -254,6 +272,22 @@ async function regenerateDemoData(admin: SupabaseClient<Database>, companyId: st
   await admin.from('special_prices').delete().eq('outlet_id', outletId)
   await admin.from('stock_transfers').delete().eq('company_id', companyId)
   await admin.from('stocktakes').delete().eq('outlet_id', outletId)
+  await admin.from('sales_quotation_items').delete().in('quotation_id', (await admin.from('sales_quotations').select('id').eq('outlet_id', outletId)).data?.map((q) => q.id) ?? [])
+  await admin.from('sales_quotations').delete().eq('outlet_id', outletId)
+  await admin.from('sales_order_items').delete().in('order_id', (await admin.from('sales_orders').select('id').eq('outlet_id', outletId)).data?.map((o) => o.id) ?? [])
+  await admin.from('sales_orders').delete().eq('outlet_id', outletId)
+
+  // Final safety net, scoped by company (this demo tenant has more than one
+  // outlet — Outlet Utama and Cabang Bandung — so an outlet-scoped wipe
+  // above can't be exhaustive for every products-referencing table): delete
+  // any invoice_items still referencing this company's products before the
+  // products delete, which would otherwise fail with a 23503 foreign key
+  // violation regardless of which table left the stray reference.
+  const { data: companyProducts } = await admin.from('products').select('id').eq('company_id', companyId)
+  const companyProductIds = (companyProducts ?? []).map((p) => p.id)
+  if (companyProductIds.length) {
+    await admin.from('invoice_items').delete().in('product_id', companyProductIds)
+  }
 
   const { error: productDeleteError } = await admin.from('products').delete().eq('company_id', companyId)
   if (productDeleteError) throw new Error(`products (delete): ${productDeleteError.message}`)

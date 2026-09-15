@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
 
   const { data, error } = await auth.supabase
     .from('recipes')
-    .select('*, products!recipes_output_product_id_fkey(name)')
+    .select('*, products(name)')
     .eq('outlet_id', outletId)
     .order('name')
 

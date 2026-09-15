@@ -799,12 +799,27 @@ each does/doesn't touch `create_invoice()`, batch order):
       working. Mirrors `expense_requests`' exact submit/approve/reject shape (new
       `campaign_requests` table), plus a "Tandai Selesai" action once approved. Explicitly labeled in
       the UI as an internal budget tracker — not connected to any ad-platform API.
-- [x] **J — Recipe change scheduling**: 23. Scheduling Recipe Changes. Code-complete, typecheck/lint/
-      build clean, committed. Migration 055 pending — user needs to run it before this batch can be
-      live-verified. Same check-on-page-load apply pattern as Price Scheduler (item 7) — a due schedule
-      replaces the recipe's `recipe_ingredients` rows with the scheduled snapshot when the page opens.
+- [x] **J — Recipe change scheduling**: 23. Scheduling Recipe Changes. Migration 055 run; live-verified
+      end-to-end via Playwright — scheduling an ingredient change for today applies automatically on next
+      page open and `recipe_ingredients` is confirmed replaced via the API. Same check-on-page-load apply
+      pattern as Price Scheduler (item 7). Verification also turned up and fixed three real bugs found
+      along the way, unrelated to the new feature itself but blocking it: (1) `GET /api/recipes` was
+      silently returning an empty list due to a stale/incorrect PostgREST FK embed hint
+      (`products!recipes_output_product_id_fkey(name)` → simplified to `products(name)`); (2) the demo
+      seed route's background reseed had no concurrency guard, so rapid repeated `/api/demo/seed` calls
+      could race two `regenerateDemoData()` runs against each other and leave orphaned rows — fixed with
+      a module-level in-flight-promise guard so concurrent calls share one run; (3) migration 052's
+      `sales_quotation_items.product_id`/`sales_order_items.product_id`/`sales_quotations.invoice_id`/
+      `sales_orders.invoice_id` FKs had no `ON DELETE` action (same bug class as migrations 047/050),
+      blocking product/invoice deletion during reseed — fixed via new migration 056 (`on delete cascade`
+      for the product_id columns, `on delete set null` for the nullable invoice_id columns). The seed
+      route's wipe sequence was also missing cleanup steps for Batch G's sales-document tables, now added,
+      plus a defensive company-scoped safety-net cleanup since the demo tenant has more than one outlet.
+      **Migration 056 needs to be run in Supabase SQL Editor.**
 - [x] **K — Trivial fix**: 24. Purchase Delivery (redirect to existing PO page, no new feature). Done
       and live-verified — no migration needed, confirmed redirecting to Purchase Order correctly.
+
+**Phase 13 complete: all 24 items across Batches A-K built and live-verified.**
 
 ## Notes on scope
 This todo tracks the **engineering deliverables** of the PRD (a working Next.js + Supabase codebase
