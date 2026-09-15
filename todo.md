@@ -787,8 +787,10 @@ each does/doesn't touch `create_invoice()`, batch order):
       `create_invoice()` changes. Sales Delivery is a manual courier-tracking log against any invoice,
       no courier API (disclosed in the UI).
 - [x] **H — New-aggregation reports**: 20. Promo & Loyalty Report, 21. Purchase Return Reconciliation.
-      Code-complete, typecheck/lint/build clean, committed. Migration 053 pending — user needs to run it
-      before this batch can be live-verified. No new core tables for item 20 (pure aggregation over
+      Migration 053 run; live-verified end-to-end via Playwright, including a real reconciliation math
+      check (demo data had zero purchase invoices, so the test seeds one via the API, links a completed
+      return to it, and confirms the report's "returned" amount reflects it). No new core tables for
+      item 20 (pure aggregation over
       existing coupons/loyalty_ledger/promotions, honestly disclosing that promotions have no usage
       tracking). Item 21 adds one nullable `purchase_returns.purchase_invoice_id` column, wired into the
       existing Purchase Return creation form as an optional "Kaitkan ke Invoice" dropdown.
