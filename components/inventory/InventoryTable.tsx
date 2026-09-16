@@ -74,21 +74,37 @@ export function InventoryTable({ outletId }: { outletId: string }) {
   const reloadDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   useEffect(() => {
     const supabase = createClient()
-    const channel = supabase
-      .channel(`inventory-outlet-${outletId}`)
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'inventory', filter: `outlet_id=eq.${outletId}` },
-        () => {
-          if (reloadDebounceRef.current) clearTimeout(reloadDebounceRef.current)
-          reloadDebounceRef.current = setTimeout(() => load({ silent: true }), 400)
-        }
-      )
-      .subscribe()
+    let cancelled = false
+    let channel: ReturnType<typeof supabase.channel> | null = null
+
+    // postgres_changes is RLS-gated: the realtime socket needs the user's
+    // access token explicitly handed to it before subscribing, or every row
+    // is evaluated as the anonymous role and user_can_access_outlet() denies
+    // everything — the subscription reports SUBSCRIBED either way, it just
+    // silently never delivers an event. auth.getSession() resolves from the
+    // cookie session @supabase/ssr already hydrated, so this doesn't need
+    // to wait for a separate auth round trip.
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (cancelled || !session) return
+      supabase.realtime.setAuth(session.access_token)
+
+      channel = supabase
+        .channel(`inventory-outlet-${outletId}`)
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'inventory', filter: `outlet_id=eq.${outletId}` },
+          () => {
+            if (reloadDebounceRef.current) clearTimeout(reloadDebounceRef.current)
+            reloadDebounceRef.current = setTimeout(() => load({ silent: true }), 400)
+          }
+        )
+        .subscribe()
+    })
 
     return () => {
+      cancelled = true
       if (reloadDebounceRef.current) clearTimeout(reloadDebounceRef.current)
-      supabase.removeChannel(channel)
+      if (channel) supabase.removeChannel(channel)
     }
   }, [outletId, load])
 

@@ -70,13 +70,17 @@ Legend: `[ ]` pending · `[x]` done · `[!]` needs user input/credentials before
 - [x] Sales/Invoice dashboard UI (`/dashboard/sales` today's transactions, `/dashboard/sales/invoices`
       full history, `/dashboard/sales/[invoiceId]` detail with void button) — these sidebar links
       existed since Sprint 1 but had no page behind them (404) until now
-- [ ] Real-time inventory sync via Supabase Realtime channel — code-complete, typecheck/lint/build clean,
-      committed. `InventoryTable` now subscribes to `postgres_changes` on `inventory` filtered by
-      `outlet_id`, debounced 400ms to coalesce bursts (a multi-item sale updates one row per item), and
-      reloads silently (no full-table loading flash). Migration 057 (`alter publication supabase_realtime
-      add table inventory;`) is pending — user needs to run it in Supabase SQL Editor before this can be
-      live-verified; RLS already covers the table so no policy change was needed, just enabling
-      replication.
+- [x] Real-time inventory sync via Supabase Realtime channel — migration 057 run; live-verified via
+      Playwright: adjusted stock through a separate API call (no page reload, no filter touch) and
+      confirmed the on-screen quantity updated on its own. `InventoryTable` subscribes to
+      `postgres_changes` on `inventory` filtered by `outlet_id`, debounced 400ms to coalesce bursts (a
+      multi-item sale updates one row per item), and reloads silently (no full-table loading flash).
+      Verification surfaced one real bug: `postgres_changes` subscriptions are RLS-gated per event, and
+      the browser client doesn't hand its session token to the realtime socket automatically — without an
+      explicit `supabase.realtime.setAuth(session.access_token)` before subscribing, every row is
+      evaluated as the anonymous role, `user_can_access_outlet()` denies it, and the channel reports
+      `SUBSCRIBED` while silently delivering zero events. Fixed by reading the session via
+      `supabase.auth.getSession()` and calling `setAuth()` before opening the channel.
 - [x] E2E test: full POS transaction (scan → pay → receipt) — Playwright set up (`npm run test:e2e`),
       5 tests passing against the live dev server + real Supabase project (login errors, signup
       validation, landing page links, a full cash sale through the actual UI, empty-cart guard).
