@@ -162,8 +162,11 @@ Legend: `[ ]` pending · `[x]` done · `[!]` needs user input/credentials before
 - [x] Webhook handlers (`/api/payments/webhook/doku`, `/bank`) with HMAC signature verification
 - [x] RLS policies for all tables (cashier / outlet_manager / master_admin) per prd.md §6.1 —
       landed in Phase 1 (010_rls_policies.sql)
-- [ ] Error handling, loading states, UI polish pass — basic states exist per-component, no
-      dedicated pass yet (no toast/notification system, no global error boundary)
+- [x] Error handling, loading states, UI polish pass — this note was stale: a toast/notification system
+      (`store/notificationStore.ts` + `components/common/Toaster.tsx`, used in 68 components) and a
+      global error boundary (`app/error.tsx`) both already exist. Confirmed working — a journal entry
+      created through `JournalEntryManager` (live-verified earlier this session) goes through this same
+      `showToast()` call on success.
 
 ## Phase 5 — QA, Deploy & Launch Prep
 - [ ] Full unit + integration + E2E suite green, coverage ≥ 80% (unit tests exist for utils only;
