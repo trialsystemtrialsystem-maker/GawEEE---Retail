@@ -99,9 +99,17 @@ Legend: `[ ]` pending · `[x]` done · `[!]` needs user input/credentials before
 ## Phase 3 — Sprint 3: Financial & Supplier (roadmap.md Sprint 3)
 - [x] DB migrations: chart_of_accounts, journal_entries, journal_entry_details, daily_financial_summary,
       accounts_receivable/payable (landed in Phase 1's migration batch, 005_financial.sql)
-- [ ] Journal entries API — schema exists, no route/UI writes to it yet; daily-summary/p-and-l are
-      computed live from invoices instead (see note below), so nothing currently populates
-      chart_of_accounts/journal_entries
+- [x] Journal entries API — this note was stale: `create_journal_entry()`/`post_journal_entry()`
+      (`014_accounting_functions.sql`) plus a full CRUD API (`app/api/accounting/{accounts,
+      journal-entries,ledger,reports}`) and UI (`JournalEntryManager` at `/dashboard/accounting/journal`)
+      already exist, with a default Indonesian-retail chart of accounts seeded on every outlet. Live
+      -verified: accounts API returns the seeded COA, a balanced manual entry can be created through the
+      UI. Petty Cash "mark as paid" (`036_petty_cash.sql`) also optionally posts a journal entry
+      (Dr Beban Operasional / Cr Kas) when an expense is disbursed. What's still genuinely missing:
+      `create_invoice()`/purchase-order receiving don't auto-post a journal entry — every sale/purchase
+      still needs a manual entry if you want it in the ledger. daily-summary/P&L stay computed live from
+      invoices rather than from posted journal entries (see below) — that's an intentional, separate
+      design choice already documented there, not a gap in this item.
 - [x] Financial dashboard UI (`/dashboard/financial`: KPI cards, sales breakdown, cash position)
 - [x] Daily summary (`/api/reports/daily-summary`), P&L (`/api/reports/p-and-l`), and cash position
       (`/api/reports/cash-position`) endpoints — computed live from invoices/invoice_items/
@@ -117,9 +125,16 @@ Legend: `[ ]` pending · `[x]` done · `[!]` needs user input/credentials before
 - [x] Purchase order UI (`/dashboard/suppliers/purchase-orders`: list, create form, submit/approve/receive
       actions) — full draft→submit→approve→receive cycle tested end-to-end against the live Supabase
       project, stock correctly incremented on receipt
-- [ ] Tax report calculation (PPN/PPh) — not started, placeholder page in place
-- [ ] Integration test: transaction → journal entry → P&L accuracy — no journal entries are written
-      yet (see above), so this can't be meaningfully tested until that's wired up
+- [x] Tax report calculation (PPN) — this note was stale: `/api/reports/tax-report` +
+      `TaxReport` (`/dashboard/financial/tax-report`) already exist, aggregating `invoices.tax_amount`
+      (computed at sale time by `create_invoice()`) by month. Live-verified: real, non-empty rows and a
+      correct total from demo data. PPh (income tax) is out of scope — that's a company-level annual
+      calculation on net profit, not a per-transaction one, and needs a decision on which PPh regime
+      (Final PPh 0.5% UMKM vs. normal rates) applies before it's buildable.
+- [ ] Integration test: transaction → journal entry → P&L accuracy — journal entries themselves are now
+      real (see above), but `create_invoice()` doesn't auto-post one, so there's still no automatic
+      transaction → journal entry link to test. Blocked on the auto-posting decision noted above, not on
+      missing test infrastructure.
 - [x] Financial dashboard sub-pages: `/dashboard/financial/cash-position` (KPI cards + recent cash
       transactions) and `/dashboard/financial/reports` (P&L with a date-range picker) — both were
       linked from the sidebar since Sprint 1 but 404'd until now
