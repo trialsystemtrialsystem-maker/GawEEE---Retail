@@ -47,6 +47,8 @@ export async function PATCH(request: NextRequest, ctx: RouteContext<'/api/outlet
     geofence_lng?: number | null
     geofence_radius_m?: number | null
     enabled_payment_methods?: string[]
+    business_hours?: Record<string, { open: string; close: string }>
+    opening_cash?: number
   } = {}
   if (typeof body.name === 'string') patch.name = body.name
   if (typeof body.address === 'string') patch.address = body.address
@@ -57,6 +59,8 @@ export async function PATCH(request: NextRequest, ctx: RouteContext<'/api/outlet
   if (typeof body.geofence_lng === 'number' || body.geofence_lng === null) patch.geofence_lng = body.geofence_lng
   if (typeof body.geofence_radius_m === 'number' || body.geofence_radius_m === null) patch.geofence_radius_m = body.geofence_radius_m
   if (Array.isArray(body.enabled_payment_methods)) patch.enabled_payment_methods = body.enabled_payment_methods
+  if (body.business_hours && typeof body.business_hours === 'object') patch.business_hours = body.business_hours
+  if (typeof body.opening_cash === 'number') patch.opening_cash = body.opening_cash
 
   const { data, error } = await auth.supabase.from('outlets').update(patch).eq('id', id).select().single()
 

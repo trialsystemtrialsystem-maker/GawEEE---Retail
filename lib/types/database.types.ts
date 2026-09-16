@@ -30,6 +30,7 @@ export type Company = {
   timezone: string
   settings: Record<string, unknown>
   metadata: Record<string, unknown>
+  onboarding_completed_at: string | null
   created_at: string
   updated_at: string
   deleted_at: string | null

@@ -17,7 +17,26 @@ export default async function DashboardLayout({ children }: { children: React.Re
     redirect('/auth/login')
   }
 
-  const { data: profile } = await supabase.from('users').select('full_name, outlet_id').eq('id', user.id).single()
+  const { data: profile } = await supabase
+    .from('users')
+    .select('full_name, outlet_id, role, company_id')
+    .eq('id', user.id)
+    .single()
+
+  // First-time setup: a master_admin whose company hasn't finished the
+  // onboarding wizard yet gets sent there instead of the dashboard. Staff
+  // accounts (invited by the owner, or a cashier) never see this — only the
+  // owner who's meant to configure the outlet.
+  if (profile?.role === 'master_admin' && profile.company_id) {
+    const { data: company } = await supabase
+      .from('companies')
+      .select('onboarding_completed_at')
+      .eq('id', profile.company_id)
+      .single()
+    if (company && !company.onboarding_completed_at) {
+      redirect('/onboarding')
+    }
+  }
 
   const outlet = profile?.outlet_id
     ? (await supabase.from('outlets').select('name').eq('id', profile.outlet_id).single()).data
