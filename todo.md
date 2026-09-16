@@ -68,8 +68,13 @@ Legend: `[ ]` pending · `[x]` done · `[!]` needs user input/credentials before
       (set in `.env.local`, not committed) rather than being hardcoded in the spec file. Not wired
       into CI yet since that needs these as GitHub Actions secrets — not something I can add myself.
       Void-flow E2E coverage still missing (no automated test yet, but the manual flow works — see below).
-- [!] Sidebar's "Stok Rendah" link points at `/dashboard/inventory/low-stock`, not yet built (use the
-      status filter on `/dashboard/inventory` for now)
+- [x] "Stok Rendah" links (`NotificationBell`, dashboard KPI card) — resolved: they already point at
+      `/dashboard/inventory?status=low_stock`, which `InventoryTable` reads from the URL to pre-select
+      the status filter. No sidebar entry or code anywhere links to the old `/dashboard/inventory/
+      low-stock` path (`lib/nav/config.ts` only ever links plain `/dashboard/inventory`) — this note was
+      stale, likely resolved during the Phase 9 sidebar rebuild without being updated here. Live-verified
+      via Playwright: the filtered URL loads, the status `<select>` is pre-set to `low_stock`, and
+      matching rows render.
 
 ## Phase 3 — Sprint 3: Financial & Supplier (roadmap.md Sprint 3)
 - [x] DB migrations: chart_of_accounts, journal_entries, journal_entry_details, daily_financial_summary,
