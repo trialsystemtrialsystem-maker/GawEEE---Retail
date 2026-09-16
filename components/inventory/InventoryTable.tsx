@@ -1,9 +1,10 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { formatCurrency } from '@/lib/utils/formatting'
 import { getProductIcon } from '@/lib/utils/productIcon'
+import { createClient } from '@/lib/supabase/client'
 import { Input } from '@/components/ui/Input'
 import { Alert } from '@/components/ui/Alert'
 
@@ -35,32 +36,61 @@ export function InventoryTable({ outletId }: { outletId: string }) {
   const [error, setError] = useState<string | null>(null)
   const [totals, setTotals] = useState({ cost: 0, retail: 0 })
 
-  const load = useCallback(async () => {
-    setIsLoading(true)
-    setError(null)
-    try {
-      const params = new URLSearchParams()
-      if (search) params.set('search', search)
-      if (statusFilter) params.set('status', statusFilter)
-      const res = await fetch(`/api/inventory/${outletId}?${params.toString()}`)
-      const data = await res.json()
-      if (!res.ok) {
-        setError(data.error ?? 'Gagal memuat inventori')
-        return
+  const load = useCallback(
+    async (opts?: { silent?: boolean }) => {
+      if (!opts?.silent) setIsLoading(true)
+      setError(null)
+      try {
+        const params = new URLSearchParams()
+        if (search) params.set('search', search)
+        if (statusFilter) params.set('status', statusFilter)
+        const res = await fetch(`/api/inventory/${outletId}?${params.toString()}`)
+        const data = await res.json()
+        if (!res.ok) {
+          setError(data.error ?? 'Gagal memuat inventori')
+          return
+        }
+        setRows(data.inventory ?? [])
+        setTotals({ cost: data.total_value_on_hand ?? 0, retail: data.total_retail_value ?? 0 })
+      } catch {
+        setError('Terjadi kesalahan jaringan')
+      } finally {
+        if (!opts?.silent) setIsLoading(false)
       }
-      setRows(data.inventory ?? [])
-      setTotals({ cost: data.total_value_on_hand ?? 0, retail: data.total_retail_value ?? 0 })
-    } catch {
-      setError('Terjadi kesalahan jaringan')
-    } finally {
-      setIsLoading(false)
-    }
-  }, [outletId, search, statusFilter])
+    },
+    [outletId, search, statusFilter]
+  )
 
   useEffect(() => {
     const timeout = setTimeout(load, 250)
     return () => clearTimeout(timeout)
   }, [load])
+
+  // Live stock updates: reload (without the full-table loading state, so
+  // rows already on screen don't flash) whenever this outlet's inventory
+  // changes elsewhere — another cashier's sale, a stock adjustment, a PO
+  // receipt. Bursts of changes (e.g. a multi-item sale updates one row per
+  // item) are coalesced into a single reload via the debounce below.
+  const reloadDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  useEffect(() => {
+    const supabase = createClient()
+    const channel = supabase
+      .channel(`inventory-outlet-${outletId}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'inventory', filter: `outlet_id=eq.${outletId}` },
+        () => {
+          if (reloadDebounceRef.current) clearTimeout(reloadDebounceRef.current)
+          reloadDebounceRef.current = setTimeout(() => load({ silent: true }), 400)
+        }
+      )
+      .subscribe()
+
+    return () => {
+      if (reloadDebounceRef.current) clearTimeout(reloadDebounceRef.current)
+      supabase.removeChannel(channel)
+    }
+  }, [outletId, load])
 
   return (
     <div className="space-y-4">

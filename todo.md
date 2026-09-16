@@ -70,7 +70,13 @@ Legend: `[ ]` pending · `[x]` done · `[!]` needs user input/credentials before
 - [x] Sales/Invoice dashboard UI (`/dashboard/sales` today's transactions, `/dashboard/sales/invoices`
       full history, `/dashboard/sales/[invoiceId]` detail with void button) — these sidebar links
       existed since Sprint 1 but had no page behind them (404) until now
-- [ ] Real-time inventory sync via Supabase Realtime channel — not wired up yet, table just refetches on filter change
+- [ ] Real-time inventory sync via Supabase Realtime channel — code-complete, typecheck/lint/build clean,
+      committed. `InventoryTable` now subscribes to `postgres_changes` on `inventory` filtered by
+      `outlet_id`, debounced 400ms to coalesce bursts (a multi-item sale updates one row per item), and
+      reloads silently (no full-table loading flash). Migration 057 (`alter publication supabase_realtime
+      add table inventory;`) is pending — user needs to run it in Supabase SQL Editor before this can be
+      live-verified; RLS already covers the table so no policy change was needed, just enabling
+      replication.
 - [x] E2E test: full POS transaction (scan → pay → receipt) — Playwright set up (`npm run test:e2e`),
       5 tests passing against the live dev server + real Supabase project (login errors, signup
       validation, landing page links, a full cash sale through the actual UI, empty-cart guard).
