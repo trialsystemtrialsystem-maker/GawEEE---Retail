@@ -238,16 +238,17 @@ export function OnboardingWizard({ outlet }: { outlet: OutletInfo }) {
 
       {step === 1 && (
         <div className="space-y-4">
-          <Input label="Nama Outlet" required value={name} onChange={(e) => setName(e.target.value)} />
-          <Input label="Alamat" required value={address} onChange={(e) => setAddress(e.target.value)} />
+          <Input name="outlet_name" label="Nama Outlet" required value={name} onChange={(e) => setName(e.target.value)} />
+          <Input name="outlet_address" label="Alamat" required value={address} onChange={(e) => setAddress(e.target.value)} />
           <div className="grid grid-cols-2 gap-4">
-            <Input label="Kota" required value={city} onChange={(e) => setCity(e.target.value)} />
-            <Input label="Telepon" value={phone} onChange={(e) => setPhone(e.target.value)} />
+            <Input name="outlet_city" label="Kota" required value={city} onChange={(e) => setCity(e.target.value)} />
+            <Input name="outlet_phone" label="Telepon" value={phone} onChange={(e) => setPhone(e.target.value)} />
           </div>
           <div className="grid grid-cols-3 gap-4">
-            <Input label="Jam Buka" type="time" value={openTime} onChange={(e) => setOpenTime(e.target.value)} />
-            <Input label="Jam Tutup" type="time" value={closeTime} onChange={(e) => setCloseTime(e.target.value)} />
+            <Input name="outlet_open_time" label="Jam Buka" type="time" value={openTime} onChange={(e) => setOpenTime(e.target.value)} />
+            <Input name="outlet_close_time" label="Jam Tutup" type="time" value={closeTime} onChange={(e) => setCloseTime(e.target.value)} />
             <Input
+              name="outlet_opening_cash"
               label="Kas Awal (Rp)"
               type="number"
               min={0}

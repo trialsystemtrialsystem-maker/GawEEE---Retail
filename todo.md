@@ -31,17 +31,20 @@ Legend: `[ ]` pending · `[x]` done · `[!]` needs user input/credentials before
 - [x] Supabase client setup (`lib/supabase/client.ts`, `server.ts` browser/server/admin clients)
 - [x] Auth API routes: register (atomic company/outlet/owner provisioning via RPC), login, logout, refresh, me
 - [x] Auth UI: signup form, login form, validation, protected-route middleware (`middleware.ts`)
-- [ ] Onboarding flow (outlet info → products → payment methods → invite staff) — code-complete,
-      typecheck/lint/build clean, committed. `OnboardingWizard` (`/onboarding`) implements all 5 steps
-      from design-system.md §3.3, reusing existing endpoints (`PATCH /api/outlets/:id`,
-      `POST /api/products`, `POST /api/admin/users`) rather than new ones. A `master_admin` whose company
-      hasn't finished onboarding gets redirected there from `app/dashboard/layout.tsx`; finishing (or a
-      company that already existed before this feature, backfilled) never sees it again. Steps 2
-      (products) and 4 (invite staff) are skippable per spec; step 4 shows each invited staff member's
-      temp password inline since there's no real email delivery to rely on. Migration 058 (adds
-      `companies.onboarding_completed_at` + backfills existing companies as already-done, plus an
-      `update` RLS policy on `companies` — it previously had `select` only, nothing could write to it)
-      is pending — user needs to run it before this can be live-verified.
+- [x] Onboarding flow (outlet info → products → payment methods → invite staff) — migration 058 run;
+      live-verified end-to-end against a fresh company (provisioned the same way `register()` does, so it
+      post-dates the migration and isn't backfilled): login redirects a new `master_admin` into
+      `/onboarding` instead of `/dashboard`; all 5 steps confirmed working, each checked against the
+      actual database row it's supposed to write (outlet name/address/opening_cash, the added product,
+      `enabled_payment_methods`, the invited staff account), finishing sets `onboarding_completed_at` and
+      lands on `/pos`, and revisiting `/dashboard` afterward no longer redirects back into the wizard.
+      `OnboardingWizard` (`/onboarding`) implements all 5 steps from design-system.md §3.3, reusing
+      existing endpoints (`PATCH /api/outlets/:id`, `POST /api/products`, `POST /api/admin/users`) rather
+      than new ones; steps 2 (products) and 4 (invite staff) are skippable per spec, and step 4 shows each
+      invited staff member's temp password inline since there's no real email delivery to rely on.
+      Verification found one real bug: none of the wizard's `Input` fields had a `name`/`id`, so their
+      `<label>` never got a matching `htmlFor` — broke real screen-reader label association, not just
+      Playwright's `getByLabel`. Fixed by naming every field.
 - [x] Landing page (hero, pain points, features, pricing, FAQ, footer) per design-system.md §2
 - [x] Dashboard shell: Header + Sidebar (full menu tree from design-system.md §5.2) + layout + live KPI overview
 - [x] Unit tests: auth utilities/validation — `signUpSchema`/`loginSchema` already covered in
