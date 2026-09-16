@@ -35,8 +35,18 @@ Legend: `[ ]` pending · `[x]` done · `[!]` needs user input/credentials before
       auto-creates one default outlet; the multi-step wizard from design-system.md §3.3 is still open
 - [x] Landing page (hero, pain points, features, pricing, FAQ, footer) per design-system.md §2
 - [x] Dashboard shell: Header + Sidebar (full menu tree from design-system.md §5.2) + layout + live KPI overview
-- [ ] Unit tests: auth utilities/validation
-- [ ] Integration tests: login/signup flow (MSW mocks)
+- [x] Unit tests: auth utilities/validation — `signUpSchema`/`loginSchema` already covered in
+      `tests/unit/lib/validation.test.ts`; added `tests/unit/lib/auth-context.test.ts` (`canAccessOutlet`
+      role/outlet matrix) and `tests/unit/lib/errors.test.ts` (`handleDatabaseError` Postgres error-code
+      mapping, `ApiError`) to close the remaining gap. 26/26 unit tests passing.
+- [ ] Integration tests: login/signup flow (MSW mocks) — the error/validation paths (wrong credentials,
+      mismatched passwords) already have real E2E coverage in `tests/e2e/auth.spec.ts` against the live
+      dev server + Supabase, which is stronger than an MSW-mocked equivalent would be. What's still
+      missing is a full successful signup→login round trip; that's not covered by either suite because it
+      would create a real Supabase Auth user each run (no throwaway/sandbox project separate from the dev
+      one) — needs a decision on either a disposable test-project setup or a teardown step before adding
+      it. Not blocked, just deliberately left for a follow-up decision rather than adding MSW as a new
+      dependency without confirming that's the right tool for it.
 - [x] `npm run build` passes clean (TypeScript strict, no errors)
 
 ## Phase 2 — Sprint 2: POS & Inventory (roadmap.md Sprint 2)
