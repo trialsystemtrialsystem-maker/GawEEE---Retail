@@ -938,6 +938,25 @@ in that report) actually has something to match against.
       picked up everything from Phase 13 onward that had never been deployed) and live-verified there too
       that a real production bug report (POS product grid reloading on every tap, already fixed in this
       codebase weeks ago but never deployed) is now actually gone in production.
+- [x] 5-outlet demo + Hourly multi-outlet monitoring — the demo company now has 5 outlets (1 primary,
+      full 90-day history, + 4 branches — Bandung/Surabaya/Medan/Yogyakarta — each with ~3 weeks of their
+      own lighter sales history, own `chart_of_accounts` so `059_auto_post_journal_entries.sql`'s triggers
+      actually post for them too, and a manager account each). Per-outlet + company-wide accumulated
+      monitoring was already built (`/dashboard/admin/outlets`, generic over however many outlets exist —
+      no code change needed there beyond having more than one outlet with real data). Added the "Hourly"
+      view on top: `GET /api/admin/outlets/hourly` aggregates revenue/transaction-count by hour-of-day
+      across all outlets combined plus per-outlet, and `OutletPerformance` gets a Ringkasan Bulanan/Pola
+      Per Jam tab toggle with an outlet selector, reusing the existing `SalesByHourChart` component.
+      Live-verified: reseeding twice in a row succeeds cleanly, all 5 outlets show real (non-zero)
+      revenue/margin/transaction numbers on the leaderboard, the Hourly chart's "combined" total exactly
+      equals the sum of all 5 outlets' individual hourly totals, and switching the outlet selector
+      re-renders the chart correctly. Found and fixed one real bug along the way: `purchase_returns.po_id`
+      has no `ON DELETE` action (same bug class as migrations 047/050/056/059's wipe-order equivalent) —
+      the demo seed's wipe sequence deleted `purchase_orders` before `purchase_returns`, which blocked the
+      delete once `purchase_returns` started carrying real `po_id` references (this session's dummy-data
+      pass), leaving stale PO rows that collided on `po_number`'s unique constraint on the next reseed.
+      Fixed by reordering the wipe (no schema migration needed — this is demo-only data). Deployed to
+      production; confirmed there too (same shared Supabase database as local dev).
 
 ## Notes on scope
 This todo tracks the **engineering deliverables** of the PRD (a working Next.js + Supabase codebase

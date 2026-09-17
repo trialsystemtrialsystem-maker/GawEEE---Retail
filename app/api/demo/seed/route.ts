@@ -240,6 +240,13 @@ async function regenerateDemoData(admin: SupabaseClient<Database>, companyId: st
 
   if (purchaseInvoiceIds.length) await admin.from('purchase_payments').delete().in('purchase_invoice_id', purchaseInvoiceIds)
   if (purchaseInvoiceIds.length) await admin.from('purchase_invoices').delete().in('id', purchaseInvoiceIds)
+  // Must come before the purchase_orders delete below: purchase_returns.po_id
+  // has no ON DELETE action (RESTRICT, same bug class as 047/050/056) and
+  // this seeder now populates it with real PO references (for reconciliation
+  // demo data) — deleting purchase_orders first left stale, un-deletable PO
+  // rows behind, which then collided on po_number's unique constraint on the
+  // very next reseed. purchase_return_items cascades from return_id.
+  await admin.from('purchase_returns').delete().eq('outlet_id', outletId)
   if (poIds.length) await admin.from('po_items').delete().in('po_id', poIds)
   if (poIds.length) await admin.from('purchase_orders').delete().in('id', poIds)
   if (invoiceIds.length) await admin.from('payment_transactions').delete().in('invoice_id', invoiceIds)
@@ -295,7 +302,8 @@ async function regenerateDemoData(admin: SupabaseClient<Database>, companyId: st
   await admin.from('recipes').delete().eq('outlet_id', outletId)
   await admin.from('product_deposits').delete().eq('outlet_id', outletId)
   await admin.from('item_requests').delete().eq('outlet_id', outletId)
-  await admin.from('purchase_returns').delete().eq('outlet_id', outletId)
+  // purchase_returns is already wiped earlier (before the purchase_orders
+  // delete it would otherwise block — see that comment) — not repeated here.
   await admin.from('special_prices').delete().eq('outlet_id', outletId)
   await admin.from('stock_transfers').delete().eq('company_id', companyId)
   await admin.from('stocktakes').delete().eq('outlet_id', outletId)
@@ -1331,5 +1339,238 @@ async function regenerateDemoData(admin: SupabaseClient<Database>, companyId: st
     campaign_requests: campaignRequestRows.length,
     expense_requests: expenseRequestRows.length,
     online_orders: onlineOrderRows.length,
+    outlets: 1 + (await seedSecondaryOutlets(admin, companyId, products, DEFAULT_COA)),
   }
+}
+
+// Default chart of accounts, same 14 rows provision_company_and_owner()
+// (014_accounting_functions.sql) seeds for a freshly-registered company's
+// first outlet. Outlets added here are created directly (not through that
+// RPC), so they'd otherwise have no accounts at all and 059_auto_post_
+// journal_entries.sql's triggers would silently skip every sale (their
+// account lookups return null, which they're designed to no-op on rather
+// than fail) — every other outlet's books would just look empty.
+const DEFAULT_COA: [string, string, string][] = [
+  ['1000', 'Kas', 'asset'],
+  ['1010', 'Bank', 'asset'],
+  ['1100', 'Piutang Usaha', 'asset'],
+  ['1200', 'Persediaan Barang Dagang', 'asset'],
+  ['2000', 'Utang Usaha', 'liability'],
+  ['2100', 'Utang Pajak', 'liability'],
+  ['3000', 'Modal Pemilik', 'equity'],
+  ['3100', 'Laba Ditahan', 'equity'],
+  ['4000', 'Pendapatan Penjualan', 'income'],
+  ['4100', 'Pendapatan Lain-lain', 'income'],
+  ['5000', 'Harga Pokok Penjualan', 'expense'],
+  ['5100', 'Beban Gaji', 'expense'],
+  ['5200', 'Beban Operasional', 'expense'],
+  ['5300', 'Beban Sewa', 'expense'],
+]
+
+const SECONDARY_OUTLET_SPECS = [
+  { name: 'Toko Frozen Fresh Demo - Cabang Bandung', city: 'Bandung', managerEmail: 'manager-bandung@gaweee.app', managerName: 'Manajer Cabang Bandung' },
+  { name: 'Toko Frozen Fresh Demo - Cabang Surabaya', city: 'Surabaya', managerEmail: 'manager-surabaya@gaweee.app', managerName: 'Manajer Cabang Surabaya' },
+  { name: 'Toko Frozen Fresh Demo - Cabang Medan', city: 'Medan', managerEmail: 'manager-medan@gaweee.app', managerName: 'Manajer Cabang Medan' },
+  { name: 'Toko Frozen Fresh Demo - Cabang Yogyakarta', city: 'Yogyakarta', managerEmail: 'manager-yogyakarta@gaweee.app', managerName: 'Manajer Cabang Yogyakarta' },
+]
+const SECONDARY_OUTLET_DAYS = 21
+
+/** Ensures the demo company has 5 outlets total (1 primary + 4 branches,
+ * see SECONDARY_OUTLET_SPECS) and gives each branch ~3 weeks of its own
+ * lighter sales history — real numbers for the multi-outlet monitoring
+ * dashboard (/dashboard/admin/outlets: per-outlet + company-wide totals,
+ * both already outlet_id-generic — they just needed more than one outlet
+ * with data to actually demonstrate) to show, including a realistic
+ * lunch/dinner-peaked hourly pattern for the Hourly view. Lighter than the
+ * primary outlet's full 90-day, every-feature history on purpose: the ask
+ * here is branch-level revenue/margin/hourly monitoring, not re-exercising
+ * every POS feature per branch. Returns how many branch outlets were
+ * touched. */
+async function seedSecondaryOutlets(
+  admin: SupabaseClient<Database>,
+  companyId: string,
+  products: { id: string; purchasePrice: number; sellingPrice: number; popularity: number }[],
+  defaultCoa: [string, string, string][]
+) {
+  const today = new Date()
+  function dateFor(dayOffset: number, hour = 12, minute = 0) {
+    const d = new Date(today)
+    d.setDate(d.getDate() - dayOffset)
+    d.setHours(hour, minute, 0, 0)
+    return d
+  }
+  // Lunch (12-13) and dinner (18-19) get roughly 3x the weight of an
+  // ordinary open hour, closed hours (before 8, after 21) get none — a
+  // believable retail pattern for the Hourly chart instead of flat noise.
+  function pickBusinessHour() {
+    const weights: [number, number][] = []
+    for (let h = 8; h <= 21; h++) weights.push([h, h === 12 || h === 13 || h === 18 || h === 19 ? 3 : 1])
+    const total = weights.reduce((s, [, w]) => s + w, 0)
+    let r = Math.random() * total
+    for (const [h, w] of weights) {
+      r -= w
+      if (r <= 0) return h
+    }
+    return 12
+  }
+
+  for (const spec of SECONDARY_OUTLET_SPECS) {
+    let outletId: string
+    const { data: existing } = await admin.from('outlets').select('id').eq('company_id', companyId).eq('name', spec.name).maybeSingle()
+    if (existing) {
+      outletId = existing.id
+    } else {
+      const { data: created, error } = await admin
+        .from('outlets')
+        .insert({ company_id: companyId, name: spec.name, address: '-', city: spec.city })
+        .select('id')
+        .single()
+      if (error || !created) throw new Error(`secondary outlet (${spec.name}): ${error?.message}`)
+      outletId = created.id
+    }
+
+    const { count: coaCount } = await admin.from('chart_of_accounts').select('*', { count: 'exact', head: true }).eq('outlet_id', outletId)
+    if (!coaCount) {
+      await admin
+        .from('chart_of_accounts')
+        .insert(defaultCoa.map(([account_code, account_name, account_type]) => ({ outlet_id: outletId, account_code, account_name, account_type })))
+    }
+
+    let managerId: string
+    const { data: existingManager } = await admin.from('users').select('id').eq('email', spec.managerEmail).maybeSingle()
+    if (existingManager) {
+      managerId = existingManager.id
+      await admin.from('users').update({ outlet_id: outletId }).eq('id', managerId)
+    } else {
+      const { data: createdAuth, error: authError } = await admin.auth.admin.createUser({
+        email: spec.managerEmail,
+        password: 'DemoManager2026!',
+        email_confirm: true,
+      })
+      if (authError || !createdAuth.user) throw new Error(`secondary outlet manager (${spec.managerEmail}): ${authError?.message}`)
+      managerId = createdAuth.user.id
+      await admin
+        .from('users')
+        .insert({ id: managerId, company_id: companyId, outlet_id: outletId, email: spec.managerEmail, full_name: spec.managerName, role: 'outlet_manager' })
+    }
+
+    // Reset this branch's own history (outlet-scoped, FK-safe order) —
+    // matches the primary outlet's reseed idempotency so repeated demo
+    // resets don't just keep piling on more invoices forever.
+    const branchInvoiceIds = (await admin.from('invoices').select('id').eq('outlet_id', outletId)).data?.map((i) => i.id) ?? []
+    if (branchInvoiceIds.length) {
+      await admin.from('payment_transactions').delete().in('invoice_id', branchInvoiceIds)
+      await admin.from('invoice_items').delete().in('invoice_id', branchInvoiceIds)
+    }
+    await admin.from('journal_entries').delete().eq('outlet_id', outletId)
+    await admin.from('invoices').delete().eq('outlet_id', outletId)
+    await admin.from('inventory_ledger').delete().eq('outlet_id', outletId)
+    await admin.from('inventory').delete().eq('outlet_id', outletId)
+
+    const stock = new Map(products.map((p) => [p.id, 200]))
+    const branchInvoices: { id: string; outlet_id: string; invoice_number: string; customer_name: null; customer_phone: null; cashier_id: string; subtotal: number; discount_amount: number; discount_reason: null; tax_amount: number; total: number; payment_status: string; order_status: string; created_at: string }[] = []
+    const branchItems: { id: string; invoice_id: string; product_id: string; quantity: number; unit_price: number; item_discount: number; cost_of_goods_sold: number }[] = []
+    const branchPayments: { id: string; invoice_id: string; payment_method: string; amount: number; status: string; payment_date: string; settlement_date: string; settlement_amount: number; created_at: string }[] = []
+    const branchLedger: { outlet_id: string; product_id: string; movement_type: string; quantity_change: number; unit_cost: number; reference_type: string; reference_id: string; recorded_by: string; created_at: string }[] = []
+
+    let counter = 0
+    for (let dayOffset = SECONDARY_OUTLET_DAYS - 1; dayOffset >= 0; dayOffset--) {
+      const txCount = randomInt(3, 10)
+      for (let t = 0; t < txCount; t++) {
+        const lineCount = randomInt(1, 3)
+        const lineItems: { product: (typeof products)[number]; qty: number }[] = []
+        const chosen = new Set<string>()
+        for (let l = 0; l < lineCount; l++) {
+          const candidates = products.filter((p) => !chosen.has(p.id) && (stock.get(p.id) ?? 0) > 0)
+          if (!candidates.length) break
+          const product = weightedPickProduct(candidates)
+          chosen.add(product.id)
+          const available = stock.get(product.id) ?? 0
+          const qty = randomInt(1, Math.min(5, available))
+          lineItems.push({ product, qty })
+          stock.set(product.id, available - qty)
+        }
+        if (!lineItems.length) continue
+
+        const subtotal = lineItems.reduce((s, l) => s + l.qty * l.product.sellingPrice, 0)
+        const taxAmount = Math.round(subtotal * TAX_RATE)
+        const total = subtotal + taxAmount
+        const paymentMethod = pick(['cash', 'cash', 'e_wallet', 'bank_transfer'])
+        const createdAt = dateFor(dayOffset, pickBusinessHour(), randomInt(0, 59))
+        const invoiceId = crypto.randomUUID()
+        counter++
+
+        branchInvoices.push({
+          id: invoiceId,
+          outlet_id: outletId,
+          invoice_number: `INV-${createdAt.toISOString().slice(0, 10).replace(/-/g, '')}-${spec.city.slice(0, 3).toUpperCase()}${String(counter).padStart(4, '0')}`,
+          customer_name: null,
+          customer_phone: null,
+          cashier_id: managerId,
+          subtotal,
+          discount_amount: 0,
+          discount_reason: null,
+          tax_amount: taxAmount,
+          total,
+          payment_status: 'paid',
+          order_status: 'completed',
+          created_at: createdAt.toISOString(),
+        })
+        for (const line of lineItems) {
+          branchItems.push({
+            id: crypto.randomUUID(),
+            invoice_id: invoiceId,
+            product_id: line.product.id,
+            quantity: line.qty,
+            unit_price: line.product.sellingPrice,
+            item_discount: 0,
+            cost_of_goods_sold: line.qty * line.product.purchasePrice,
+          })
+          branchLedger.push({
+            outlet_id: outletId,
+            product_id: line.product.id,
+            movement_type: 'sales',
+            quantity_change: -line.qty,
+            unit_cost: line.product.purchasePrice,
+            reference_type: 'invoice',
+            reference_id: invoiceId,
+            recorded_by: managerId,
+            created_at: createdAt.toISOString(),
+          })
+        }
+        branchPayments.push({
+          id: crypto.randomUUID(),
+          invoice_id: invoiceId,
+          payment_method: paymentMethod,
+          amount: total,
+          status: 'settled',
+          payment_date: createdAt.toISOString(),
+          settlement_date: createdAt.toISOString(),
+          settlement_amount: total,
+          created_at: createdAt.toISOString(),
+        })
+      }
+    }
+
+    const branchInventory = products.map((p) => ({
+      outlet_id: outletId,
+      product_id: p.id,
+      quantity_on_hand: Math.max(0, stock.get(p.id) ?? 0),
+      alert_status: (stock.get(p.id) ?? 0) <= 0 ? 'out_of_stock' : (stock.get(p.id) ?? 0) <= 10 ? 'low_stock' : 'normal',
+    }))
+
+    async function insertChunkedBranch<T>(table: keyof Database['public']['Tables'], rows: T[], chunkSize = 300) {
+      for (let i = 0; i < rows.length; i += chunkSize) {
+        const { error } = await admin.from(table).insert(rows.slice(i, i + chunkSize) as never)
+        if (error) throw new Error(`${table} (${spec.name}): ${error.message}`)
+      }
+    }
+    await insertChunkedBranch('inventory', branchInventory)
+    await insertChunkedBranch('invoices', branchInvoices)
+    await insertChunkedBranch('invoice_items', branchItems)
+    await insertChunkedBranch('payment_transactions', branchPayments)
+    await insertChunkedBranch('inventory_ledger', branchLedger)
+  }
+
+  return SECONDARY_OUTLET_SPECS.length
 }
