@@ -121,23 +121,30 @@ Legend: `[ ]` pending · `[x]` done · `[!]` needs user input/credentials before
       059 below) — purchase-order receiving still doesn't, that's a smaller separate follow-up. daily
       -summary/P&L stay computed live from invoices rather than from posted journal entries (see below) —
       that's an intentional, separate design choice already documented there, not a gap in this item.
-- [ ] Auto-post journal entries from sales (`059_auto_post_journal_entries.sql`) — code-complete,
-      typecheck/lint/build clean, committed. Three triggers on `invoices`, not changes to
-      `create_invoice()`/`void_invoice()` themselves (same "additive calls, not function changes"
-      precedent as Petty Cash): (1) a deferred constraint trigger on INSERT posts a revenue entry
-      (Dr Kas if `payment_status='paid'` i.e. cash, else Dr Piutang Usaha for e-wallet/bank still
-      pending) plus a separate HPP entry from `invoice_items.cost_of_goods_sold`; (2) an UPDATE trigger
-      reclassifies Piutang Usaha into Bank once a pending payment settles; (3) an UPDATE trigger reverses
-      every posted entry tagged to an invoice when it's voided, by mirroring debit/credit rather than
-      deleting. Every function is wrapped in an exception handler that logs a warning and returns rather
-      than raising — since the INSERT trigger is deferred to commit-time, an unhandled exception there
-      would roll back the sale itself, so a bookkeeping bug must never be able to block or undo an actual
-      transaction. Also added a `journal_entries` wipe step to the demo seed route (source_id has no FK,
-      so it wouldn't get cleaned by the existing `invoices` delete, and would accumulate across
-      reseeds). Migration 059 is pending — user needs to run it before this can be live-verified, and
-      given the blast radius (every POS sale runs through these triggers) it needs a full cash + e-wallet
-      + bank-transfer + void regression pass through the live POS afterward, not just a check that
-      entries appear.
+- [x] Auto-post journal entries from sales (`059_auto_post_journal_entries.sql`) — migration run;
+      live-verified with a full regression pass through the real POS UI (not just a check that entries
+      appear), given the blast radius of triggers on every sale: a cash sale posts a balanced revenue
+      entry debiting Kas plus a balanced HPP entry; an e-wallet sale posts its revenue entry debiting
+      Piutang Usaha (not Kas) while still pending, then simulating settlement posts a balanced
+      reclassification entry into Bank; a bank-transfer sale round-trips the same way; voiding the cash
+      sale reversed every entry posted for it (status flipped to `reversed`, mirrored `void`-tagged
+      entries posted, and the net debit/credit per account across original+reversal came out to exactly
+      zero). Also timed a full demo reseed (722 invoices, the genuinely-empty blocking path) to check the
+      new per-invoice trigger overhead: 19.4s, inside the ~15-25s baseline already documented for that
+      path, with 720 correctly-posted entries and zero errors — no meaningful performance regression.
+      Three triggers on `invoices`, not changes to `create_invoice()`/`void_invoice()` themselves (same
+      "additive calls, not function changes" precedent as Petty Cash): (1) a deferred constraint trigger
+      on INSERT posts a revenue entry (Dr Kas if `payment_status='paid'` i.e. cash, else Dr Piutang Usaha
+      for e-wallet/bank still pending) plus a separate HPP entry from `invoice_items.cost_of_goods_sold`;
+      (2) an UPDATE trigger reclassifies Piutang Usaha into Bank once a pending payment settles; (3) an
+      UPDATE trigger reverses every posted entry tagged to an invoice when it's voided, by mirroring
+      debit/credit rather than deleting. Every function is wrapped in an exception handler that logs a
+      warning and returns rather than raising — since the INSERT trigger is deferred to commit-time, an
+      unhandled exception there would roll back the sale itself, so a bookkeeping bug must never be able
+      to block or undo an actual transaction. Also added a `journal_entries` wipe step to the demo seed
+      route (`source_id` has no FK, so it wouldn't get cleaned by the existing `invoices` delete, and
+      would accumulate across reseeds). Purchase-order receiving still doesn't auto-post — a smaller,
+      separate follow-up if wanted.
 - [x] Financial dashboard UI (`/dashboard/financial`: KPI cards, sales breakdown, cash position)
 - [x] Daily summary (`/api/reports/daily-summary`), P&L (`/api/reports/p-and-l`), and cash position
       (`/api/reports/cash-position`) endpoints — computed live from invoices/invoice_items/
@@ -159,10 +166,11 @@ Legend: `[ ]` pending · `[x]` done · `[!]` needs user input/credentials before
       correct total from demo data. PPh (income tax) is out of scope — that's a company-level annual
       calculation on net profit, not a per-transaction one, and needs a decision on which PPh regime
       (Final PPh 0.5% UMKM vs. normal rates) applies before it's buildable.
-- [ ] Integration test: transaction → journal entry → P&L accuracy — journal entries themselves are now
-      real (see above), but `create_invoice()` doesn't auto-post one, so there's still no automatic
-      transaction → journal entry link to test. Blocked on the auto-posting decision noted above, not on
-      missing test infrastructure.
+- [ ] Automated integration test: transaction → journal entry → P&L accuracy — the link itself is now
+      real and live-verified (migration 059, above) via a manual Playwright regression pass, but that
+      pass was a one-off verification script, not a committed automated test in `tests/`. Worth promoting
+      into a real Jest/Playwright test if this trigger logic is touched again, but not needed for the
+      feature itself to be considered done.
 - [x] Financial dashboard sub-pages: `/dashboard/financial/cash-position` (KPI cards + recent cash
       transactions) and `/dashboard/financial/reports` (P&L with a date-range picker) — both were
       linked from the sidebar since Sprint 1 but 404'd until now
