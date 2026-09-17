@@ -957,6 +957,15 @@ in that report) actually has something to match against.
       pass), leaving stale PO rows that collided on `po_number`'s unique constraint on the next reseed.
       Fixed by reordering the wipe (no schema migration needed — this is demo-only data). Deployed to
       production; confirmed there too (same shared Supabase database as local dev).
+- [x] "Rincian Harian" (daily breakdown per outlet) — user tried the Hourly/monthly views but still
+      couldn't find a day-by-day comparison across outlets, correctly: it didn't exist. Added a third tab
+      on `/dashboard/admin/outlets` alongside Ringkasan Bulanan/Hourly: `GET /api/admin/outlets/daily`
+      returns 14 days of revenue/transaction-count per outlet plus a combined total (same shape/pattern
+      as the Hourly endpoint), rendered as a chart (reusing `SalesByHourChart` again — a bar chart is a
+      bar chart regardless of whether the bucket is an hour or a day) plus a comparison table with one
+      column per outlet and a Total column, so a specific day's numbers can be read across all 5 outlets
+      at once. Live-verified: 14 dates × 5 outlets returned, combined total matches the sum of all
+      outlets exactly, and the table renders one row per day with all 5 outlet columns present.
 
 ## Notes on scope
 This todo tracks the **engineering deliverables** of the PRD (a working Next.js + Supabase codebase

@@ -7,7 +7,7 @@ import { Alert } from '@/components/ui/Alert'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { SalesByHourChart } from '@/components/charts/SalesByHourChart'
-import { formatCurrency, formatPercent } from '@/lib/utils/formatting'
+import { formatCurrency, formatPercent, formatDate } from '@/lib/utils/formatting'
 import { useNotificationStore } from '@/store/notificationStore'
 
 interface OutletRow {
@@ -46,16 +46,35 @@ function toChartData(hourly: HourBucket[]) {
   return hourly.map((h) => ({ hour: `${String(h.hour).padStart(2, '0')}:00`, total: h.revenue }))
 }
 
+interface DailyBucket {
+  date: string
+  revenue: number
+  transaction_count: number
+}
+interface DailyResponse {
+  days: number
+  dates: string[]
+  combined: DailyBucket[]
+  outlets: { outlet_id: string; outlet_name: string; daily: DailyBucket[] }[]
+}
+
+function toDailyChartData(daily: DailyBucket[]) {
+  return daily.map((d) => ({ hour: formatDate(d.date).slice(0, 5), total: d.revenue }))
+}
+
 export function OutletPerformance() {
   const [data, setData] = useState<OutletsResponse | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState({ name: '', address: '', city: '', phone: '' })
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [view, setView] = useState<'monthly' | 'hourly'>('monthly')
+  const [view, setView] = useState<'monthly' | 'hourly' | 'daily'>('monthly')
   const [hourlyData, setHourlyData] = useState<HourlyResponse | null>(null)
   const [hourlyError, setHourlyError] = useState<string | null>(null)
   const [hourlyOutletId, setHourlyOutletId] = useState<string>('combined')
+  const [dailyData, setDailyData] = useState<DailyResponse | null>(null)
+  const [dailyError, setDailyError] = useState<string | null>(null)
+  const [dailyOutletId, setDailyOutletId] = useState<string>('combined')
   const showToast = useNotificationStore((s) => s.show)
 
   const load = useCallback(async () => {
@@ -97,6 +116,27 @@ export function OutletPerformance() {
     const timeout = setTimeout(loadHourly, 0)
     return () => clearTimeout(timeout)
   }, [view, hourlyData, loadHourly])
+
+  const loadDaily = useCallback(async () => {
+    setDailyError(null)
+    try {
+      const res = await fetch('/api/admin/outlets/daily?days=14')
+      const json = await res.json()
+      if (!res.ok) {
+        setDailyError(typeof json.error === 'string' ? json.error : 'Gagal memuat data harian')
+        return
+      }
+      setDailyData(json)
+    } catch {
+      setDailyError('Terjadi kesalahan jaringan')
+    }
+  }, [])
+
+  useEffect(() => {
+    if (view !== 'daily' || dailyData) return
+    const timeout = setTimeout(loadDaily, 0)
+    return () => clearTimeout(timeout)
+  }, [view, dailyData, loadDaily])
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault()
@@ -188,6 +228,13 @@ export function OutletPerformance() {
         >
           Pola Per Jam (Hourly)
         </button>
+        <button
+          type="button"
+          onClick={() => setView('daily')}
+          className={`border-b-2 px-3 pb-2 text-sm font-semibold ${view === 'daily' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+        >
+          Rincian Harian
+        </button>
       </div>
 
       {view === 'monthly' && (
@@ -255,6 +302,74 @@ export function OutletPerformance() {
                   : (hourlyData.outlets.find((o) => o.outlet_id === hourlyOutletId)?.hourly ?? hourlyData.combined)
               )}
             />
+          )}
+        </Card>
+      )}
+
+      {view === 'daily' && (
+        <Card>
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h2 className="text-lg font-semibold text-gray-900">Rincian Penjualan Harian</h2>
+              <p className="text-sm text-gray-500">14 hari terakhir — bandingkan penjualan tiap hari antar outlet.</p>
+            </div>
+            {dailyData && (
+              <select
+                value={dailyOutletId}
+                onChange={(e) => setDailyOutletId(e.target.value)}
+                className="rounded-sm border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="combined">Semua Outlet (Gabungan)</option>
+                {dailyData.outlets.map((o) => (
+                  <option key={o.outlet_id} value={o.outlet_id}>
+                    {o.outlet_name}
+                  </option>
+                ))}
+              </select>
+            )}
+          </div>
+
+          {dailyError && <Alert variant="danger">{dailyError}</Alert>}
+          {!dailyData && !dailyError && <p className="text-gray-400">Memuat…</p>}
+          {dailyData && (
+            <>
+              <SalesByHourChart
+                data={toDailyChartData(
+                  dailyOutletId === 'combined'
+                    ? dailyData.combined
+                    : (dailyData.outlets.find((o) => o.outlet_id === dailyOutletId)?.daily ?? dailyData.combined)
+                )}
+              />
+
+              <div className="mt-6 overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200 text-sm">
+                  <thead>
+                    <tr className="text-left text-gray-500">
+                      <th className="py-2 pr-4">Tanggal</th>
+                      {dailyData.outlets.map((o) => (
+                        <th key={o.outlet_id} className="py-2 pr-4 text-right">
+                          {o.outlet_name.replace('Toko Frozen Fresh Demo - ', '')}
+                        </th>
+                      ))}
+                      <th className="py-2 pr-4 text-right font-semibold text-gray-700">Total</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    {dailyData.dates.map((date, i) => (
+                      <tr key={date}>
+                        <td className="py-2 pr-4 text-gray-600">{formatDate(date)}</td>
+                        {dailyData.outlets.map((o) => (
+                          <td key={o.outlet_id} className="py-2 pr-4 text-right text-gray-700">
+                            {formatCurrency(o.daily[i]?.revenue ?? 0)}
+                          </td>
+                        ))}
+                        <td className="py-2 pr-4 text-right font-semibold text-gray-900">{formatCurrency(dailyData.combined[i]?.revenue ?? 0)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
           )}
         </Card>
       )}
