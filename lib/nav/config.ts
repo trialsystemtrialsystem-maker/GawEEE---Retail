@@ -36,6 +36,7 @@ export const PRIMARY_NAV: NavItem[] = [
     icon: '📊',
     children: [
       { label: 'Dashboard', href: '/dashboard' },
+      { label: 'Outlet', href: '/dashboard/admin/outlets' },
       { label: 'Laporan Harian', href: '/dashboard/reports/daily' },
     ],
     groups: [

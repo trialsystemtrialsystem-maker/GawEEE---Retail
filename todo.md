@@ -966,6 +966,12 @@ in that report) actually has something to match against.
       column per outlet and a Total column, so a specific day's numbers can be read across all 5 outlets
       at once. Live-verified: 14 dates × 5 outlets returned, combined total matches the sum of all
       outlets exactly, and the table renders one row per day with all 5 outlet columns present.
+- [x] "Outlet" sidebar entry directly under Dashboard (`lib/nav/config.ts`) — user found the multi-outlet
+      monitoring page useful once shown where it was, but wanted faster access than Master Admin →
+      Outlets. Added a second entry point right under Sales → Dashboard pointing at the same
+      `/dashboard/admin/outlets` page (no route/page duplication — nav items aren't role-filtered
+      anywhere in this app, access is already page-gated there for non-master_admin). Live-verified the
+      link appears and lands on the per-outlet leaderboard (already the page's default tab).
 
 ## Notes on scope
 This todo tracks the **engineering deliverables** of the PRD (a working Next.js + Supabase codebase
