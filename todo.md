@@ -900,6 +900,45 @@ each does/doesn't touch `create_invoice()`, batch order):
 
 **Phase 13 complete: all 24 items across Batches A-K built and live-verified.**
 
+## Phase 15 — Fill every menu with realistic 2-month demo data
+Most Phase 13 menus had zero demo data (or a handful of leftover one-off rows from live-verifying them,
+not real history), so opening them showed an empty state even though the feature worked. Extended
+`regenerateDemoData()` (`app/api/demo/seed/route.ts`) to also generate ~60 days of realistic data for
+every one of them, wiping and reseeding on every reset the same way the core POS/inventory/purchasing
+loop already did. Also fixed `invoices.customer_phone` (previously always `null`) to carry a real number
+matching `customer_name`, so Customer Summary Report's phone-based matching (no FK exists, disclosed
+in that report) actually has something to match against.
+- [x] Created real `customers` rows (10, matching the existing `DEMO_CUSTOMER_NAMES`), `product_departments`
+      (3, with 2 categories grouped under one), `note_presets` (6), `product_modifier_groups`/`options`
+      (spice-level + a priced add-on on 2 products), `customer_field_definitions` (2),
+      `customer_reviews` (20), `price_schedules` (2 already-applied + 2 pending), `time_based_prices` (2),
+      `channel_prices` (45, first 15 products × 3 channels), `product_deposits` (15, all 3 statuses),
+      `facilities` (3) + `bookings` (20), `sales_quotations`/`items` (15, some converted to a real
+      invoice) + `sales_orders`/`items` (10) + `sales_deliveries` (8), `purchase_returns`/`items` (6,
+      linked to a real `purchase_invoice_id` for reconciliation), `recipes`/`recipe_ingredients` (3) +
+      `recipe_change_schedules` (1 applied + 1 pending), `coupons` (5) + `loyalty_ledger` (34),
+      `stock_transfers`/`items` (5, between the demo tenant's two outlets), `stocktakes`/`details` (3,
+      across draft/in_progress/completed/approved with a couple of deliberate variances), and expanded
+      `campaign_requests`/`expense_requests`/`online_orders` from a handful of leftover test rows to 10-20
+      properly backdated ones each.
+- [x] Live-verified every one of the 29 corresponding menu pages renders this data correctly (not just
+      that the rows exist) — Department List, Notes Category List, Extra Product, Customer Custom Fields,
+      Customer Summary Report, Customer Satisfaction, Price Scheduler, Time-Based Pricing, Ojek Online
+      Price List, Product Deposits + Deposit Report, Product Facility + Bookings + Facility Report, Sales
+      Quotation/Order/Delivery Lists, Purchase Return Reconciliation, Master Recipes + Recipe Change
+      Scheduling, Coupon + Loyalty + Promo & Loyalty Report, Stock Transfer, Stocktake, Buy Marketing
+      Campaign, Finance Approvals, Online Orders, Journal Entries, Tax Report. Two false failures in the
+      first verification pass were test-script bugs, not app bugs: "Customer Data Setting" and "Customer
+      Custom Fields" are two *different* pages (module-behavior settings vs. the field list itself) —
+      the test hit the wrong one; and Extra Product's page is per-product (pick a product from a dropdown
+      first) — the test wasn't selecting one of the two products that actually had modifier groups.
+- [x] Ran a full reseed end-to-end (34s, no errors) and a POS checkout smoke test afterward to confirm
+      none of this broke the core sale flow (only additive inserts, no changes to `create_invoice()`).
+- [x] Deployed to production (`https://gaweee-retail.vercel.app`, was 15 days stale before this — also
+      picked up everything from Phase 13 onward that had never been deployed) and live-verified there too
+      that a real production bug report (POS product grid reloading on every tap, already fixed in this
+      codebase weeks ago but never deployed) is now actually gone in production.
+
 ## Notes on scope
 This todo tracks the **engineering deliverables** of the PRD (a working Next.js + Supabase codebase
 implementing Phase 1 features, with payment gateways behind a swappable mock interface). Items marked

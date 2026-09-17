@@ -261,6 +261,26 @@ async function regenerateDemoData(admin: SupabaseClient<Database>, companyId: st
   await admin.from('cashier_shifts').delete().eq('outlet_id', outletId)
   await admin.from('product_bundles').delete().eq('outlet_id', outletId)
 
+  // Phase 13 menus that previously had zero (or a handful of leftover
+  // one-off test rows) demo data — wiped here so every reseed regenerates a
+  // consistent ~2 months of history for them too, instead of accumulating
+  // stale rows across repeated reseeds. None of these block the products
+  // delete below via their own FK (no product_id reference, or cascades
+  // from a parent already wiped), except product_deposits — that one's
+  // wiped in the "every table with a product FK" block further down.
+  await admin.from('customer_reviews').delete().eq('outlet_id', outletId)
+  await admin.from('facilities').delete().eq('outlet_id', outletId) // bookings.facility_id is ON DELETE SET NULL
+  await admin.from('bookings').delete().eq('outlet_id', outletId)
+  await admin.from('coupons').delete().eq('outlet_id', outletId)
+  await admin.from('campaign_requests').delete().eq('outlet_id', outletId)
+  await admin.from('expense_requests').delete().eq('outlet_id', outletId)
+  await admin.from('online_orders').delete().eq('outlet_id', outletId)
+  await admin.from('customer_field_definitions').delete().eq('outlet_id', outletId)
+  await admin.from('note_presets').delete().eq('outlet_id', outletId)
+  // loyalty_ledger.customer_id is ON DELETE CASCADE, so wiping customers
+  // clears it too.
+  await admin.from('customers').delete().eq('outlet_id', outletId)
+
   // Every other table with a (non-cascading, from products' side) FK to
   // products.id — anything left un-wiped here makes the products delete
   // below fail with a 23503 foreign key violation, which the codebase found
@@ -273,6 +293,7 @@ async function regenerateDemoData(admin: SupabaseClient<Database>, companyId: st
   // automatically from their parent's `on delete cascade`.
   await admin.from('production_runs').delete().eq('outlet_id', outletId)
   await admin.from('recipes').delete().eq('outlet_id', outletId)
+  await admin.from('product_deposits').delete().eq('outlet_id', outletId)
   await admin.from('item_requests').delete().eq('outlet_id', outletId)
   await admin.from('purchase_returns').delete().eq('outlet_id', outletId)
   await admin.from('special_prices').delete().eq('outlet_id', outletId)
@@ -298,6 +319,11 @@ async function regenerateDemoData(admin: SupabaseClient<Database>, companyId: st
   const { error: productDeleteError } = await admin.from('products').delete().eq('company_id', companyId)
   if (productDeleteError) throw new Error(`products (delete): ${productDeleteError.message}`)
   await admin.from('product_categories').delete().eq('company_id', companyId)
+  // Must come after product_categories: product_categories.department_id
+  // has no ON DELETE action (RESTRICT), so a department row an
+  // about-to-be-recreated category still points at would block this delete
+  // if it ran first.
+  await admin.from('product_departments').delete().eq('company_id', companyId)
   await admin.from('suppliers').delete().eq('company_id', companyId)
 
   // 3) Categories, suppliers, products, and starting inventory.
@@ -429,6 +455,12 @@ async function regenerateDemoData(admin: SupabaseClient<Database>, companyId: st
 
   let invoiceCounter = 0
 
+  // Name -> phone, so invoices carry a real customer_phone instead of null.
+  // Customer Summary Report matches by phone (no FK from invoices to
+  // customers), so without this it would always show empty. Also doubles as
+  // the seed data for the `customers` table itself (built further below).
+  const customerPhoneByName = new Map(DEMO_CUSTOMER_NAMES.map((name, i) => [name, `0812345${String(60 + i).padStart(5, '0')}`]))
+
   for (let dayOffset = DAYS_OF_HISTORY - 1; dayOffset >= 0; dayOffset--) {
     const date = dateFor(dayOffset)
     const dayOfWeek = date.getDay()
@@ -525,13 +557,14 @@ async function regenerateDemoData(admin: SupabaseClient<Database>, companyId: st
       const invoiceId = crypto.randomUUID()
       const createdAt = dateFor(dayOffset, randomInt(8, 21), randomInt(0, 59))
       invoiceCounter++
+      const invoiceCustomerName = Math.random() < 0.4 ? pick(DEMO_CUSTOMER_NAMES) : null
 
       invoices.push({
         id: invoiceId,
         outlet_id: outletId,
         invoice_number: `INV-${createdAt.toISOString().slice(0, 10).replace(/-/g, '')}-${String(invoiceCounter).padStart(5, '0')}`,
-        customer_name: Math.random() < 0.4 ? pick(DEMO_CUSTOMER_NAMES) : null,
-        customer_phone: null,
+        customer_name: invoiceCustomerName,
+        customer_phone: invoiceCustomerName ? (customerPhoneByName.get(invoiceCustomerName) ?? null) : null,
         cashier_id: userId,
         subtotal,
         discount_amount: discountAmount,
@@ -673,6 +706,534 @@ async function regenerateDemoData(admin: SupabaseClient<Database>, companyId: st
     created_at: dateFor(1).toISOString(),
   })
 
+  // 6b) Feature-showcase data: everything below fills in the Phase 13 menus
+  // that had zero demo data (or only a handful of leftover one-off test
+  // rows from live-verifying them, not real history) — a fresh install of
+  // this seeder gave a fully-populated POS/inventory/purchasing loop but a
+  // mostly-empty Sales/Accounting sidebar otherwise. ~60 days of spread,
+  // same dateFor/randomInt/pick helpers as the rest of this function.
+  const customerRows = DEMO_CUSTOMER_NAMES.map((name) => ({
+    id: crypto.randomUUID(),
+    outlet_id: outletId,
+    name,
+    phone: customerPhoneByName.get(name)!,
+    email: null as string | null,
+    notes: null as string | null,
+    created_by: userId,
+    created_at: dateFor(randomInt(60, 89)).toISOString(),
+  }))
+  const departmentNames = ['Makanan Beku', 'Makanan Siap Saji', 'Bahan Segar']
+  const departmentRows = departmentNames.map((name, i) => ({
+    id: crypto.randomUUID(),
+    company_id: companyId,
+    name,
+    sort_order: i,
+  }))
+
+  const notePresetLabels = ['Tanpa MSG', 'Extra Pedas', 'Tanpa Es', 'Less Sugar', 'Extra Sambal', 'Tanpa Bawang']
+  const notePresetRows = notePresetLabels.map((label) => ({
+    id: crypto.randomUUID(),
+    outlet_id: outletId,
+    label,
+    is_active: true,
+    created_by: userId,
+    created_at: dateFor(randomInt(40, 89)).toISOString(),
+  }))
+
+  // Extra Product (modifiers): an unpriced "spice level" choice on a couple
+  // of ready-to-eat items, plus one priced add-on linking a real product as
+  // its own cart line (see ProductSearch.handleModifierConfirm).
+  const modifierGroupRows: { id: string; product_id: string; name: string; sort_order: number }[] = []
+  const modifierOptionRows: { id: string; group_id: string; label: string; linked_product_id: string | null; sort_order: number }[] = []
+  const readyToEatProducts = products.filter((p) => p.category === 'Makanan Siap Saji')
+  for (const mp of readyToEatProducts.slice(0, 2)) {
+    const spiceGroupId = crypto.randomUUID()
+    modifierGroupRows.push({ id: spiceGroupId, product_id: mp.id, name: 'Tingkat Kepedasan', sort_order: 0 })
+    ;['Tidak Pedas', 'Sedang', 'Pedas'].forEach((label, i) =>
+      modifierOptionRows.push({ id: crypto.randomUUID(), group_id: spiceGroupId, label, linked_product_id: null, sort_order: i })
+    )
+  }
+  const sauceAddon = products.find((p) => p.name.includes('Saus'))
+  if (sauceAddon && readyToEatProducts.length) {
+    const addonGroupId = crypto.randomUUID()
+    modifierGroupRows.push({ id: addonGroupId, product_id: readyToEatProducts[0].id, name: 'Tambahan', sort_order: 1 })
+    modifierOptionRows.push({ id: crypto.randomUUID(), group_id: addonGroupId, label: sauceAddon.name, linked_product_id: sauceAddon.id, sort_order: 0 })
+  }
+
+  const customerFieldRows = ['Alamat Pengiriman', 'Tanggal Lahir'].map((label, i) => ({
+    id: crypto.randomUUID(),
+    outlet_id: outletId,
+    label,
+    sort_order: i,
+    created_at: dateFor(randomInt(60, 89)).toISOString(),
+  }))
+
+  const reviewComments = [
+    'Pelayanan cepat dan ramah, produk selalu segar.',
+    'Harga bersaing dibanding toko sebelah.',
+    'Stoknya kadang kurang lengkap untuk seafood.',
+    'Puas belanja di sini, langganan terus.',
+    'Antrian agak lama pas jam ramai.',
+    'Kualitas daging bagus, packaging rapi.',
+    'Respon kasir cepat dan sopan.',
+    null,
+  ]
+  const customerReviewRows = Array.from({ length: 20 }, () => {
+    const rating = weightedPickProduct([
+      { v: 5, popularity: 5 },
+      { v: 4, popularity: 4 },
+      { v: 3, popularity: 2 },
+      { v: 2, popularity: 1 },
+      { v: 1, popularity: 1 },
+    ]).v
+    const name = pick(DEMO_CUSTOMER_NAMES)
+    return {
+      id: crypto.randomUUID(),
+      outlet_id: outletId,
+      invoice_id: null as string | null,
+      customer_name: name,
+      customer_phone: customerPhoneByName.get(name) ?? null,
+      rating,
+      comment: pick(reviewComments),
+      created_by: userId,
+      created_at: dateFor(randomInt(1, 59), randomInt(9, 20)).toISOString(),
+    }
+  })
+
+  // Price Scheduler: 2 already-applied (new_price matches the product's
+  // current catalog price, consistent with "this is the change that led to
+  // today's price"), 2 still pending (future effective_date, so opening
+  // /dashboard/sales/product/price-scheduler triggers the real
+  // check-on-page-load apply instead of showing stale-already-done data).
+  const priceScheduleRows: { id: string; product_id: string; new_price: number; effective_date: string; applied: boolean; created_by: string; created_at: string }[] = []
+  for (const p of products.slice(0, 2)) {
+    priceScheduleRows.push({
+      id: crypto.randomUUID(),
+      product_id: p.id,
+      new_price: p.sellingPrice,
+      effective_date: dateFor(randomInt(10, 30)).toISOString().slice(0, 10),
+      applied: true,
+      created_by: userId,
+      created_at: dateFor(randomInt(31, 40)).toISOString(),
+    })
+  }
+  for (const p of products.slice(2, 4)) {
+    const futureDate = new Date(today)
+    futureDate.setDate(futureDate.getDate() + randomInt(3, 10))
+    priceScheduleRows.push({
+      id: crypto.randomUUID(),
+      product_id: p.id,
+      new_price: Math.round((p.sellingPrice * 1.05) / 500) * 500,
+      effective_date: futureDate.toISOString().slice(0, 10),
+      applied: false,
+      created_by: userId,
+      created_at: dateFor(randomInt(1, 5)).toISOString(),
+    })
+  }
+
+  // Time-Based Pricing: a lunch-hour discount on a couple of ready-to-eat
+  // items, every day.
+  const timeBasedPriceRows = readyToEatProducts.slice(0, 2).map((p) => ({
+    id: crypto.randomUUID(),
+    product_id: p.id,
+    price: Math.round((p.sellingPrice * 0.85) / 500) * 500,
+    day_of_week: null as number | null,
+    start_time: '11:00',
+    end_time: '14:00',
+    is_active: true,
+    created_by: userId,
+    created_at: dateFor(randomInt(40, 89)).toISOString(),
+  }))
+
+  // Ojek Online Price List: a reference markup for the first 15 products
+  // across all 3 real channels.
+  const channelPriceRows: { id: string; product_id: string; channel: string; price: number; created_by: string; created_at: string }[] = []
+  for (const p of products.slice(0, 15)) {
+    for (const channel of ['gofood', 'grabfood', 'shopeefood']) {
+      channelPriceRows.push({
+        id: crypto.randomUUID(),
+        product_id: p.id,
+        channel,
+        price: Math.round((p.sellingPrice * 1.08) / 500) * 500,
+        created_by: userId,
+        created_at: dateFor(randomInt(40, 89)).toISOString(),
+      })
+    }
+  }
+
+  // Product Deposits: spread across all 3 statuses.
+  const productDepositRows = Array.from({ length: 15 }, (_, i) => {
+    const product = weightedPickProduct(products)
+    const qty = randomInt(2, 10)
+    const statusRoll = Math.random()
+    const status = statusRoll < 0.45 ? 'fulfilled' : statusRoll < 0.8 ? 'pending' : 'cancelled'
+    const name = pick(DEMO_CUSTOMER_NAMES)
+    const totalPrice = qty * product.sellingPrice
+    return {
+      id: crypto.randomUUID(),
+      outlet_id: outletId,
+      customer_name: name,
+      customer_phone: customerPhoneByName.get(name) ?? null,
+      product_id: product.id,
+      quantity: qty,
+      deposit_amount: Math.round(totalPrice * 0.3),
+      total_price: totalPrice,
+      status,
+      created_by: userId,
+      created_at: dateFor(randomInt(i * 3, i * 3 + 3)).toISOString(),
+    }
+  })
+
+  // Facility/Booking.
+  const facilityRows = ['Ruang Pertemuan', 'Meja Diskusi A', 'Area Event Depan'].map((name, i) => ({
+    id: crypto.randomUUID(),
+    outlet_id: outletId,
+    name,
+    capacity: [10, 4, 30][i],
+    description: null as string | null,
+    is_active: true,
+    created_by: userId,
+    created_at: dateFor(randomInt(60, 89)).toISOString(),
+  }))
+  const bookingStatuses = ['pending', 'confirmed', 'completed', 'completed', 'cancelled']
+  const bookingRows = Array.from({ length: 20 }, () => {
+    const dayOffset = randomInt(0, 59)
+    const name = pick(DEMO_CUSTOMER_NAMES)
+    return {
+      id: crypto.randomUUID(),
+      outlet_id: outletId,
+      customer_name: name,
+      customer_phone: customerPhoneByName.get(name) ?? null,
+      item_description: 'Sewa ruang/area untuk acara kecil',
+      staff_id: null as string | null,
+      facility_id: pick(facilityRows).id,
+      scheduled_date: dateFor(dayOffset).toISOString().slice(0, 10),
+      scheduled_start_time: `${randomInt(8, 18)}:00`,
+      scheduled_end_time: `${randomInt(8, 18)}:00`,
+      status: dayOffset > 2 ? pick(bookingStatuses) : pick(['pending', 'confirmed']),
+      notes: null as string | null,
+      created_by: userId,
+      created_at: dateFor(dayOffset + randomInt(1, 5)).toISOString(),
+    }
+  })
+
+  // Sales Documents: quotations, orders, deliveries — a mix of statuses,
+  // some quotations converted through to a real invoice/order so "Convert
+  // to Invoice"/"Fulfill" have something to show as already-done.
+  const quotationStatuses = ['draft', 'sent', 'accepted', 'rejected', 'expired']
+  const salesQuotationRows: { id: string; outlet_id: string; customer_name: string; customer_phone: string | null; quotation_number: string; quotation_date: string; valid_until: string; status: string; invoice_id: string | null; notes: null; created_by: string; created_at: string }[] = []
+  const salesQuotationItemRows: { quotation_id: string; product_id: string; quantity: number; unit_price: number }[] = []
+  const convertibleInvoices = invoices.filter((i) => i.order_status === 'completed')
+  for (let i = 0; i < 15; i++) {
+    const dayOffset = randomInt(1, 59)
+    const status = i < 3 ? 'accepted' : pick(quotationStatuses)
+    const name = pick(DEMO_CUSTOMER_NAMES)
+    const quotationId = crypto.randomUUID()
+    const lineItems = Array.from({ length: randomInt(1, 3) }, () => ({ product: weightedPickProduct(products), qty: randomInt(2, 8) }))
+    salesQuotationRows.push({
+      id: quotationId,
+      outlet_id: outletId,
+      customer_name: name,
+      customer_phone: customerPhoneByName.get(name) ?? null,
+      quotation_number: `QUO-DEMO-${String(i + 1).padStart(4, '0')}`,
+      quotation_date: dateFor(dayOffset).toISOString().slice(0, 10),
+      valid_until: dateFor(Math.max(0, dayOffset - 14)).toISOString().slice(0, 10),
+      status,
+      invoice_id: status === 'accepted' && convertibleInvoices[i] ? convertibleInvoices[i].id : null,
+      notes: null,
+      created_by: userId,
+      created_at: dateFor(dayOffset).toISOString(),
+    })
+    for (const line of lineItems) {
+      salesQuotationItemRows.push({ quotation_id: quotationId, product_id: line.product.id, quantity: line.qty, unit_price: line.product.sellingPrice })
+    }
+  }
+
+  const orderStatuses = ['draft', 'confirmed', 'fulfilled', 'cancelled']
+  const salesOrderRows: { id: string; outlet_id: string; customer_name: string; customer_phone: string | null; order_number: string; order_date: string; quotation_id: string | null; status: string; invoice_id: string | null; notes: null; created_by: string; created_at: string }[] = []
+  const salesOrderItemRows: { order_id: string; product_id: string; quantity: number; unit_price: number }[] = []
+  for (let i = 0; i < 10; i++) {
+    const dayOffset = randomInt(1, 59)
+    const status = i < 3 ? 'fulfilled' : pick(orderStatuses)
+    const name = pick(DEMO_CUSTOMER_NAMES)
+    const orderId = crypto.randomUUID()
+    const lineItems = Array.from({ length: randomInt(1, 3) }, () => ({ product: weightedPickProduct(products), qty: randomInt(2, 8) }))
+    salesOrderRows.push({
+      id: orderId,
+      outlet_id: outletId,
+      customer_name: name,
+      customer_phone: customerPhoneByName.get(name) ?? null,
+      order_number: `SO-DEMO-${String(i + 1).padStart(4, '0')}`,
+      order_date: dateFor(dayOffset).toISOString().slice(0, 10),
+      quotation_id: null,
+      status,
+      invoice_id: status === 'fulfilled' && convertibleInvoices[i + 15] ? convertibleInvoices[i + 15].id : null,
+      notes: null,
+      created_by: userId,
+      created_at: dateFor(dayOffset).toISOString(),
+    })
+    for (const line of lineItems) {
+      salesOrderItemRows.push({ order_id: orderId, product_id: line.product.id, quantity: line.qty, unit_price: line.product.sellingPrice })
+    }
+  }
+
+  const deliveryStatuses = ['preparing', 'shipped', 'delivered', 'delivered']
+  const salesDeliveryRows = convertibleInvoices.slice(20, 28).map((inv) => {
+    const status = pick(deliveryStatuses)
+    return {
+      id: crypto.randomUUID(),
+      invoice_id: inv.id,
+      courier_name: pick(['JNE', 'J&T Express', 'SiCepat', 'Kurir Toko']),
+      tracking_number: status === 'preparing' ? null : `TRK${randomInt(100000, 999999)}`,
+      status,
+      shipped_at: status === 'preparing' ? null : new Date(new Date(inv.created_at).getTime() + 3600_000).toISOString(),
+      delivered_at: status === 'delivered' ? new Date(new Date(inv.created_at).getTime() + 2 * 86400_000).toISOString() : null,
+      notes: null as string | null,
+      created_by: userId,
+      created_at: inv.created_at,
+    }
+  })
+
+  // Purchase Return Reconciliation: linked back to a real purchase_invoice
+  // where one exists, so "berapa yang masih harus dibayar setelah retur"
+  // has real numbers to show.
+  const purchaseReturnRows: { id: string; outlet_id: string; supplier_id: string; po_id: string | null; purchase_invoice_id: string | null; return_date: string; reason: string; status: string; total_amount: number; created_by: string; created_at: string }[] = []
+  const purchaseReturnItemRows: { return_id: string; product_id: string; quantity: number; unit_cost: number }[] = []
+  const returnableInvoices = purchaseInvoices.slice(0, 6)
+  for (const pinv of returnableInvoices) {
+    const po = purchaseOrders.find((p) => p.id === pinv.po_id)
+    const poItems = poItemRows.filter((it) => it.po_id === pinv.po_id)
+    if (!po || poItems.length === 0) continue
+    const line = pick(poItems)
+    const qty = Math.min(line.quantity_received || 1, randomInt(1, 5))
+    const returnId = crypto.randomUUID()
+    purchaseReturnRows.push({
+      id: returnId,
+      outlet_id: outletId,
+      supplier_id: po.supplier_id,
+      po_id: po.id,
+      purchase_invoice_id: pinv.id,
+      return_date: pinv.invoice_date,
+      reason: pick(['Barang rusak saat pengiriman', 'Kualitas tidak sesuai', 'Kelebihan kirim', 'Kemasan penyok']),
+      status: 'completed',
+      total_amount: qty * line.unit_cost,
+      created_by: userId,
+      created_at: pinv.invoice_date,
+    })
+    purchaseReturnItemRows.push({ return_id: returnId, product_id: line.product_id, quantity: qty, unit_cost: line.unit_cost })
+  }
+
+  // Recipes: a couple of prepared items made from raw ingredients, plus a
+  // scheduled ingredient change (one already applied, one still pending —
+  // same check-on-page-load pattern as Price Scheduler).
+  const recipeRows: { id: string; outlet_id: string; name: string; output_product_id: string; output_quantity: number; created_by: string; created_at: string }[] = []
+  const recipeIngredientRows: { recipe_id: string; ingredient_product_id: string; quantity: number }[] = []
+  const recipeChangeScheduleRows: { id: string; recipe_id: string; new_ingredients: { ingredient_product_id: string; quantity: number }[]; effective_date: string; applied: boolean; created_by: string; created_at: string }[] = []
+  const recipeCandidates = readyToEatProducts.slice(0, 3)
+  for (const output of recipeCandidates) {
+    const ingredients = products.filter((p) => p.id !== output.id && p.category !== 'Makanan Siap Saji').slice(0, 2)
+    if (ingredients.length < 1) continue
+    const recipeId = crypto.randomUUID()
+    recipeRows.push({
+      id: recipeId,
+      outlet_id: outletId,
+      name: `Resep ${output.name}`,
+      output_product_id: output.id,
+      output_quantity: 1,
+      created_by: userId,
+      created_at: dateFor(randomInt(60, 89)).toISOString(),
+    })
+    for (const ing of ingredients) {
+      recipeIngredientRows.push({ recipe_id: recipeId, ingredient_product_id: ing.id, quantity: randomInt(1, 3) })
+    }
+    if (recipeRows.length === 1 && ingredients.length) {
+      recipeChangeScheduleRows.push({
+        id: crypto.randomUUID(),
+        recipe_id: recipeId,
+        new_ingredients: ingredients.map((ing) => ({ ingredient_product_id: ing.id, quantity: randomInt(1, 3) })),
+        effective_date: dateFor(20).toISOString().slice(0, 10),
+        applied: true,
+        created_by: userId,
+        created_at: dateFor(25).toISOString(),
+      })
+    }
+    if (recipeRows.length === 2 && ingredients.length) {
+      const futureDate = new Date(today)
+      futureDate.setDate(futureDate.getDate() + 7)
+      recipeChangeScheduleRows.push({
+        id: crypto.randomUUID(),
+        recipe_id: recipeId,
+        new_ingredients: ingredients.slice().reverse().map((ing) => ({ ingredient_product_id: ing.id, quantity: randomInt(1, 3) })),
+        effective_date: futureDate.toISOString().slice(0, 10),
+        applied: false,
+        created_by: userId,
+        created_at: dateFor(2).toISOString(),
+      })
+    }
+  }
+
+  // Promo & Loyalty: coupons with real usage_count, plus a loyalty ledger
+  // (points earned roughly tracking each customer's actual spend, with a
+  // few redemptions) for the customers created above.
+  const couponRows = [
+    { code: 'HEMAT10', discount_type: 'percentage', discount_value: 10, usage_limit: 100, usage_count: 34, expires_at: null as string | null, is_active: true },
+    { code: 'DISKON5K', discount_type: 'fixed', discount_value: 5000, usage_limit: 200, usage_count: 87, expires_at: null, is_active: true },
+    { code: 'AKHIRTAHUN', discount_type: 'percentage', discount_value: 15, usage_limit: 50, usage_count: 50, expires_at: dateFor(30).toISOString().slice(0, 10), is_active: false },
+    { code: 'NEWCUST', discount_type: 'fixed', discount_value: 10000, usage_limit: 30, usage_count: 12, expires_at: null, is_active: true },
+    { code: 'WEEKEND', discount_type: 'percentage', discount_value: 8, usage_limit: null as number | null, usage_count: 21, expires_at: null, is_active: true },
+  ].map((c) => ({ id: crypto.randomUUID(), outlet_id: outletId, ...c, created_by: userId, created_at: dateFor(randomInt(50, 89)).toISOString() }))
+
+  const loyaltyLedgerRows: { customer_id: string; points_change: number; reason: string; recorded_by: string; created_at: string }[] = []
+  for (const c of customerRows) {
+    const earnEvents = randomInt(2, 5)
+    for (let e = 0; e < earnEvents; e++) {
+      loyaltyLedgerRows.push({
+        customer_id: c.id,
+        points_change: randomInt(5, 40),
+        reason: 'Poin dari transaksi pembelian',
+        recorded_by: userId,
+        created_at: dateFor(randomInt(1, 59)).toISOString(),
+      })
+    }
+    if (Math.random() < 0.4) {
+      loyaltyLedgerRows.push({
+        customer_id: c.id,
+        points_change: -randomInt(10, 30),
+        reason: 'Penukaran poin untuk diskon',
+        recorded_by: userId,
+        created_at: dateFor(randomInt(1, 30)).toISOString(),
+      })
+    }
+  }
+
+  // Stock Transfer, between Outlet Utama and whichever other outlet this
+  // company has (the demo tenant has a "Cabang Bandung" second outlet).
+  const { data: otherOutlets } = await admin.from('outlets').select('id').eq('company_id', companyId).neq('id', outletId)
+  const otherOutletId = otherOutlets?.[0]?.id ?? null
+  const stockTransferRows: { id: string; company_id: string; source_outlet_id: string; destination_outlet_id: string; status: string; notes: null; requested_by: string; shipped_by: string | null; received_by: string | null; shipped_at: string | null; received_at: string | null; created_at: string }[] = []
+  const stockTransferItemRows: { transfer_id: string; product_id: string; quantity: number }[] = []
+  if (otherOutletId) {
+    const transferStatuses = ['requested', 'in_transit', 'completed', 'completed', 'cancelled']
+    for (let i = 0; i < 5; i++) {
+      const dayOffset = randomInt(1, 59)
+      const status = transferStatuses[i] ?? pick(transferStatuses)
+      const transferId = crypto.randomUUID()
+      stockTransferRows.push({
+        id: transferId,
+        company_id: companyId,
+        source_outlet_id: outletId,
+        destination_outlet_id: otherOutletId,
+        status,
+        notes: null,
+        requested_by: userId,
+        shipped_by: status === 'requested' ? null : userId,
+        received_by: status === 'completed' ? userId : null,
+        shipped_at: status === 'requested' ? null : dateFor(dayOffset - 1).toISOString(),
+        received_at: status === 'completed' ? dateFor(dayOffset - 2).toISOString() : null,
+        created_at: dateFor(dayOffset).toISOString(),
+      })
+      for (const p of Array.from({ length: randomInt(1, 3) }, () => weightedPickProduct(products))) {
+        stockTransferItemRows.push({ transfer_id: transferId, product_id: p.id, quantity: randomInt(5, 20) })
+      }
+    }
+  }
+
+  // Stocktake, across statuses, with a couple of counted lines each (one
+  // with a deliberate variance so the report has something to flag).
+  const stocktakeStatuses = ['completed', 'approved', 'in_progress']
+  const stocktakeRows = stocktakeStatuses.map((status, i) => ({
+    id: crypto.randomUUID(),
+    outlet_id: outletId,
+    scheduled_date: dateFor(20 - i * 7).toISOString().slice(0, 10),
+    actual_start_date: status === 'in_progress' ? dateFor(0).toISOString() : dateFor(20 - i * 7).toISOString(),
+    actual_end_date: status === 'in_progress' ? null : dateFor(20 - i * 7).toISOString(),
+    created_by: userId,
+    approved_by: status === 'approved' ? userId : null,
+    status,
+    variance_tolerance_percent: 2.0,
+    total_variance_value: null as number | null,
+    notes: null as string | null,
+    created_at: dateFor(20 - i * 7).toISOString(),
+  }))
+  const stocktakeDetailRows: { stocktake_id: string; product_id: string; expected_quantity: number; counted_quantity: number }[] = []
+  for (const st of stocktakeRows) {
+    for (const p of products.slice(0, 4)) {
+      const expected = stock.get(p.id) ?? 20
+      const variance = st.status === 'in_progress' ? 0 : pick([0, 0, 0, -1, 1, -2])
+      stocktakeDetailRows.push({ stocktake_id: st.id, product_id: p.id, expected_quantity: expected, counted_quantity: Math.max(0, expected + variance) })
+    }
+  }
+
+  // Buy Marketing Campaign, Petty Cash expenses, and manual online orders —
+  // more of what Phase 13 Batches I/E/F already built, spread across the
+  // same ~60 days instead of a handful of leftover verification rows.
+  const campaignPlatforms = ['meta', 'google', 'tiktok', 'other']
+  const campaignStatuses = ['pending', 'approved', 'approved', 'rejected', 'completed']
+  const campaignRequestRows = Array.from({ length: 10 }, (_, i) => {
+    const dayOffset = randomInt(1, 59)
+    const status = campaignStatuses[i % campaignStatuses.length]
+    return {
+      id: crypto.randomUUID(),
+      outlet_id: outletId,
+      campaign_name: pick(['Promo Akhir Pekan', 'Iklan Produk Baru', 'Boost Brand Awareness', 'Campaign Ramadan', 'Retargeting Pelanggan']),
+      platform: pick(campaignPlatforms),
+      budget_amount: randomInt(5, 30) * 100000,
+      notes: null as string | null,
+      requested_by: userId,
+      status,
+      approved_by: status === 'pending' ? null : userId,
+      decided_at: status === 'pending' ? null : dateFor(Math.max(0, dayOffset - 1)).toISOString(),
+      created_at: dateFor(dayOffset).toISOString(),
+    }
+  })
+
+  const expenseStatuses = ['pending', 'approved', 'approved', 'rejected']
+  const expenseRequestRows = Array.from({ length: 12 }, (_, i) => {
+    const dayOffset = randomInt(1, 59)
+    const status = expenseStatuses[i % expenseStatuses.length]
+    const paid = status === 'approved' && Math.random() < 0.6
+    return {
+      id: crypto.randomUUID(),
+      outlet_id: outletId,
+      description: pick(['Beli perlengkapan kebersihan', 'Servis AC toko', 'Biaya parkir supplier', 'Beli ATK', 'Ganti lampu gudang', 'Biaya listrik tambahan']),
+      amount: randomInt(5, 50) * 10000,
+      requested_by: userId,
+      status,
+      approved_by: status === 'pending' ? null : userId,
+      decided_at: status === 'pending' ? null : dateFor(Math.max(0, dayOffset - 1)).toISOString(),
+      paid_at: paid ? dateFor(Math.max(0, dayOffset - 2)).toISOString() : null,
+      payment_method: paid ? pick(['cash', 'bank_transfer']) : null,
+      created_at: dateFor(dayOffset).toISOString(),
+    }
+  })
+
+  const onlineOrderChannels = ['whatsapp', 'instagram', 'marketplace', 'other']
+  const onlineOrderStatuses = ['incoming', 'on_process', 'on_delivery', 'completed', 'completed', 'cancelled']
+  const onlineOrderRows = Array.from({ length: 20 }, (_, i) => {
+    const dayOffset = randomInt(1, 59)
+    const lineItems = Array.from({ length: randomInt(1, 3) }, () => {
+      const product = weightedPickProduct(products)
+      const qty = randomInt(1, 4)
+      return { name: product.name, quantity: qty, price: product.sellingPrice }
+    })
+    const total = lineItems.reduce((s, l) => s + l.quantity * l.price, 0)
+    const name = pick(DEMO_CUSTOMER_NAMES)
+    return {
+      id: crypto.randomUUID(),
+      outlet_id: outletId,
+      order_number: `OL-DEMO-${String(i + 1).padStart(4, '0')}`,
+      channel: pick(onlineOrderChannels),
+      customer_name: name,
+      customer_phone: customerPhoneByName.get(name) ?? null,
+      items: lineItems,
+      total_amount: total,
+      status: dayOffset > 2 ? pick(onlineOrderStatuses) : pick(['incoming', 'on_process']),
+      notes: null as string | null,
+      created_by: userId,
+      created_at: dateFor(dayOffset).toISOString(),
+    }
+  })
+
   // 7) Final inventory rows + low-stock alerts.
   const inventoryRows = products.map((p) => {
     const qty = Math.max(0, stock.get(p.id) ?? 0)
@@ -714,10 +1275,61 @@ async function regenerateDemoData(admin: SupabaseClient<Database>, companyId: st
   if (systemAlertRows.length) await insertChunked('system_alerts', systemAlertRows)
   if (auditLogRows.length) await insertChunked('audit_log', auditLogRows)
 
+  // Feature-showcase data (6b, above) — same dependency-order chunked
+  // writes, covering the Phase 13 menus that otherwise had nothing to show.
+  await insertChunked('customers', customerRows)
+  await insertChunked('product_departments', departmentRows)
+  // A couple of categories grouped under a department, so the department
+  // filter on the categories list has something to actually group.
+  const groupableCategoryNames = ['Makanan Siap Saji', 'Es Krim & Dessert']
+  for (const [i, name] of groupableCategoryNames.entries()) {
+    const catId = categoryIdByName.get(name)
+    if (catId) await admin.from('product_categories').update({ department_id: departmentRows[i % departmentRows.length].id }).eq('id', catId)
+  }
+  await insertChunked('note_presets', notePresetRows)
+  await insertChunked('product_modifier_groups', modifierGroupRows)
+  if (modifierOptionRows.length) await insertChunked('product_modifier_options', modifierOptionRows)
+  await insertChunked('customer_field_definitions', customerFieldRows)
+  await insertChunked('customer_reviews', customerReviewRows)
+  await insertChunked('price_schedules', priceScheduleRows)
+  await insertChunked('time_based_prices', timeBasedPriceRows)
+  await insertChunked('channel_prices', channelPriceRows)
+  await insertChunked('product_deposits', productDepositRows)
+  await insertChunked('facilities', facilityRows)
+  await insertChunked('bookings', bookingRows)
+  await insertChunked('sales_quotations', salesQuotationRows)
+  if (salesQuotationItemRows.length) await insertChunked('sales_quotation_items', salesQuotationItemRows)
+  await insertChunked('sales_orders', salesOrderRows)
+  if (salesOrderItemRows.length) await insertChunked('sales_order_items', salesOrderItemRows)
+  if (salesDeliveryRows.length) await insertChunked('sales_deliveries', salesDeliveryRows)
+  if (purchaseReturnRows.length) await insertChunked('purchase_returns', purchaseReturnRows)
+  if (purchaseReturnItemRows.length) await insertChunked('purchase_return_items', purchaseReturnItemRows)
+  await insertChunked('recipes', recipeRows)
+  if (recipeIngredientRows.length) await insertChunked('recipe_ingredients', recipeIngredientRows)
+  if (recipeChangeScheduleRows.length) await insertChunked('recipe_change_schedules', recipeChangeScheduleRows)
+  await insertChunked('coupons', couponRows)
+  if (loyaltyLedgerRows.length) await insertChunked('loyalty_ledger', loyaltyLedgerRows)
+  if (stockTransferRows.length) await insertChunked('stock_transfers', stockTransferRows)
+  if (stockTransferItemRows.length) await insertChunked('stock_transfer_items', stockTransferItemRows)
+  await insertChunked('stocktakes', stocktakeRows)
+  if (stocktakeDetailRows.length) await insertChunked('stocktake_details', stocktakeDetailRows)
+  await insertChunked('campaign_requests', campaignRequestRows)
+  await insertChunked('expense_requests', expenseRequestRows)
+  await insertChunked('online_orders', onlineOrderRows)
+
   return {
     products: products.length,
     invoices: invoices.length,
     purchase_orders: purchaseOrders.length,
     days_of_history: DAYS_OF_HISTORY,
+    customers: customerRows.length,
+    bookings: bookingRows.length,
+    sales_quotations: salesQuotationRows.length,
+    sales_orders: salesOrderRows.length,
+    recipes: recipeRows.length,
+    coupons: couponRows.length,
+    campaign_requests: campaignRequestRows.length,
+    expense_requests: expenseRequestRows.length,
+    online_orders: onlineOrderRows.length,
   }
 }
