@@ -395,7 +395,7 @@ export function POSScreen({ outletId, cashierName }: { outletId: string; cashier
               value={couponCode}
               onChange={(e) => setCouponCode(e.target.value)}
               placeholder="Kode Promo"
-              className="min-w-0 flex-1 rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              className="min-w-0 flex-1 rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--brand-500)]"
             />
             <Button type="button" variant="secondary" size="sm" isLoading={isApplyingCoupon} onClick={applyCoupon}>
               Pakai
@@ -407,7 +407,7 @@ export function POSScreen({ outletId, cashierName }: { outletId: string; cashier
               type="button"
               onClick={() => setPayLater(false)}
               className={`rounded-xl border-2 py-2.5 text-sm font-semibold transition-colors ${
-                !payLater ? 'border-emerald-500 bg-emerald-50 text-emerald-700' : 'border-gray-200 text-gray-500'
+                !payLater ? 'border-[var(--brand-500)] bg-[var(--brand-50)] text-[var(--brand-700)]' : 'border-gray-200 text-gray-500'
               }`}
             >
               ⚡ Bayar Sekarang

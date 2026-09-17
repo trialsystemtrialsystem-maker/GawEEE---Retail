@@ -67,12 +67,12 @@ export function ModifierPickerModal({
                     type="button"
                     onClick={() => pick(g.id, o.id)}
                     className={`flex w-full items-center justify-between rounded-md border px-3 py-2 text-left text-sm ${
-                      picked[g.id] === o.id ? 'border-emerald-500 bg-emerald-50' : 'border-gray-200 hover:border-emerald-300 hover:bg-emerald-50/50'
+                      picked[g.id] === o.id ? 'border-[var(--brand-500)] bg-[var(--brand-50)]' : 'border-gray-200 hover:border-[var(--brand-500)] hover:bg-[var(--brand-50)]/50'
                     }`}
                   >
                     <span>{o.label}</span>
                     {o.products ? (
-                      <span className="font-medium text-emerald-600">+{formatCurrency(o.products.selling_price)}</span>
+                      <span className="font-medium text-[var(--brand-600)]">+{formatCurrency(o.products.selling_price)}</span>
                     ) : (
                       <span className="text-xs text-gray-400">gratis</span>
                     )}
@@ -86,7 +86,7 @@ export function ModifierPickerModal({
           <button type="button" onClick={onClose} className="flex-1 rounded-md border border-gray-200 py-2 text-center text-sm text-gray-500 hover:bg-gray-50">
             Batal
           </button>
-          <button type="button" onClick={handleConfirm} className="flex-1 rounded-md bg-emerald-600 py-2 text-center text-sm font-semibold text-white hover:bg-emerald-700">
+          <button type="button" onClick={handleConfirm} className="flex-1 rounded-md bg-[var(--brand-600)] py-2 text-center text-sm font-semibold text-white hover:bg-[var(--brand-700)]">
             Tambah ke Keranjang
           </button>
         </div>

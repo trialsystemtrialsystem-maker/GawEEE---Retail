@@ -67,12 +67,12 @@ export function CustomerPicker({
     return (
       <div className="space-y-1">
         <label className="block text-sm font-medium text-gray-700">Pelanggan</label>
-        <div className="flex items-center justify-between rounded-lg border-2 border-emerald-200 bg-emerald-50 px-3 py-2 text-sm">
-          <span className="font-medium text-emerald-800">
+        <div className="flex items-center justify-between rounded-lg border-2 border-[var(--brand-100)] bg-[var(--brand-50)] px-3 py-2 text-sm">
+          <span className="font-medium text-[var(--brand-900)]">
             {value.name}
-            {value.phone && <span className="ml-1 font-normal text-emerald-600">— {value.phone}</span>}
+            {value.phone && <span className="ml-1 font-normal text-[var(--brand-600)]">— {value.phone}</span>}
           </span>
-          <button type="button" onClick={() => onChange(null)} className="text-xs text-emerald-700 hover:underline">
+          <button type="button" onClick={() => onChange(null)} className="text-xs text-[var(--brand-700)] hover:underline">
             Ganti
           </button>
         </div>
@@ -89,7 +89,7 @@ export function CustomerPicker({
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Cari nama/telepon…"
-          className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+          className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--brand-500)]"
         />
         {results.length > 0 && (
           <ul className="absolute z-10 mt-1 w-full rounded-lg border border-gray-200 bg-white shadow-lg">
@@ -102,7 +102,7 @@ export function CustomerPicker({
                     setQuery('')
                     setResults([])
                   }}
-                  className="block w-full px-3 py-2 text-left text-sm hover:bg-emerald-50"
+                  className="block w-full px-3 py-2 text-left text-sm hover:bg-[var(--brand-50)]"
                 >
                   {c.name} {c.phone && <span className="text-gray-400">— {c.phone}</span>}
                 </button>
@@ -113,7 +113,7 @@ export function CustomerPicker({
       </div>
 
       {!showNewForm ? (
-        <button type="button" onClick={() => setShowNewForm(true)} className="text-xs font-medium text-emerald-600 hover:underline">
+        <button type="button" onClick={() => setShowNewForm(true)} className="text-xs font-medium text-[var(--brand-600)] hover:underline">
           + Pelanggan Baru
         </button>
       ) : (
@@ -131,7 +131,7 @@ export function CustomerPicker({
             placeholder="Telepon"
             className="min-w-0 flex-1 rounded-md border border-gray-200 px-2 py-1.5 text-sm"
           />
-          <button type="submit" disabled={isCreating} className="rounded-md bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50">
+          <button type="submit" disabled={isCreating} className="rounded-md bg-[var(--brand-600)] px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50">
             Simpan
           </button>
         </form>

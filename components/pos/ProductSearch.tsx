@@ -244,7 +244,7 @@ export function ProductSearch({ outletId }: { outletId: string }) {
             type="button"
             onClick={() => setActiveCategory(null)}
             className={`shrink-0 rounded-full px-3.5 py-1.5 text-xs font-semibold transition-colors ${
-              activeCategory === null ? 'bg-emerald-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              activeCategory === null ? 'bg-[var(--brand-700)] text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
             }`}
           >
             Semua
@@ -255,7 +255,7 @@ export function ProductSearch({ outletId }: { outletId: string }) {
               type="button"
               onClick={() => setActiveCategory(cat)}
               className={`shrink-0 rounded-full px-3.5 py-1.5 text-xs font-semibold transition-colors ${
-                activeCategory === cat ? 'bg-emerald-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                activeCategory === cat ? 'bg-[var(--brand-700)] text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
               }`}
             >
               {cat}

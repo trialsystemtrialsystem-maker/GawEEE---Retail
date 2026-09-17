@@ -25,7 +25,7 @@ export function PosPortalNav() {
             key={tab.href}
             href={tab.href}
             className={`flex shrink-0 items-center gap-1.5 rounded-full px-3.5 py-2 text-sm font-medium transition-colors ${
-              active ? 'bg-emerald-600 text-white shadow-sm' : 'text-gray-500 hover:bg-gray-100 hover:text-gray-700'
+              active ? 'bg-[var(--brand-700)] text-white shadow-sm' : 'text-gray-500 hover:bg-gray-100 hover:text-gray-700'
             }`}
           >
             <span aria-hidden>{tab.icon}</span>

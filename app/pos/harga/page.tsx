@@ -12,7 +12,7 @@ export default async function DaftarHargaPage() {
 
   return (
     <div className="mx-auto max-w-3xl space-y-4">
-      <h1 className="text-xl font-extrabold text-emerald-800">🏷️ Daftar Harga</h1>
+      <h1 className="text-xl font-extrabold text-[var(--brand-900)]">🏷️ Daftar Harga</h1>
       {profile?.outlet_id ? <PriceList outletId={profile.outlet_id} /> : <Alert variant="warning">Pilih outlet terlebih dahulu.</Alert>}
     </div>
   )

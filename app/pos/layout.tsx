@@ -18,7 +18,7 @@ export default async function POSLayout({ children }: { children: React.ReactNod
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="bg-gradient-to-r from-emerald-800 to-emerald-600 px-4 py-2.5 sm:px-6">
+      <div className="bg-gradient-to-r from-[var(--brand-900)] to-[var(--brand-700)] px-4 py-2.5 sm:px-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2.5">
             <span className="text-lg font-extrabold text-white">GawEEE.com</span>

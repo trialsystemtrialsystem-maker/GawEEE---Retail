@@ -54,7 +54,7 @@ export function PriceList({ outletId }: { outletId: string }) {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Cari produk…"
-          className="w-full max-w-xs rounded-xl border-2 border-[var(--brand-100)] px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+          className="w-full max-w-xs rounded-xl border-2 border-[var(--brand-100)] px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--brand-500)]"
         />
         <ExportCsvButton filename="daftar-harga" rows={csvRows} />
       </div>
