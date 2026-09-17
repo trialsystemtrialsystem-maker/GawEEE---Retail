@@ -246,6 +246,12 @@ async function regenerateDemoData(admin: SupabaseClient<Database>, companyId: st
   if (invoiceIds.length) await admin.from('virtual_accounts').delete().in('invoice_id', invoiceIds)
   if (invoiceIds.length) await admin.from('invoice_items').delete().in('invoice_id', invoiceIds)
   if (invoiceIds.length) await admin.from('customer_refunds').delete().in('invoice_id', invoiceIds)
+  // journal_entries.source_id is a loose polymorphic reference (no FK), so
+  // it doesn't block the invoices delete below — but it also won't get
+  // cascade-cleaned by it, and 059_auto_post_journal_entries.sql now posts
+  // one to three of these per invoice. journal_entry_details cascades from
+  // this delete (its FK is ON DELETE CASCADE).
+  await admin.from('journal_entries').delete().eq('outlet_id', outletId)
   await admin.from('invoices').delete().eq('outlet_id', outletId)
   await admin.from('inventory_ledger').delete().eq('outlet_id', outletId)
   await admin.from('inventory').delete().eq('outlet_id', outletId)

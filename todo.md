@@ -117,11 +117,27 @@ Legend: `[ ]` pending · `[x]` done · `[!]` needs user input/credentials before
       already exist, with a default Indonesian-retail chart of accounts seeded on every outlet. Live
       -verified: accounts API returns the seeded COA, a balanced manual entry can be created through the
       UI. Petty Cash "mark as paid" (`036_petty_cash.sql`) also optionally posts a journal entry
-      (Dr Beban Operasional / Cr Kas) when an expense is disbursed. What's still genuinely missing:
-      `create_invoice()`/purchase-order receiving don't auto-post a journal entry — every sale/purchase
-      still needs a manual entry if you want it in the ledger. daily-summary/P&L stay computed live from
-      invoices rather than from posted journal entries (see below) — that's an intentional, separate
-      design choice already documented there, not a gap in this item.
+      (Dr Beban Operasional / Cr Kas) when an expense is disbursed. Sales now auto-post too (see migration
+      059 below) — purchase-order receiving still doesn't, that's a smaller separate follow-up. daily
+      -summary/P&L stay computed live from invoices rather than from posted journal entries (see below) —
+      that's an intentional, separate design choice already documented there, not a gap in this item.
+- [ ] Auto-post journal entries from sales (`059_auto_post_journal_entries.sql`) — code-complete,
+      typecheck/lint/build clean, committed. Three triggers on `invoices`, not changes to
+      `create_invoice()`/`void_invoice()` themselves (same "additive calls, not function changes"
+      precedent as Petty Cash): (1) a deferred constraint trigger on INSERT posts a revenue entry
+      (Dr Kas if `payment_status='paid'` i.e. cash, else Dr Piutang Usaha for e-wallet/bank still
+      pending) plus a separate HPP entry from `invoice_items.cost_of_goods_sold`; (2) an UPDATE trigger
+      reclassifies Piutang Usaha into Bank once a pending payment settles; (3) an UPDATE trigger reverses
+      every posted entry tagged to an invoice when it's voided, by mirroring debit/credit rather than
+      deleting. Every function is wrapped in an exception handler that logs a warning and returns rather
+      than raising — since the INSERT trigger is deferred to commit-time, an unhandled exception there
+      would roll back the sale itself, so a bookkeeping bug must never be able to block or undo an actual
+      transaction. Also added a `journal_entries` wipe step to the demo seed route (source_id has no FK,
+      so it wouldn't get cleaned by the existing `invoices` delete, and would accumulate across
+      reseeds). Migration 059 is pending — user needs to run it before this can be live-verified, and
+      given the blast radius (every POS sale runs through these triggers) it needs a full cash + e-wallet
+      + bank-transfer + void regression pass through the live POS afterward, not just a check that
+      entries appear.
 - [x] Financial dashboard UI (`/dashboard/financial`: KPI cards, sales breakdown, cash position)
 - [x] Daily summary (`/api/reports/daily-summary`), P&L (`/api/reports/p-and-l`), and cash position
       (`/api/reports/cash-position`) endpoints — computed live from invoices/invoice_items/
