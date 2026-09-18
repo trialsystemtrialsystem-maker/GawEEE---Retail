@@ -1091,6 +1091,41 @@ live-verified end-to-end.
       open shift's id, then closed the shift and confirmed `total_transactions` computed correctly from
       the exact join (no longer the time-range approximation).
 
+## Phase 19 — Loyalty auto-earn + promotion usage tracking (`063_loyalty_and_promotion_completion.sql`)
+Continuation of Phase 18's sales-identification audit: two features that turned out to be missing
+entirely rather than just missing an audit trail. Loyalty points were 100% manual
+(`POST /api/loyalty/adjust`) despite `outlets.loyalty_points_per_1000`/`loyalty_rp_per_point` existing
+specifically to configure automatic earning — a customer spending real money never actually earned a
+point. `promotions` (distinct from coupons) had zero path from "manager defines a promotion" to "a sale
+actually uses it" — the POS never applied one despite a stale code comment claiming otherwise. Migration
+063 run; live-verified end-to-end via Playwright against the demo tenant.
+- [x] **Loyalty auto-earn** — new `lib/utils/loyalty.ts#earnLoyaltyPoints()`, best-effort and silent on
+      any failure (unregistered customer, outlet not configured, DB error) so it can never block or break
+      the sale itself. Called from `POST /api/invoices` immediately for a `paid` (cash) invoice, and from
+      the e-wallet/Doku/bank webhook and `/simulate-success` settlement routes once a pending payment
+      actually clears. `loyalty_ledger.invoice_id` (migration 063) links an auto-earned entry back to the
+      sale that earned it. Live-verified: a cash sale to a phone number matching a real seeded customer
+      earned the correct point count (`floor(total/1000) * loyalty_points_per_1000`) immediately; an
+      e-wallet sale earned zero points while `payment_status` was still `pending`, then earned the correct
+      points immediately after `/simulate-success` settled it — confirming points really do wait for
+      settlement instead of firing at invoice creation.
+- [x] **Promotion application tracking** — new `promotion_applications` table (promotion_id, invoice_id,
+      outlet_id, discount_amount, applied_by), the same shape as Phase 18's `coupon_redemptions` for the
+      same reason. `POSScreen` now fetches active promotions for the outlet (`is_active` and within
+      `start_date`/`end_date`) and renders them as clickable chips; applying one stacks onto the existing
+      discount field exactly like a coupon does, and the chosen promotion is sent through at checkout.
+      `POST /api/invoices` records the application as an additive follow-up after `create_invoice()`
+      succeeds — `create_invoice()` itself stays untouched. New `GET /api/promotion-applications?promotion_id=`
+      + a click-to-expand usage list in `PromotionManager` (mirroring `CouponManager`'s pattern exactly:
+      invoice number, timestamp, discount amount, invoice total, status) surface it. Live-verified: applied
+      a real promotion in the POS, checked out, confirmed a `promotion_applications` row was written with
+      the exact discount amount and invoice_id, and confirmed `PromotionManager`'s expanded row lists it.
+- [x] **Real bug found and fixed along the way**: `GET /api/customers?search=` only ever matched
+      `name ilike`, silently ignoring phone numbers even though the POS's own placeholder text says "Cari
+      nama/telepon…" (search by name or phone). Searching by phone returned zero results, which is what
+      the live loyalty test caught — confirmed it wasn't a test-script issue by inspecting the route
+      directly. Fixed to `.or(name.ilike, phone.ilike)` in `app/api/customers/route.ts`.
+
 ## Notes on scope
 This todo tracks the **engineering deliverables** of the PRD (a working Next.js + Supabase codebase
 implementing Phase 1 features, with payment gateways behind a swappable mock interface). Items marked

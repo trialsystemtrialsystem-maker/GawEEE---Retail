@@ -1,0 +1,50 @@
+import type { SupabaseClient } from '@supabase/supabase-js'
+import type { Database } from '@/lib/types/database.types'
+
+/** Auto-earns loyalty points for a just-settled sale — called once an
+ * invoice is confirmed paid (immediately for cash in POST /api/invoices,
+ * or from the settlement routes for e-wallet/bank once the payment clears).
+ * Best-effort and silent on any failure: a customer not being registered,
+ * an outlet with loyalty_points_per_1000 = 0 (not configured), or any
+ * database error all just mean no points get recorded — never something
+ * that should be able to affect the sale itself. See
+ * 063_loyalty_and_promotion_completion.sql. */
+export async function earnLoyaltyPoints(supabase: SupabaseClient<Database>, invoiceId: string) {
+  try {
+    const { data: invoice } = await supabase
+      .from('invoices')
+      .select('outlet_id, customer_phone, total, cashier_id')
+      .eq('id', invoiceId)
+      .single()
+    if (!invoice?.customer_phone) return
+
+    const { data: outlet } = await supabase.from('outlets').select('loyalty_points_per_1000').eq('id', invoice.outlet_id).single()
+    if (!outlet || outlet.loyalty_points_per_1000 <= 0) return
+
+    const { data: customer } = await supabase
+      .from('customers')
+      .select('id')
+      .eq('outlet_id', invoice.outlet_id)
+      .eq('phone', invoice.customer_phone)
+      .maybeSingle()
+    if (!customer) return
+
+    const points = Math.floor(invoice.total / 1000) * outlet.loyalty_points_per_1000
+    if (points <= 0) return
+
+    // customer_id + invoice_id together keep this idempotent if a settlement
+    // webhook somehow fires twice for the same invoice.
+    const { data: existing } = await supabase.from('loyalty_ledger').select('id').eq('invoice_id', invoiceId).eq('customer_id', customer.id).maybeSingle()
+    if (existing) return
+
+    await supabase.from('loyalty_ledger').insert({
+      customer_id: customer.id,
+      points_change: points,
+      reason: `Poin otomatis dari transaksi`,
+      recorded_by: invoice.cashier_id,
+      invoice_id: invoiceId,
+    })
+  } catch {
+    // Never let a bookkeeping-adjacent side effect affect the caller.
+  }
+}

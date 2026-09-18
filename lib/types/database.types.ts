@@ -1060,6 +1060,17 @@ export type LoyaltyLedgerEntry = {
   points_change: number
   reason: string
   recorded_by: string
+  invoice_id: string | null
+  created_at: string
+}
+
+export type PromotionApplication = {
+  id: string
+  promotion_id: string
+  invoice_id: string | null
+  outlet_id: string
+  discount_amount: number
+  applied_by: string
   created_at: string
 }
 
@@ -1218,6 +1229,7 @@ export type Database = {
       recipe_ingredients: Table<RecipeIngredient>
       production_runs: Table<ProductionRun>
       promotions: Table<Promotion>
+      promotion_applications: Table<PromotionApplication>
       coupons: Table<Coupon>
       coupon_redemptions: Table<CouponRedemption>
       loyalty_ledger: Table<LoyaltyLedgerEntry>

@@ -1,6 +1,7 @@
 import crypto from 'crypto'
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/server'
+import { earnLoyaltyPoints } from '@/lib/utils/loyalty'
 
 // POST /api/payments/webhook/bank — bank VA transfer callback. See prd.md §5.2.
 // Not yet reachable in practice: BANK_VA_SECRET isn't provisioned (todo.md Phase 4).
@@ -42,6 +43,7 @@ export async function POST(request: NextRequest) {
       .eq('invoice_id', va.invoice_id)
     await admin.from('invoices').update({ payment_status: 'paid' }).eq('id', va.invoice_id)
     await admin.from('virtual_accounts').update({ status: 'paid' }).eq('id', va.id)
+    await earnLoyaltyPoints(admin, va.invoice_id)
   } else {
     await admin
       .from('payment_transactions')

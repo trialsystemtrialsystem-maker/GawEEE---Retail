@@ -1,6 +1,7 @@
 import crypto from 'crypto'
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/server'
+import { earnLoyaltyPoints } from '@/lib/utils/loyalty'
 
 // POST /api/payments/webhook/doku — server-to-server callback. See prd.md §5.1.
 // Uses the service-role client (no end-user session exists for a webhook
@@ -41,6 +42,7 @@ export async function POST(request: NextRequest) {
       .update({ status: 'settled', settlement_date: new Date().toISOString(), settlement_amount: body.amount })
       .eq('id', payment.id)
     await admin.from('invoices').update({ payment_status: 'paid' }).eq('id', payment.invoice_id)
+    await earnLoyaltyPoints(admin, payment.invoice_id)
   } else {
     await admin.from('payment_transactions').update({ status: 'failed' }).eq('id', payment.id)
   }

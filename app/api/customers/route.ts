@@ -16,7 +16,10 @@ export async function GET(request: NextRequest) {
   }
 
   let query = auth.supabase.from('customers').select('*, customer_groups(name)').eq('outlet_id', outletId).order('name')
-  if (search) query = query.ilike('name', `%${search}%`)
+  if (search) {
+    const escaped = search.replace(/[%,]/g, '\\$&')
+    query = query.or(`name.ilike.%${escaped}%,phone.ilike.%${escaped}%`)
+  }
 
   const { data, error } = await query
   if (error) {

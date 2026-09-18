@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getAuthContext, canAccessOutlet } from '@/lib/utils/auth-context'
 import { validate, createInvoiceSchema } from '@/lib/utils/validation'
 import { handleDatabaseError } from '@/lib/utils/errors'
+import { earnLoyaltyPoints } from '@/lib/utils/loyalty'
 
 // POST /api/invoices — create a POS transaction. See prd.md §4.3.
 // The heavy lifting (stock validation, totals, inventory deduction) happens
@@ -24,6 +25,8 @@ export async function POST(request: NextRequest) {
     payment_method,
     coupon_code,
     coupon_discount_amount,
+    promotion_id,
+    promotion_discount_amount,
   } = result.data
 
   if (!canAccessOutlet(auth, outlet_id)) {
@@ -112,6 +115,27 @@ export async function POST(request: NextRequest) {
         redeemed_by: auth.authUserId,
       })
     }
+  }
+
+  // 3. Same idea for a manually-applied promotion (063_loyalty_and_
+  //    promotion_completion.sql) — `promotions` previously had zero usage
+  //    tracking at all, not even an aggregate counter.
+  if (promotion_id && promotion_discount_amount) {
+    await auth.supabase.from('promotion_applications').insert({
+      promotion_id,
+      invoice_id: data!.invoice_id,
+      outlet_id,
+      discount_amount: promotion_discount_amount,
+      applied_by: auth.authUserId,
+    })
+  }
+
+  // 4. Auto-earn loyalty points for a registered customer — only for a
+  //    sale that's actually settled already (cash, paid immediately by
+  //    create_invoice()); e-wallet/bank still 'pending' at this point earn
+  //    once they settle instead, from the payment routes below.
+  if (data!.payment_status === 'paid') {
+    await earnLoyaltyPoints(auth.supabase, data!.invoice_id)
   }
 
   const nextStep =

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePosStore } from '@/store/posStore'
 import { ProductSearch } from '@/components/pos/ProductSearch'
@@ -46,6 +46,8 @@ export function POSScreen({ outletId, cashierName }: { outletId: string; cashier
   const [couponCode, setCouponCode] = useState('')
   const [isApplyingCoupon, setIsApplyingCoupon] = useState(false)
   const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; amount: number } | null>(null)
+  const [activePromotions, setActivePromotions] = useState<{ id: string; name: string; discount_type: 'percentage' | 'fixed'; discount_value: number }[]>([])
+  const [appliedPromotion, setAppliedPromotion] = useState<{ id: string; name: string; amount: number } | null>(null)
   const showToast = useNotificationStore((s) => s.show)
 
   const items = usePosStore((s) => s.items)
@@ -56,6 +58,24 @@ export function POSScreen({ outletId, cashierName }: { outletId: string; cashier
   const discountAmount = usePosStore((s) => s.discountAmount)
   const discountReason = usePosStore((s) => s.discountReason)
   const setDiscount = usePosStore((s) => s.setDiscount)
+
+  useEffect(() => {
+    const timeout = setTimeout(async () => {
+      const res = await fetch(`/api/promotions?outlet_id=${outletId}`)
+      const data = await res.json()
+      if (!res.ok) return
+      const today = new Date().toISOString().slice(0, 10)
+      setActivePromotions((data.promotions ?? []).filter((p: { is_active: boolean; start_date: string; end_date: string }) => p.is_active && p.start_date <= today && today <= p.end_date))
+    }, 0)
+    return () => clearTimeout(timeout)
+  }, [outletId])
+
+  function applyPromotion(promo: (typeof activePromotions)[number]) {
+    const amount = promo.discount_type === 'percentage' ? Math.round((subtotal * promo.discount_value) / 100) : promo.discount_value
+    setDiscount(discountAmount + amount, discountReason ? `${discountReason}; Promo: ${promo.name}` : `Promo: ${promo.name}`)
+    setAppliedPromotion({ id: promo.id, name: promo.name, amount })
+    showToast(`Promo "${promo.name}" diterapkan`, 'success')
+  }
 
   async function applyCoupon() {
     if (!couponCode.trim()) return
@@ -117,6 +137,8 @@ export function POSScreen({ outletId, cashierName }: { outletId: string; cashier
           payment_method: payLater ? 'pay_later' : useSplitPayment ? (splitLines.find((l) => l.payment_method !== 'cash')?.payment_method ?? 'cash') : paymentMethod,
           coupon_code: appliedCoupon?.code,
           coupon_discount_amount: appliedCoupon?.amount,
+          promotion_id: appliedPromotion?.id,
+          promotion_discount_amount: appliedPromotion?.amount,
         }),
       })
       const data = await res.json()
@@ -206,6 +228,7 @@ export function POSScreen({ outletId, cashierName }: { outletId: string; cashier
     setCustomer(null)
     setPayLater(false)
     setAppliedCoupon(null)
+    setAppliedPromotion(null)
     setStep('cart')
   }
 
@@ -406,6 +429,29 @@ export function POSScreen({ outletId, cashierName }: { outletId: string; cashier
               Pakai
             </Button>
           </div>
+
+          {activePromotions.length > 0 && (
+            <div className="space-y-1.5">
+              <p className="text-xs font-medium text-gray-500">Promosi Aktif</p>
+              <div className="flex flex-wrap gap-1.5">
+                {activePromotions.map((promo) => (
+                  <button
+                    key={promo.id}
+                    type="button"
+                    onClick={() => applyPromotion(promo)}
+                    disabled={appliedPromotion?.id === promo.id}
+                    className={`rounded-full border px-3 py-1 text-xs font-semibold transition-colors ${
+                      appliedPromotion?.id === promo.id
+                        ? 'border-[var(--brand-500)] bg-[var(--brand-50)] text-[var(--brand-700)]'
+                        : 'border-gray-200 text-gray-600 hover:border-[var(--brand-500)] hover:bg-[var(--brand-50)]'
+                    }`}
+                  >
+                    {promo.name} ({promo.discount_type === 'percentage' ? `${promo.discount_value}%` : formatCurrency(promo.discount_value)})
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
 
           <div className="grid grid-cols-2 gap-2">
             <button

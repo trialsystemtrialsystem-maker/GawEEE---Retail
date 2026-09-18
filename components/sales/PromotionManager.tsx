@@ -1,9 +1,9 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
+import { Fragment, useEffect, useState, useCallback } from 'react'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
-import { formatDate } from '@/lib/utils/formatting'
+import { formatDate, formatDateTime, formatCurrency } from '@/lib/utils/formatting'
 import { useNotificationStore } from '@/store/notificationStore'
 
 interface Promotion {
@@ -16,13 +16,39 @@ interface Promotion {
   is_active: boolean
 }
 
+interface Application {
+  id: string
+  discount_amount: number
+  created_at: string
+  invoices: { invoice_number: string; total: number; order_status: string } | null
+}
+
 export function PromotionManager({ outletId, canManage }: { outletId: string; canManage: boolean }) {
   const [promotions, setPromotions] = useState<Promotion[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState({ name: '', discount_type: 'percentage', discount_value: '', start_date: new Date().toISOString().slice(0, 10), end_date: new Date().toISOString().slice(0, 10) })
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [expandedId, setExpandedId] = useState<string | null>(null)
+  const [applications, setApplications] = useState<Application[]>([])
+  const [isLoadingApplications, setIsLoadingApplications] = useState(false)
   const showToast = useNotificationStore((s) => s.show)
+
+  async function toggleApplications(promotionId: string) {
+    if (expandedId === promotionId) {
+      setExpandedId(null)
+      return
+    }
+    setExpandedId(promotionId)
+    setIsLoadingApplications(true)
+    try {
+      const res = await fetch(`/api/promotion-applications?promotion_id=${promotionId}`)
+      const data = await res.json()
+      setApplications(res.ok ? (data.applications ?? []) : [])
+    } finally {
+      setIsLoadingApplications(false)
+    }
+  }
 
   const load = useCallback(async () => {
     setIsLoading(true)
@@ -121,23 +147,66 @@ export function PromotionManager({ outletId, canManage }: { outletId: string; ca
               </tr>
             ) : (
               promotions.map((p) => (
-                <tr key={p.id} className="hover:bg-gray-50">
-                  <td className="px-4 py-2 text-gray-900">{p.name}</td>
-                  <td className="px-4 py-2 text-gray-700">{p.discount_type === 'percentage' ? `${p.discount_value}%` : `Rp ${p.discount_value.toLocaleString('id-ID')}`}</td>
-                  <td className="px-4 py-2 text-gray-600">{formatDate(p.start_date)} - {formatDate(p.end_date)}</td>
-                  <td className="px-4 py-2">
-                    <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${p.is_active ? 'bg-emerald-50 text-emerald-700' : 'bg-gray-100 text-gray-500'}`}>
-                      {p.is_active ? 'Aktif' : 'Nonaktif'}
-                    </span>
-                  </td>
-                  {canManage && (
+                <Fragment key={p.id}>
+                  <tr onClick={() => toggleApplications(p.id)} className="cursor-pointer hover:bg-gray-50">
+                    <td className="px-4 py-2 text-gray-900">{p.name} <span className="text-xs text-blue-500">(lihat rincian)</span></td>
+                    <td className="px-4 py-2 text-gray-700">{p.discount_type === 'percentage' ? `${p.discount_value}%` : `Rp ${p.discount_value.toLocaleString('id-ID')}`}</td>
+                    <td className="px-4 py-2 text-gray-600">{formatDate(p.start_date)} - {formatDate(p.end_date)}</td>
                     <td className="px-4 py-2">
-                      <button onClick={() => toggleActive(p)} className="text-sm font-medium text-blue-600 hover:text-blue-700">
-                        {p.is_active ? 'Nonaktifkan' : 'Aktifkan'}
-                      </button>
+                      <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${p.is_active ? 'bg-emerald-50 text-emerald-700' : 'bg-gray-100 text-gray-500'}`}>
+                        {p.is_active ? 'Aktif' : 'Nonaktif'}
+                      </span>
                     </td>
+                    {canManage && (
+                      <td className="px-4 py-2">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            toggleActive(p)
+                          }}
+                          className="text-sm font-medium text-blue-600 hover:text-blue-700"
+                        >
+                          {p.is_active ? 'Nonaktifkan' : 'Aktifkan'}
+                        </button>
+                      </td>
+                    )}
+                  </tr>
+                  {expandedId === p.id && (
+                    <tr>
+                      <td colSpan={canManage ? 5 : 4} className="bg-gray-50 px-4 py-3">
+                        <p className="mb-2 text-xs font-semibold text-gray-500">Rincian Pemakaian — {p.name}</p>
+                        {isLoadingApplications ? (
+                          <p className="text-xs text-gray-400">Memuat…</p>
+                        ) : applications.length === 0 ? (
+                          <p className="text-xs text-gray-400">Belum ada transaksi yang memakai promosi ini.</p>
+                        ) : (
+                          <table className="min-w-full text-xs">
+                            <thead>
+                              <tr className="text-left text-gray-500">
+                                <th className="py-1 pr-4">Invoice</th>
+                                <th className="py-1 pr-4">Waktu</th>
+                                <th className="py-1 pr-4 text-right">Diskon</th>
+                                <th className="py-1 pr-4 text-right">Total Invoice</th>
+                                <th className="py-1 pr-4">Status</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-100">
+                              {applications.map((a) => (
+                                <tr key={a.id}>
+                                  <td className="py-1 pr-4 font-mono text-gray-800">{a.invoices?.invoice_number ?? '-'}</td>
+                                  <td className="py-1 pr-4 text-gray-600">{formatDateTime(a.created_at)}</td>
+                                  <td className="py-1 pr-4 text-right text-gray-700">{formatCurrency(a.discount_amount)}</td>
+                                  <td className="py-1 pr-4 text-right text-gray-700">{a.invoices ? formatCurrency(a.invoices.total) : '-'}</td>
+                                  <td className="py-1 pr-4 text-gray-600">{a.invoices?.order_status === 'voided' ? 'Dibatalkan' : 'Selesai'}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        )}
+                      </td>
+                    </tr>
                   )}
-                </tr>
+                </Fragment>
               ))
             )}
           </tbody>

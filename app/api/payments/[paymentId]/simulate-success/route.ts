@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { getAuthContext } from '@/lib/utils/auth-context'
+import { earnLoyaltyPoints } from '@/lib/utils/loyalty'
 
 // POST /api/payments/:payment_id/simulate-success — Phase 1 demo-only stand-in
 // for the real Doku Pay / Bank VA webhook (todo.md Phase 4, blocked on real
@@ -25,6 +26,7 @@ export async function POST(_request: Request, ctx: RouteContext<'/api/payments/[
     .eq('id', paymentId)
 
   await auth.supabase.from('invoices').update({ payment_status: 'paid' }).eq('id', payment.invoice_id)
+  await earnLoyaltyPoints(auth.supabase, payment.invoice_id)
 
   return NextResponse.json({ status: 'settled' })
 }
