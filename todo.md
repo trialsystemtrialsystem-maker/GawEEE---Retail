@@ -1064,6 +1064,29 @@ were never actually re-seeded, so those two pages had been silently empty since 
       — and a final smoke test (checkout + the 5-outlet monitoring dashboard) confirmed none of this
       broke anything already working.
 
+## Phase 18 — Sales identification gaps (`062_sales_identification.sql`)
+User asked what "identification" features were still missing, specifically for sales. Found two real
+gaps: coupon usage was only ever an aggregate counter with no way to trace which invoice actually
+redeemed a given coupon, and invoices had no explicit link to the cashier shift they were made during
+(reconciliation approximated it via a `created_at` time-range query instead). Both closed — code
+-complete, typecheck/lint/build clean, committed.
+- [ ] **Coupon redemption audit trail** — new `coupon_redemptions` table (coupon_id, invoice_id,
+      discount_amount, redeemed_by, created_at). `createInvoiceSchema` gained optional `coupon_code`/
+      `coupon_discount_amount` fields; `POSScreen` now tracks which coupon was actually applied
+      (`appliedCoupon` state, reset on a new transaction) and sends it through at checkout.
+      `POST /api/invoices` records the redemption as an additive follow-up after `create_invoice()`
+      succeeds (same non-atomic trade-off already used for `sold_unit_label`/notes) — `create_invoice()`
+      itself stays untouched. New `GET /api/coupon-redemptions?coupon_id=` + a click-to-expand redemption
+      list in `CouponManager` (invoice number, timestamp, discount amount, invoice status) surface it,
+      instead of leaving it backend-only.
+- [ ] **`invoices.cashier_shift_id`** — stamped at checkout (another additive follow-up) from whichever
+      shift is currently open for the outlet; the app only allows one open shift per outlet at a time, so
+      there's no ambiguity to resolve. `POST /api/cashier-shifts/:id/close` switched from its old
+      `created_at >= shift_start_time` range query to an exact join on this column — correct today either
+      way given the single-open-shift constraint, but the explicit link is what actually carries the
+      "which shift" fact now instead of a range that happened to work under a rule from a different route.
+- [ ] Migration 062 is pending — user needs to run it before this can be live-verified.
+
 ## Notes on scope
 This todo tracks the **engineering deliverables** of the PRD (a working Next.js + Supabase codebase
 implementing Phase 1 features, with payment gateways behind a swappable mock interface). Items marked

@@ -14,8 +14,17 @@ export async function POST(request: NextRequest) {
   const result = validate(createInvoiceSchema, body)
   if (!result.valid) return NextResponse.json({ error: result.errors }, { status: 400 })
 
-  const { outlet_id, customer_name, customer_phone, items, discount_amount, discount_reason, payment_method } =
-    result.data
+  const {
+    outlet_id,
+    customer_name,
+    customer_phone,
+    items,
+    discount_amount,
+    discount_reason,
+    payment_method,
+    coupon_code,
+    coupon_discount_amount,
+  } = result.data
 
   if (!canAccessOutlet(auth, outlet_id)) {
     return NextResponse.json({ error: 'Tidak memiliki izin untuk outlet ini' }, { status: 403 })
@@ -66,6 +75,43 @@ export async function POST(request: NextRequest) {
         prep_status: isService ? 'pending' : undefined,
       })
       .eq('id', match.id)
+  }
+
+  // Sales identification, both additive follow-ups (same non-atomic
+  // trade-off as the sold_unit_label/notes stamping above) rather than
+  // create_invoice() changes:
+  //
+  // 1. Link this sale to whichever cashier shift is currently open for the
+  //    outlet — the app only allows one open shift per outlet at a time
+  //    (see app/api/cashier-shifts/route.ts), so there's no ambiguity to
+  //    resolve here. Silently no-ops if no shift is open (not every sale
+  //    happens under an opened shift).
+  const { data: openShift } = await auth.supabase
+    .from('cashier_shifts')
+    .select('id')
+    .eq('outlet_id', outlet_id)
+    .eq('status', 'open')
+    .maybeSingle()
+  if (openShift) {
+    await auth.supabase.from('invoices').update({ cashier_shift_id: openShift.id }).eq('id', data!.invoice_id)
+  }
+
+  // 2. Record which coupon (if any) this sale actually redeemed, so usage
+  //    can be traced back to a real transaction instead of just an
+  //    aggregate counter (coupons.usage_count, incremented separately by
+  //    POST /api/coupons/redeem when the code was first applied at
+  //    cart-build time, before an invoice existed to link to).
+  if (coupon_code && coupon_discount_amount) {
+    const { data: coupon } = await auth.supabase.from('coupons').select('id').eq('outlet_id', outlet_id).ilike('code', coupon_code).maybeSingle()
+    if (coupon) {
+      await auth.supabase.from('coupon_redemptions').insert({
+        coupon_id: coupon.id,
+        invoice_id: data!.invoice_id,
+        outlet_id,
+        discount_amount: coupon_discount_amount,
+        redeemed_by: auth.authUserId,
+      })
+    }
   }
 
   const nextStep =

@@ -180,11 +180,22 @@ export type Invoice = {
   payment_status: InvoicePaymentStatus
   order_status: InvoiceOrderStatus
   notes: string | null
+  cashier_shift_id: string | null
   created_at: string
   updated_at: string
   voided_at: string | null
   voided_by: string | null
   void_reason: string | null
+}
+
+export type CouponRedemption = {
+  id: string
+  coupon_id: string
+  invoice_id: string | null
+  outlet_id: string
+  discount_amount: number
+  redeemed_by: string
+  created_at: string
 }
 
 export type InvoiceItem = {
@@ -1208,6 +1219,7 @@ export type Database = {
       production_runs: Table<ProductionRun>
       promotions: Table<Promotion>
       coupons: Table<Coupon>
+      coupon_redemptions: Table<CouponRedemption>
       loyalty_ledger: Table<LoyaltyLedgerEntry>
       cashier_shifts: Table<CashierShift>
       held_transactions: Table<HeldTransaction>

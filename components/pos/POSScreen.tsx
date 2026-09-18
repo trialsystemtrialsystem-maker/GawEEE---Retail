@@ -45,6 +45,7 @@ export function POSScreen({ outletId, cashierName }: { outletId: string; cashier
   const [payLater, setPayLater] = useState(false)
   const [couponCode, setCouponCode] = useState('')
   const [isApplyingCoupon, setIsApplyingCoupon] = useState(false)
+  const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; amount: number } | null>(null)
   const showToast = useNotificationStore((s) => s.show)
 
   const items = usePosStore((s) => s.items)
@@ -73,6 +74,7 @@ export function POSScreen({ outletId, cashierName }: { outletId: string; cashier
       const coupon = data.coupon as { code: string; discount_type: 'percentage' | 'fixed'; discount_value: number }
       const amount = coupon.discount_type === 'percentage' ? Math.round((subtotal * coupon.discount_value) / 100) : coupon.discount_value
       setDiscount(discountAmount + amount, discountReason ? `${discountReason}; Promo: ${coupon.code}` : `Promo: ${coupon.code}`)
+      setAppliedCoupon({ code: coupon.code, amount })
       showToast(`Promo "${coupon.code}" diterapkan`, 'success')
       setCouponCode('')
     } finally {
@@ -113,6 +115,8 @@ export function POSScreen({ outletId, cashierName }: { outletId: string; cashier
           discount_amount: discountAmount,
           discount_reason: discountReason || undefined,
           payment_method: payLater ? 'pay_later' : useSplitPayment ? (splitLines.find((l) => l.payment_method !== 'cash')?.payment_method ?? 'cash') : paymentMethod,
+          coupon_code: appliedCoupon?.code,
+          coupon_discount_amount: appliedCoupon?.amount,
         }),
       })
       const data = await res.json()
@@ -201,6 +205,7 @@ export function POSScreen({ outletId, cashierName }: { outletId: string; cashier
     setSplitLines([])
     setCustomer(null)
     setPayLater(false)
+    setAppliedCoupon(null)
     setStep('cart')
   }
 

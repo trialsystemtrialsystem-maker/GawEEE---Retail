@@ -49,6 +49,8 @@ export const createInvoiceSchema = z.object({
   discount_amount: z.number().min(0).default(0),
   discount_reason: z.string().optional(),
   payment_method: z.enum(['cash', 'e_wallet', 'bank_transfer', 'card', 'pay_later']),
+  coupon_code: z.string().optional(),
+  coupon_discount_amount: z.number().min(0).optional(),
 })
 
 export type CreateInvoiceInput = z.infer<typeof createInvoiceSchema>
