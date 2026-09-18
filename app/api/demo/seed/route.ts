@@ -298,6 +298,29 @@ async function regenerateDemoData(admin: SupabaseClient<Database>, companyId: st
   // clears it too.
   await admin.from('customers').delete().eq('outlet_id', outletId)
 
+  // HR/ops menus that were completely empty (Employee, Master Admin, and a
+  // few Sales/Inventory sub-menus never touched by the seeder before now).
+  // payroll_runs before staff_members: payslips.staff_id has no cascade, so
+  // a staff row still referenced by a payslip can't be deleted — wiping
+  // payroll_runs first cascades payslips away. staff_members is scoped to
+  // `user_id is null` — NOT a blanket wipe — because the cashier-role demo
+  // login (the "1a2" block above, when it runs first) links a real staff
+  // row to a real auth user via user_id; a blanket wipe here would delete
+  // that row moments after it was created. Every row this seeder inserts
+  // below leaves user_id null, so this scoping only ever touches its own
+  // rows. attendance/staff_schedules cascade from staff_members; shifts'
+  // own delete also cascades staff_schedules independently.
+  await admin.from('payroll_runs').delete().eq('outlet_id', outletId)
+  await admin.from('shifts').delete().eq('outlet_id', outletId)
+  await admin.from('staff_members').delete().eq('outlet_id', outletId).is('user_id', null)
+  await admin.from('position_levels').delete().eq('outlet_id', outletId)
+  await admin.from('staff_announcements').delete().eq('outlet_id', outletId)
+  await admin.from('leave_requests').delete().eq('outlet_id', outletId)
+  await admin.from('customer_groups').delete().eq('outlet_id', outletId) // cascades special_prices too
+  await admin.from('promotions').delete().eq('outlet_id', outletId)
+  await admin.from('bulk_admin_operations').delete().eq('company_id', companyId)
+  await admin.from('checklist_items').delete().eq('outlet_id', outletId) // cascades checklist_completions
+
   // Every other table with a (non-cascading, from products' side) FK to
   // products.id — anything left un-wiped here makes the products delete
   // below fail with a 23503 foreign key violation, which the codebase found
@@ -1335,6 +1358,8 @@ async function regenerateDemoData(admin: SupabaseClient<Database>, companyId: st
   await insertChunked('expense_requests', expenseRequestRows)
   await insertChunked('online_orders', onlineOrderRows)
 
+  const staffStats = await seedStaffAndOpsData(admin, companyId, outletId, userId, products)
+
   return {
     products: products.length,
     invoices: invoices.length,
@@ -1350,6 +1375,7 @@ async function regenerateDemoData(admin: SupabaseClient<Database>, companyId: st
     expense_requests: expenseRequestRows.length,
     online_orders: onlineOrderRows.length,
     outlets: 1 + (await seedSecondaryOutlets(admin, companyId, products, DEFAULT_COA)),
+    ...staffStats,
   }
 }
 
@@ -1583,4 +1609,310 @@ async function seedSecondaryOutlets(
   }
 
   return SECONDARY_OUTLET_SPECS.length
+}
+
+const POSITION_LEVEL_NAMES = ['Staf', 'Supervisor', 'Manajer']
+const STAFF_SPECS = [
+  { first: 'Andi', last: 'Saputra', position: 'cashier' },
+  { first: 'Budi', last: 'Hermawan', position: 'cashier' },
+  { first: 'Citra', last: 'Wulandari', position: 'staff' },
+  { first: 'Dewi', last: 'Anggraini', position: 'staff' },
+  { first: 'Eko', last: 'Prabowo', position: 'staff' },
+  { first: 'Fajar', last: 'Nugroho', position: 'supervisor' },
+  { first: 'Gita', last: 'Permata', position: 'supervisor' },
+]
+const CHECKLIST_ITEMS_SPEC = [
+  { label: 'Bersihkan area kasir', category: 'opening' },
+  { label: 'Cek suhu freezer', category: 'opening' },
+  { label: 'Hidupkan mesin EDC', category: 'opening' },
+  { label: 'Hitung kas awal', category: 'opening' },
+  { label: 'Tutup dan kunci freezer', category: 'closing' },
+  { label: 'Hitung kas akhir & setor', category: 'closing' },
+  { label: 'Matikan lampu & AC', category: 'closing' },
+]
+
+/** Fills in the Employee/HR and a handful of Master Admin/Sales/Inventory
+ * menus that had zero demo data at all (not even leftover test rows) —
+ * position levels, staff, attendance, shifts/schedules, payroll, leave
+ * requests, announcements, customer groups/special pricing, promotions,
+ * bulk admin operations, and the opening/closing checklist. All scoped to
+ * the primary outlet only (the branches already got lighter, monitoring-
+ * focused data in seedSecondaryOutlets — full HR depth per branch isn't
+ * the point there). */
+async function seedStaffAndOpsData(
+  admin: SupabaseClient<Database>,
+  companyId: string,
+  outletId: string,
+  userId: string,
+  products: { id: string; sellingPrice: number }[]
+) {
+  const today = new Date()
+  function dateFor(dayOffset: number, hour = 9, minute = 0) {
+    const d = new Date(today)
+    d.setDate(d.getDate() - dayOffset)
+    d.setHours(hour, minute, 0, 0)
+    return d
+  }
+
+  const positionLevelRows = POSITION_LEVEL_NAMES.map((name, i) => ({
+    id: crypto.randomUUID(),
+    outlet_id: outletId,
+    name,
+    sort_order: i,
+  }))
+  const positionLevelIdByPosition: Record<string, string> = {
+    cashier: positionLevelRows[0].id,
+    staff: positionLevelRows[0].id,
+    supervisor: positionLevelRows[1].id,
+  }
+
+  const staffRows = STAFF_SPECS.map((s, i) => ({
+    id: crypto.randomUUID(),
+    outlet_id: outletId,
+    first_name: s.first,
+    last_name: s.last,
+    email: `${s.first.toLowerCase()}.${s.last.toLowerCase()}@demo-staff.gaweee.app`,
+    phone: `0813${String(10000000 + i * 111).padStart(8, '0')}`,
+    position: s.position,
+    position_level_id: positionLevelIdByPosition[s.position],
+    hire_date: dateFor(randomInt(60, 365)).toISOString().slice(0, 10),
+    salary_amount: s.position === 'supervisor' ? 5_500_000 : s.position === 'staff' ? 4_000_000 : 3_800_000,
+    salary_frequency: 'monthly',
+    bank_account_name: `${s.first} ${s.last}`,
+    bank_account_number: `${randomInt(1000000000, 9999999999)}`,
+    commission_rate: s.position === 'cashier' ? 0.005 : 0,
+    status: 'active',
+    employment_status: i < 5 ? 'permanent' : 'contract',
+  }))
+
+  // Attendance: ~20 weekday check-ins per staff over the last 30 days.
+  const attendanceRows: { staff_id: string; attendance_date: string; clock_in_time: string; clock_out_time: string; status: string }[] = []
+  for (const staff of staffRows) {
+    for (let dayOffset = 1; dayOffset <= 30; dayOffset++) {
+      const day = dateFor(dayOffset)
+      if (day.getDay() === 0) continue // skip Sunday
+      const roll = Math.random()
+      const status = roll < 0.85 ? 'present' : roll < 0.93 ? 'late' : 'absent'
+      if (status === 'absent') {
+        attendanceRows.push({ staff_id: staff.id, attendance_date: day.toISOString().slice(0, 10), clock_in_time: null as unknown as string, clock_out_time: null as unknown as string, status })
+        continue
+      }
+      const clockIn = new Date(day)
+      clockIn.setHours(status === 'late' ? 9 : 8, randomInt(0, 30), 0, 0)
+      const clockOut = new Date(day)
+      clockOut.setHours(17, randomInt(0, 30), 0, 0)
+      attendanceRows.push({ staff_id: staff.id, attendance_date: day.toISOString().slice(0, 10), clock_in_time: clockIn.toISOString(), clock_out_time: clockOut.toISOString(), status })
+    }
+  }
+
+  const shiftRows = [
+    { id: crypto.randomUUID(), outlet_id: outletId, name: 'Pagi', start_time: '07:00', end_time: '15:00' },
+    { id: crypto.randomUUID(), outlet_id: outletId, name: 'Siang', start_time: '15:00', end_time: '23:00' },
+  ]
+  const staffScheduleRows: { staff_id: string; shift_id: string; work_date: string }[] = []
+  for (let dayOffset = -7; dayOffset <= 7; dayOffset++) {
+    const day = dateFor(-dayOffset)
+    if (day.getDay() === 0) continue
+    for (const staff of staffRows.slice(0, 4)) {
+      staffScheduleRows.push({ staff_id: staff.id, shift_id: pick(shiftRows).id, work_date: day.toISOString().slice(0, 10) })
+    }
+  }
+
+  // Payroll: last month paid, this month still draft.
+  const lastMonthStart = dateFor(45)
+  const lastMonthEnd = dateFor(15)
+  const payrollRunRows = [
+    { id: crypto.randomUUID(), outlet_id: outletId, period_start: lastMonthStart.toISOString().slice(0, 10), period_end: lastMonthEnd.toISOString().slice(0, 10), status: 'paid', created_by: userId, paid_at: lastMonthEnd.toISOString() },
+    { id: crypto.randomUUID(), outlet_id: outletId, period_start: dateFor(14).toISOString().slice(0, 10), period_end: dateFor(0).toISOString().slice(0, 10), status: 'draft', created_by: userId, paid_at: null as string | null },
+  ]
+  const payslipRows: { payroll_run_id: string; staff_id: string; base_salary: number; commission_amount: number; deductions: number }[] = []
+  for (const run of payrollRunRows) {
+    for (const staff of staffRows) {
+      payslipRows.push({
+        payroll_run_id: run.id,
+        staff_id: staff.id,
+        base_salary: staff.salary_amount,
+        commission_amount: staff.commission_rate > 0 ? randomInt(50_000, 300_000) : 0,
+        deductions: randomInt(0, 100_000),
+      })
+    }
+  }
+
+  const leaveTypes = ['izin', 'sakit', 'libur']
+  const leaveStatuses = ['pending', 'approved', 'approved', 'rejected']
+  const leaveRequestRows = Array.from({ length: 6 }, (_, i) => {
+    const start = dateFor(randomInt(1, 40))
+    const end = new Date(start)
+    end.setDate(end.getDate() + randomInt(0, 2))
+    const status = leaveStatuses[i % leaveStatuses.length]
+    return {
+      id: crypto.randomUUID(),
+      outlet_id: outletId,
+      leave_type: pick(leaveTypes),
+      start_date: start.toISOString().slice(0, 10),
+      end_date: end.toISOString().slice(0, 10),
+      reason: pick(['Keperluan keluarga', 'Sakit demam', 'Acara pernikahan saudara', 'Kontrol dokter']),
+      status,
+      requested_by: userId,
+      decided_by: status === 'pending' ? null : userId,
+      decided_at: status === 'pending' ? null : dateFor(randomInt(0, 40)).toISOString(),
+      created_at: start.toISOString(),
+    }
+  })
+
+  const announcementMessages = [
+    'Jam operasional Hari Raya diubah menjadi 08.00-20.00, mohon perhatikan jadwal shift.',
+    'Reminder: SOP kebersihan freezer wajib dijalankan tiap pergantian shift.',
+    'Selamat kepada tim atas pencapaian target penjualan bulan lalu!',
+    'Ada pelatihan penggunaan sistem kasir baru minggu depan, wajib hadir.',
+    'Mohon segera submit slip gaji yang belum dikonfirmasi ke bagian HR.',
+  ]
+  const staffAnnouncementRows = announcementMessages.map((message, i) => ({
+    id: crypto.randomUUID(),
+    outlet_id: outletId,
+    message,
+    created_by: userId,
+    created_at: dateFor(randomInt(1, 30) + i * 3).toISOString(),
+  }))
+
+  const customerGroupRows = [
+    { id: crypto.randomUUID(), outlet_id: outletId, name: 'Member Reseller', description: 'Harga khusus untuk pelanggan yang jual ulang dalam jumlah besar', created_by: userId },
+    { id: crypto.randomUUID(), outlet_id: outletId, name: 'Pelanggan VIP', description: 'Pelanggan setia dengan histori belanja tinggi', created_by: userId },
+  ]
+  const specialPriceRows: { outlet_id: string; group_id: string; product_id: string; price: number; created_by: string }[] = []
+  for (const group of customerGroupRows) {
+    for (const p of products.slice(0, 5)) {
+      specialPriceRows.push({
+        outlet_id: outletId,
+        group_id: group.id,
+        product_id: p.id,
+        price: Math.round((p.sellingPrice * 0.92) / 500) * 500,
+        created_by: userId,
+      })
+    }
+  }
+
+  const promotionSpecs = [
+    { name: 'Promo Gajian', discount_type: 'percentage', discount_value: 10, dayStart: 20, dayEnd: -5, is_active: true },
+    { name: 'Diskon Produk Beku', discount_type: 'fixed', discount_value: 3000, dayStart: 15, dayEnd: -10, is_active: true },
+    { name: 'Promo Ramadan', discount_type: 'percentage', discount_value: 15, dayStart: 60, dayEnd: 30, is_active: false },
+    { name: 'Cashback Akhir Tahun', discount_type: 'fixed', discount_value: 5000, dayStart: 10, dayEnd: -3, is_active: true },
+  ]
+  const promotionRows = promotionSpecs.map((p) => ({
+    id: crypto.randomUUID(),
+    outlet_id: outletId,
+    name: p.name,
+    discount_type: p.discount_type,
+    discount_value: p.discount_value,
+    start_date: dateFor(p.dayStart).toISOString().slice(0, 10),
+    end_date: dateFor(p.dayEnd).toISOString().slice(0, 10),
+    is_active: p.is_active,
+    created_by: userId,
+  }))
+
+  const bulkOperationRows = [
+    { id: crypto.randomUUID(), company_id: companyId, admin_id: userId, operation_type: 'price_update', outlets_affected: ['all'], operation_description: 'Kenaikan harga 3% untuk kategori Seafood Beku', status: 'completed', success_count: 12, failed_count: 0 },
+    { id: crypto.randomUUID(), company_id: companyId, admin_id: userId, operation_type: 'promo_creation', outlets_affected: [outletId], operation_description: 'Buat promo akhir pekan di semua outlet', status: 'scheduled', success_count: null, failed_count: null },
+    { id: crypto.randomUUID(), company_id: companyId, admin_id: userId, operation_type: 'product_add', outlets_affected: ['all'], operation_description: 'Tambah 5 produk baru kategori Camilan', status: 'failed', success_count: 3, failed_count: 2 },
+  ]
+
+  const checklistItemRows = CHECKLIST_ITEMS_SPEC.map((c, i) => ({
+    id: crypto.randomUUID(),
+    outlet_id: outletId,
+    label: c.label,
+    category: c.category,
+    sort_order: i,
+    is_active: true,
+    created_by: userId,
+  }))
+  const checklistCompletionRows: { outlet_id: string; item_id: string; completed_by: string; shift_date: string; completed_at: string }[] = []
+  for (let dayOffset = 0; dayOffset <= 10; dayOffset++) {
+    const day = dateFor(dayOffset)
+    for (const item of checklistItemRows) {
+      if (Math.random() < 0.8) {
+        checklistCompletionRows.push({
+          outlet_id: outletId,
+          item_id: item.id,
+          completed_by: userId,
+          shift_date: day.toISOString().slice(0, 10),
+          completed_at: dateFor(dayOffset, randomInt(7, 22)).toISOString(),
+        })
+      }
+    }
+  }
+
+  // Item Request and Stock Production List (ItemRequestManager /
+  // ProductionRunManager) — both already had a wipe step from an earlier
+  // phase, but neither ever got seed data added alongside it, so both
+  // pages have shown an empty list ever since.
+  const itemRequestStatuses = ['pending', 'approved', 'approved', 'rejected', 'converted']
+  const itemRequestRows = Array.from({ length: 8 }, (_, i) => {
+    const status = itemRequestStatuses[i % itemRequestStatuses.length]
+    const requestedAt = dateFor(randomInt(1, 45))
+    return {
+      id: crypto.randomUUID(),
+      outlet_id: outletId,
+      product_id: pick(products).id,
+      quantity_requested: randomInt(10, 100),
+      reason: pick(['Stok menipis', 'Permintaan pelanggan meningkat', 'Persiapan akhir pekan', 'Restock rutin']),
+      status,
+      requested_by: userId,
+      decided_by: status === 'pending' ? null : userId,
+      decided_at: status === 'pending' ? null : dateFor(Math.max(0, randomInt(0, 44))).toISOString(),
+      created_at: requestedAt.toISOString(),
+    }
+  })
+
+  const { data: outletRecipes } = await admin.from('recipes').select('id').eq('outlet_id', outletId)
+  const productionRunStatuses = ['completed', 'completed', 'draft']
+  const productionRunRows = (outletRecipes ?? []).flatMap((recipe, i) => {
+    const status = productionRunStatuses[i % productionRunStatuses.length]
+    const createdAt = dateFor(randomInt(1, 30))
+    return [
+      {
+        id: crypto.randomUUID(),
+        outlet_id: outletId,
+        recipe_id: recipe.id,
+        batch_count: randomInt(2, 8),
+        status,
+        produced_by: userId,
+        created_at: createdAt.toISOString(),
+        completed_at: status === 'completed' ? createdAt.toISOString() : null,
+      },
+    ]
+  })
+
+  async function insertChunkedStaff<T>(table: keyof Database['public']['Tables'], rows: T[], chunkSize = 300) {
+    for (let i = 0; i < rows.length; i += chunkSize) {
+      const { error } = await admin.from(table).insert(rows.slice(i, i + chunkSize) as never)
+      if (error) throw new Error(`${table} (staff/ops seed): ${error.message}`)
+    }
+  }
+
+  await insertChunkedStaff('item_requests', itemRequestRows)
+  if (productionRunRows.length) await insertChunkedStaff('production_runs', productionRunRows)
+  await insertChunkedStaff('position_levels', positionLevelRows)
+  await insertChunkedStaff('staff_members', staffRows)
+  if (attendanceRows.length) await insertChunkedStaff('attendance', attendanceRows)
+  await insertChunkedStaff('shifts', shiftRows)
+  if (staffScheduleRows.length) await insertChunkedStaff('staff_schedules', staffScheduleRows)
+  await insertChunkedStaff('payroll_runs', payrollRunRows)
+  if (payslipRows.length) await insertChunkedStaff('payslips', payslipRows)
+  await insertChunkedStaff('leave_requests', leaveRequestRows)
+  await insertChunkedStaff('staff_announcements', staffAnnouncementRows)
+  await insertChunkedStaff('customer_groups', customerGroupRows)
+  if (specialPriceRows.length) await insertChunkedStaff('special_prices', specialPriceRows)
+  await insertChunkedStaff('promotions', promotionRows)
+  await insertChunkedStaff('bulk_admin_operations', bulkOperationRows)
+  await insertChunkedStaff('checklist_items', checklistItemRows)
+  if (checklistCompletionRows.length) await insertChunkedStaff('checklist_completions', checklistCompletionRows)
+
+  return {
+    staff_members: staffRows.length,
+    leave_requests: leaveRequestRows.length,
+    promotions: promotionRows.length,
+    customer_groups: customerGroupRows.length,
+    item_requests: itemRequestRows.length,
+    production_runs: productionRunRows.length,
+  }
 }

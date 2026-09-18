@@ -1037,6 +1037,33 @@ most already had their own `[!]`-flagged entries above.
       phase. Still well short of the ≥80% coverage goal tracked separately above — this was "add
       meaningful coverage for previously-untested pure logic," not a full coverage push.
 
+## Phase 17 — Fill the remaining Employee/HR/Admin menus with dummy data
+User asked to finish what Phase 15 started: every menu should have realistic dummy data, and every
+feature should be confirmed working as intended. A fresh audit (row counts across every table Phase 15
+hadn't touched) found the entire Employee/HR side of the app, plus a few Sales/Inventory/Master Admin
+menus, still completely empty — Phase 15 covered Sales/Inventory/Accounting features but never reached
+Employee, and two tables (`item_requests`, `production_runs`) had a wipe step from an earlier phase but
+were never actually re-seeded, so those two pages had been silently empty since before Phase 15 too.
+- [x] Added `position_levels` (3), `staff_members` (7, positions cashier/staff/supervisor with realistic
+      salary/bank/commission data — scoped to `user_id is null` on wipe so the real cashier-role demo
+      login's linked staff row is never deleted out from under it), `attendance` (~180 rows, weekday-only,
+      present/late/absent mix over 30 days), `shifts` (2) + `staff_schedules` (52, 2 weeks), `payroll_runs`
+      (1 paid + 1 draft) + `payslips` (14), `leave_requests` (6, all 3 statuses), `staff_announcements` (5),
+      `customer_groups` (2) + `special_prices` (10), `promotions` (4, active/expired mix),
+      `bulk_admin_operations` (3 — the page itself is submit-only with no history view, so these don't
+      render anywhere yet, but the table/API pairing is real and this is realistic data for if a history
+      view gets built later), `checklist_items` (7, opening/closing) + `checklist_completions` (~60 over
+      10 days), and backfilled `item_requests` (8) + `production_runs` (3, linked to the existing recipes)
+      that an earlier phase's wipe step had been silently emptying with nothing to replace them.
+- [x] Live-verified all 15 corresponding pages render this data correctly: Daftar Karyawan, Attendance,
+      Buka/Tutup Kasir, Payroll, Jadwal Kerja, Notifikasi, Persetujuan Izin/Cuti, Commission Group List,
+      Item Request, Customer Group, Special Pricing Group, Promotion, Bulk Operations, Stock Production
+      List, Checklist Activity.
+- [x] Ran a full reseed twice in a row (58-62s each, includes the 5-outlet dataset from Phase 15) with
+      zero errors both times, confirming the wipe/reseed cycle is stable and doesn't accumulate duplicates
+      — and a final smoke test (checkout + the 5-outlet monitoring dashboard) confirmed none of this
+      broke anything already working.
+
 ## Notes on scope
 This todo tracks the **engineering deliverables** of the PRD (a working Next.js + Supabase codebase
 implementing Phase 1 features, with payment gateways behind a swappable mock interface). Items marked
