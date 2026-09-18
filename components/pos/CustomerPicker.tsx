@@ -8,6 +8,7 @@ interface Customer {
   phone: string | null
 }
 export interface PickedCustomer {
+  id: string
   name: string
   phone?: string
 }
@@ -52,7 +53,7 @@ export function CustomerPicker({
       })
       const data = await res.json()
       if (res.ok) {
-        onChange({ name: data.customer.name, phone: data.customer.phone ?? undefined })
+        onChange({ id: data.customer.id, name: data.customer.name, phone: data.customer.phone ?? undefined })
         setShowNewForm(false)
         setNewName('')
         setNewPhone('')
@@ -98,7 +99,7 @@ export function CustomerPicker({
                 <button
                   type="button"
                   onClick={() => {
-                    onChange({ name: c.name, phone: c.phone ?? undefined })
+                    onChange({ id: c.id, name: c.name, phone: c.phone ?? undefined })
                     setQuery('')
                     setResults([])
                   }}

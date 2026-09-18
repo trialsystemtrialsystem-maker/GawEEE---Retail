@@ -27,6 +27,8 @@ export async function POST(request: NextRequest) {
     coupon_discount_amount,
     promotion_id,
     promotion_discount_amount,
+    loyalty_customer_id,
+    redeem_points,
   } = result.data
 
   if (!canAccessOutlet(auth, outlet_id)) {
@@ -130,7 +132,30 @@ export async function POST(request: NextRequest) {
     })
   }
 
-  // 4. Auto-earn loyalty points for a registered customer — only for a
+  // 4. Redeem loyalty points for a discount, if the cashier applied one at
+  //    checkout (mirrors coupon/promotion — a negative loyalty_ledger entry
+  //    linked to this invoice instead of a positive auto-earned one).
+  //    Re-checks the balance server-side rather than trusting the client's
+  //    last-fetched number, since another sale could have spent points on
+  //    the same customer in between — same best-effort, non-blocking
+  //    philosophy as everything else in this file: if the balance turns out
+  //    to be insufficient by the time we get here, just skip the redemption
+  //    silently rather than unwind an already-completed sale over it.
+  if (redeem_points && redeem_points > 0 && loyalty_customer_id) {
+    const { data: ledgerRows } = await auth.supabase.from('loyalty_ledger').select('points_change').eq('customer_id', loyalty_customer_id)
+    const balance = (ledgerRows ?? []).reduce((s, r) => s + r.points_change, 0)
+    if (balance >= redeem_points) {
+      await auth.supabase.from('loyalty_ledger').insert({
+        customer_id: loyalty_customer_id,
+        points_change: -redeem_points,
+        reason: 'Penukaran poin saat transaksi',
+        recorded_by: auth.authUserId,
+        invoice_id: data!.invoice_id,
+      })
+    }
+  }
+
+  // 5. Auto-earn loyalty points for a registered customer — only for a
   //    sale that's actually settled already (cash, paid immediately by
   //    create_invoice()); e-wallet/bank still 'pending' at this point earn
   //    once they settle instead, from the payment routes below.

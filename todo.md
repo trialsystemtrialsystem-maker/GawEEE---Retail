@@ -1126,6 +1126,37 @@ actually uses it" — the POS never applied one despite a stale code comment cla
       the live loyalty test caught — confirmed it wasn't a test-script issue by inspecting the route
       directly. Fixed to `.or(name.ilike, phone.ilike)` in `app/api/customers/route.ts`.
 
+## Phase 20 — Loyalty point redemption at checkout
+Follow-up audit (same "identification" theme as Phases 18-19, this time scoped to commission, loyalty
+tiers, sales returns, gift cards, and point redemption) found one more real gap: `loyalty_ledger` could
+record a negative `points_change` (manual redemption via `POST /api/loyalty/adjust`), but nothing in the
+POS ever actually let a cashier redeem points for a discount at checkout — the same "defined but never
+wired to a real sale" pattern already closed twice for coupons and promotions. Commission (calculated
+live from real invoices in `sales-breakdown`/payroll routes), sales returns (`033_customer_refunds.sql`,
+already fully wired), and loyalty tiers/gift cards (don't exist as a concept at all, correctly out of
+scope) were checked and are NOT gaps. No new migration needed — `loyalty_ledger.invoice_id` already
+existed from migration 063.
+- [x] `CustomerPicker`'s `PickedCustomer` type gained `id` (previously only carried name/phone, resolved
+      server-side by phone match) so the POS can look up a specific customer's point balance directly by
+      id instead of re-deriving it — avoids the phone-matching ambiguity the phone-search bug (Phase 19)
+      exposed.
+- [x] `POSScreen` fetches the outlet's `loyalty_rp_per_point` and, once a customer is selected, their
+      current balance (`GET /api/customers/:id/loyalty`, already existed for `LoyaltyManager`). Shows a
+      "Tukar Poin" input capped to the fetched balance; applying it stacks onto the discount exactly like
+      a coupon/promotion. `POST /api/invoices` gained `loyalty_customer_id`/`redeem_points`, and inserts a
+      negative `loyalty_ledger` entry linked to the invoice as an additive follow-up (`create_invoice()`
+      untouched) — re-validating the balance server-side rather than trusting the client's last fetch.
+- [x] **Real bug found and fixed during live verification**: the redemption entry and an auto-earn entry
+      (Phase 19) share the same `invoice_id` + `customer_id`. `earnLoyaltyPoints()`'s idempotency check
+      (`invoice_id` + `customer_id` already has a row → skip) matched the redemption row it had nothing to
+      do with, so redeeming points on a cash sale silently suppressed that same sale's own point-earning.
+      Fixed by scoping the check to `points_change > 0` in `lib/utils/loyalty.ts`.
+- [x] Live-verified end-to-end via Playwright: selected a customer with a real 138-point balance, redeemed
+      50 points (correctly capped to balance), confirmed the cart discount and final total matched exactly
+      (Rp20.000 → -Rp5.000 → Rp22.000 → Rp16.500 with tax), checked out with cash, and confirmed both a
+      `-50` redemption row and a separate `+16` auto-earn row landed in `loyalty_ledger` against the same
+      invoice — the dedup fix above confirmed working by seeing both rows coexist correctly.
+
 ## Notes on scope
 This todo tracks the **engineering deliverables** of the PRD (a working Next.js + Supabase codebase
 implementing Phase 1 features, with payment gateways behind a swappable mock interface). Items marked

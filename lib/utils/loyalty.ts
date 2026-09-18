@@ -33,8 +33,12 @@ export async function earnLoyaltyPoints(supabase: SupabaseClient<Database>, invo
     if (points <= 0) return
 
     // customer_id + invoice_id together keep this idempotent if a settlement
-    // webhook somehow fires twice for the same invoice.
-    const { data: existing } = await supabase.from('loyalty_ledger').select('id').eq('invoice_id', invoiceId).eq('customer_id', customer.id).maybeSingle()
+    // webhook somehow fires twice for the same invoice. Scoped to a positive
+    // points_change specifically — a point *redemption* against this same
+    // invoice (negative points_change, see POST /api/invoices) shares the
+    // same invoice_id + customer_id and must not be mistaken for "points
+    // already earned here."
+    const { data: existing } = await supabase.from('loyalty_ledger').select('id').eq('invoice_id', invoiceId).eq('customer_id', customer.id).gt('points_change', 0).maybeSingle()
     if (existing) return
 
     await supabase.from('loyalty_ledger').insert({

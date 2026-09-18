@@ -48,6 +48,10 @@ export function POSScreen({ outletId, cashierName }: { outletId: string; cashier
   const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; amount: number } | null>(null)
   const [activePromotions, setActivePromotions] = useState<{ id: string; name: string; discount_type: 'percentage' | 'fixed'; discount_value: number }[]>([])
   const [appliedPromotion, setAppliedPromotion] = useState<{ id: string; name: string; amount: number } | null>(null)
+  const [loyaltyRpPerPoint, setLoyaltyRpPerPoint] = useState(0)
+  const [customerLoyaltyBalance, setCustomerLoyaltyBalance] = useState(0)
+  const [redeemPointsInput, setRedeemPointsInput] = useState('')
+  const [appliedRedemption, setAppliedRedemption] = useState<{ points: number; amount: number } | null>(null)
   const showToast = useNotificationStore((s) => s.show)
 
   const items = usePosStore((s) => s.items)
@@ -69,6 +73,46 @@ export function POSScreen({ outletId, cashierName }: { outletId: string; cashier
     }, 0)
     return () => clearTimeout(timeout)
   }, [outletId])
+
+  useEffect(() => {
+    const timeout = setTimeout(async () => {
+      const res = await fetch(`/api/loyalty/settings?outlet_id=${outletId}`)
+      const data = await res.json()
+      if (res.ok) setLoyaltyRpPerPoint(data.settings?.loyalty_rp_per_point ?? 0)
+    }, 0)
+    return () => clearTimeout(timeout)
+  }, [outletId])
+
+  useEffect(() => {
+    const timeout = setTimeout(async () => {
+      if (!customer?.id) {
+        setCustomerLoyaltyBalance(0)
+        return
+      }
+      const res = await fetch(`/api/customers/${customer.id}/loyalty`)
+      const data = await res.json()
+      if (res.ok) setCustomerLoyaltyBalance(data.balance ?? 0)
+    }, 0)
+    return () => clearTimeout(timeout)
+  }, [customer?.id])
+
+  function handleCustomerChange(next: PickedCustomer | null) {
+    if (appliedRedemption) {
+      setDiscount(Math.max(0, discountAmount - appliedRedemption.amount), discountReason)
+      setAppliedRedemption(null)
+    }
+    setCustomer(next)
+  }
+
+  function applyRedeem() {
+    const points = Math.min(Math.floor(Number(redeemPointsInput) || 0), customerLoyaltyBalance)
+    if (points <= 0 || !customer?.id) return
+    const amount = points * loyaltyRpPerPoint
+    setDiscount(discountAmount + amount, discountReason ? `${discountReason}; Tukar ${points} poin` : `Tukar ${points} poin`)
+    setAppliedRedemption({ points, amount })
+    setRedeemPointsInput('')
+    showToast(`${points} poin ditukar senilai ${formatCurrency(amount)}`, 'success')
+  }
 
   function applyPromotion(promo: (typeof activePromotions)[number]) {
     const amount = promo.discount_type === 'percentage' ? Math.round((subtotal * promo.discount_value) / 100) : promo.discount_value
@@ -139,6 +183,8 @@ export function POSScreen({ outletId, cashierName }: { outletId: string; cashier
           coupon_discount_amount: appliedCoupon?.amount,
           promotion_id: appliedPromotion?.id,
           promotion_discount_amount: appliedPromotion?.amount,
+          loyalty_customer_id: appliedRedemption ? customer?.id : undefined,
+          redeem_points: appliedRedemption?.points,
         }),
       })
       const data = await res.json()
@@ -229,6 +275,9 @@ export function POSScreen({ outletId, cashierName }: { outletId: string; cashier
     setPayLater(false)
     setAppliedCoupon(null)
     setAppliedPromotion(null)
+    setAppliedRedemption(null)
+    setRedeemPointsInput('')
+    setCustomerLoyaltyBalance(0)
     setStep('cart')
   }
 
@@ -415,7 +464,36 @@ export function POSScreen({ outletId, cashierName }: { outletId: string; cashier
           {error && <Alert variant="danger">{error}</Alert>}
           <ShoppingCart outletId={outletId} />
 
-          <CustomerPicker outletId={outletId} value={customer} onChange={setCustomer} />
+          <CustomerPicker outletId={outletId} value={customer} onChange={handleCustomerChange} />
+
+          {customer?.id && loyaltyRpPerPoint > 0 && customerLoyaltyBalance > 0 && (
+            <div className="space-y-1.5 rounded-lg border border-gray-200 p-2.5">
+              <p className="text-xs font-medium text-gray-500">
+                Poin {customer.name}: <span className="font-semibold text-[var(--brand-700)]">{customerLoyaltyBalance}</span>{' '}
+                <span className="text-gray-400">(≈ {formatCurrency(customerLoyaltyBalance * loyaltyRpPerPoint)})</span>
+              </p>
+              {appliedRedemption ? (
+                <p className="text-xs font-semibold text-[var(--status-good)]">
+                  {appliedRedemption.points} poin ditukar · -{formatCurrency(appliedRedemption.amount)}
+                </p>
+              ) : (
+                <div className="flex gap-2">
+                  <input
+                    type="number"
+                    min="1"
+                    max={customerLoyaltyBalance}
+                    value={redeemPointsInput}
+                    onChange={(e) => setRedeemPointsInput(e.target.value)}
+                    placeholder="Jumlah poin"
+                    className="min-w-0 flex-1 rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--brand-500)]"
+                  />
+                  <Button type="button" variant="secondary" size="sm" onClick={applyRedeem}>
+                    Tukar
+                  </Button>
+                </div>
+              )}
+            </div>
+          )}
 
           <div className="flex gap-2">
             <input

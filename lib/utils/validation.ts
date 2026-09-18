@@ -53,6 +53,9 @@ export const createInvoiceSchema = z.object({
   coupon_discount_amount: z.number().min(0).optional(),
   promotion_id: z.string().uuid().optional(),
   promotion_discount_amount: z.number().min(0).optional(),
+  loyalty_customer_id: z.string().uuid().optional(),
+  redeem_points: z.number().int().positive().optional(),
+  redeem_discount_amount: z.number().min(0).optional(),
 })
 
 export type CreateInvoiceInput = z.infer<typeof createInvoiceSchema>
