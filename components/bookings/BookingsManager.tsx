@@ -160,17 +160,20 @@ export function BookingsManager({ outletId }: { outletId: string }) {
       {showForm && (
         <form onSubmit={handleCreate} className="grid grid-cols-1 gap-3 rounded-lg border border-gray-200 p-4 sm:grid-cols-3">
           <Input
+            name="booking_customer_name"
             label="Nama Pelanggan"
             required
             value={form.customer_name}
             onChange={(e) => setForm((f) => ({ ...f, customer_name: e.target.value }))}
           />
           <Input
+            name="booking_customer_phone"
             label="No. Telepon"
             value={form.customer_phone}
             onChange={(e) => setForm((f) => ({ ...f, customer_phone: e.target.value }))}
           />
           <Input
+            name="booking_item_description"
             label="Layanan / Item"
             required
             placeholder="Contoh: Kue Ulang Tahun Custom 2kg"
@@ -178,6 +181,7 @@ export function BookingsManager({ outletId }: { outletId: string }) {
             onChange={(e) => setForm((f) => ({ ...f, item_description: e.target.value }))}
           />
           <Input
+            name="booking_scheduled_date"
             label="Tanggal"
             type="date"
             required
@@ -185,6 +189,7 @@ export function BookingsManager({ outletId }: { outletId: string }) {
             onChange={(e) => setForm((f) => ({ ...f, scheduled_date: e.target.value }))}
           />
           <Input
+            name="booking_scheduled_start_time"
             label="Jam Mulai"
             type="time"
             required
@@ -192,6 +197,7 @@ export function BookingsManager({ outletId }: { outletId: string }) {
             onChange={(e) => setForm((f) => ({ ...f, scheduled_start_time: e.target.value }))}
           />
           <Input
+            name="booking_scheduled_end_time"
             label="Jam Selesai"
             type="time"
             value={form.scheduled_end_time}

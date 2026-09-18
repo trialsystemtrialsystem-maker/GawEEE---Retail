@@ -170,11 +170,11 @@ export function PurchaseInvoiceList({ outletId, canManage }: { outletId: string;
               ))}
             </select>
           </div>
-          <Input label="No. Invoice" required value={form.invoice_number} onChange={(e) => setForm((f) => ({ ...f, invoice_number: e.target.value }))} />
-          <Input label="Tanggal Invoice" type="date" required value={form.invoice_date} onChange={(e) => setForm((f) => ({ ...f, invoice_date: e.target.value }))} />
-          <Input label="Jatuh Tempo" type="date" required value={form.due_date} onChange={(e) => setForm((f) => ({ ...f, due_date: e.target.value }))} />
-          <Input label="Subtotal (Rp)" type="number" min="0" required value={form.subtotal} onChange={(e) => setForm((f) => ({ ...f, subtotal: e.target.value }))} />
-          <Input label="Pajak (Rp)" type="number" min="0" value={form.tax_amount} onChange={(e) => setForm((f) => ({ ...f, tax_amount: e.target.value }))} />
+          <Input name="invoice_number" label="No. Invoice" required value={form.invoice_number} onChange={(e) => setForm((f) => ({ ...f, invoice_number: e.target.value }))} />
+          <Input name="invoice_date" label="Tanggal Invoice" type="date" required value={form.invoice_date} onChange={(e) => setForm((f) => ({ ...f, invoice_date: e.target.value }))} />
+          <Input name="invoice_due_date" label="Jatuh Tempo" type="date" required value={form.due_date} onChange={(e) => setForm((f) => ({ ...f, due_date: e.target.value }))} />
+          <Input name="invoice_subtotal" label="Subtotal (Rp)" type="number" min="0" required value={form.subtotal} onChange={(e) => setForm((f) => ({ ...f, subtotal: e.target.value }))} />
+          <Input name="invoice_tax_amount" label="Pajak (Rp)" type="number" min="0" value={form.tax_amount} onChange={(e) => setForm((f) => ({ ...f, tax_amount: e.target.value }))} />
           <div className="sm:col-span-3">
             <Button type="submit" isLoading={isSubmitting}>
               Simpan
@@ -240,6 +240,7 @@ export function PurchaseInvoiceList({ outletId, canManage }: { outletId: string;
                           {canManage && inv.payment_status !== 'paid' && (
                             <form onSubmit={(e) => handlePay(inv.id, e)} className="flex flex-wrap items-end gap-3">
                               <Input
+                                name="payment_amount"
                                 label="Nominal Bayar"
                                 type="number"
                                 min="1"
@@ -248,6 +249,7 @@ export function PurchaseInvoiceList({ outletId, canManage }: { outletId: string;
                                 onChange={(e) => setPaymentForm((f) => ({ ...f, amount: e.target.value }))}
                               />
                               <Input
+                                name="payment_date"
                                 label="Tanggal"
                                 type="date"
                                 required

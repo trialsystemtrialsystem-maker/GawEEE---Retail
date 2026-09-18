@@ -111,17 +111,20 @@ export function StaffManager({ outletId, canManage }: { outletId: string; canMan
       {showForm && (
         <form onSubmit={handleCreate} className="grid grid-cols-1 gap-3 rounded-lg border border-gray-200 p-4 sm:grid-cols-3">
           <Input
+            name="staff_first_name"
             label="Nama Depan"
             required
             value={form.first_name}
             onChange={(e) => setForm((f) => ({ ...f, first_name: e.target.value }))}
           />
           <Input
+            name="staff_last_name"
             label="Nama Belakang"
             value={form.last_name}
             onChange={(e) => setForm((f) => ({ ...f, last_name: e.target.value }))}
           />
           <Input
+            name="staff_position"
             label="Jabatan"
             required
             placeholder="Kasir, Supervisor, dll"
@@ -129,17 +132,20 @@ export function StaffManager({ outletId, canManage }: { outletId: string; canMan
             onChange={(e) => setForm((f) => ({ ...f, position: e.target.value }))}
           />
           <Input
+            name="staff_phone"
             label="Telepon"
             value={form.phone}
             onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
           />
           <Input
+            name="staff_email"
             label="Email"
             type="email"
             value={form.email}
             onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
           />
           <Input
+            name="staff_hire_date"
             label="Tanggal Masuk"
             type="date"
             required
@@ -147,6 +153,7 @@ export function StaffManager({ outletId, canManage }: { outletId: string; canMan
             onChange={(e) => setForm((f) => ({ ...f, hire_date: e.target.value }))}
           />
           <Input
+            name="staff_salary_amount"
             label="Gaji Pokok (Rp)"
             type="number"
             min="0"
@@ -154,6 +161,7 @@ export function StaffManager({ outletId, canManage }: { outletId: string; canMan
             onChange={(e) => setForm((f) => ({ ...f, salary_amount: e.target.value }))}
           />
           <Input
+            name="staff_commission_rate"
             label="Komisi (0-1, contoh 0.02 = 2%)"
             type="number"
             step="0.01"
@@ -163,6 +171,7 @@ export function StaffManager({ outletId, canManage }: { outletId: string; canMan
             onChange={(e) => setForm((f) => ({ ...f, commission_rate: e.target.value }))}
           />
           <Input
+            name="staff_pin_code"
             label="Quick PIN (4-6 digit, opsional)"
             value={form.pin_code}
             onChange={(e) => setForm((f) => ({ ...f, pin_code: e.target.value }))}

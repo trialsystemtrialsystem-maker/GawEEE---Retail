@@ -104,7 +104,7 @@ export function CashierShiftManager({ outletId }: { outletId: string }) {
             </p>
             <p className="text-lg font-bold text-gray-900">Kas Awal: {formatCurrency(openShift.opening_cash)}</p>
             <form onSubmit={handleClose} className="flex flex-wrap items-end gap-3">
-              <Input label="Hitung Kas Sekarang (Rp)" type="number" min="0" required value={closingCash} onChange={(e) => setClosingCash(e.target.value)} />
+              <Input name="closing_cash" label="Hitung Kas Sekarang (Rp)" type="number" min="0" required value={closingCash} onChange={(e) => setClosingCash(e.target.value)} />
               <Button type="submit" isLoading={isSubmitting}>
                 Tutup Kasir
               </Button>
@@ -112,7 +112,7 @@ export function CashierShiftManager({ outletId }: { outletId: string }) {
           </div>
         ) : (
           <form onSubmit={handleOpen} className="flex flex-wrap items-end gap-3">
-            <Input label="Kas Awal (Rp)" type="number" min="0" required value={openingCash} onChange={(e) => setOpeningCash(e.target.value)} />
+            <Input name="opening_cash" label="Kas Awal (Rp)" type="number" min="0" required value={openingCash} onChange={(e) => setOpeningCash(e.target.value)} />
             <Button type="submit" isLoading={isSubmitting}>
               Buka Kasir
             </Button>

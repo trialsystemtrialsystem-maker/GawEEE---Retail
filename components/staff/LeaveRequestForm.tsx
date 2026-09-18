@@ -89,8 +89,8 @@ export function LeaveRequestForm({ outletId }: { outletId: string }) {
           ))}
         </div>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <Input label="Tanggal Mulai" type="date" required value={startDate} onChange={(e) => setStartDate(e.target.value)} />
-          <Input label="Tanggal Selesai (opsional)" type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} min={startDate} />
+          <Input name="leave_start_date" label="Tanggal Mulai" type="date" required value={startDate} onChange={(e) => setStartDate(e.target.value)} />
+          <Input name="leave_end_date" label="Tanggal Selesai (opsional)" type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} min={startDate} />
         </div>
         <div className="space-y-1">
           <label className="block text-sm font-medium text-gray-700">Alasan</label>

@@ -124,7 +124,7 @@ export function HeldTransactionsPanel({ outletId }: { outletId: string }) {
           onSubmit={handleHold}
           className="absolute left-0 top-full z-10 mt-2 w-72 space-y-2 rounded-md border border-gray-200 bg-white p-3 shadow-lg"
         >
-          <Input label="Catatan (opsional)" value={note} onChange={(e) => setNote(e.target.value)} placeholder="mis. Pelanggan ambil dompet" />
+          <Input name="hold_note" label="Catatan (opsional)" value={note} onChange={(e) => setNote(e.target.value)} placeholder="mis. Pelanggan ambil dompet" />
           <div className="flex justify-end gap-2">
             <Button type="button" variant="ghost" size="sm" onClick={() => setShowHoldForm(false)}>
               Batal

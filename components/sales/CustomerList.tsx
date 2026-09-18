@@ -112,24 +112,28 @@ export function CustomerList({ outletId }: { outletId: string }) {
       {showForm && (
         <form onSubmit={handleCreate} className="grid grid-cols-1 gap-3 rounded-lg border border-gray-200 p-4 sm:grid-cols-2">
           <Input
+            name="customer_name"
             label="Nama"
             required
             value={form.name}
             onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
           />
           <Input
+            name="customer_phone"
             label="Telepon"
             required={requirePhone}
             value={form.phone}
             onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
           />
           <Input
+            name="customer_email"
             label="Email"
             type="email"
             value={form.email}
             onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
           />
           <Input
+            name="customer_notes"
             label="Catatan"
             value={form.notes}
             onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
@@ -152,6 +156,7 @@ export function CustomerList({ outletId }: { outletId: string }) {
           {fieldDefinitions.map((fd) => (
             <Input
               key={fd.id}
+              name={`custom_field_${fd.id}`}
               label={fd.label}
               required={fd.is_required}
               value={customFieldValues[fd.label] ?? ''}

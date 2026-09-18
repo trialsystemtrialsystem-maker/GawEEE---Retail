@@ -120,7 +120,7 @@ export function ProductionRunManager({ outletId, canManage }: { outletId: string
               ))}
             </select>
           </div>
-          <Input label="Jumlah Batch" type="number" min="1" required value={form.batch_count} onChange={(e) => setForm((f) => ({ ...f, batch_count: e.target.value }))} />
+          <Input name="batch_count" label="Jumlah Batch" type="number" min="1" required value={form.batch_count} onChange={(e) => setForm((f) => ({ ...f, batch_count: e.target.value }))} />
           <Button type="submit" isLoading={isSubmitting}>
             Buat
           </Button>

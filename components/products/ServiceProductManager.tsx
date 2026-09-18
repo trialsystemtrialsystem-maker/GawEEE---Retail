@@ -102,9 +102,9 @@ export function ServiceProductManager() {
 
       {showForm && (
         <form onSubmit={handleAdd} className="grid grid-cols-1 gap-3 rounded-lg border border-gray-200 p-4 sm:grid-cols-3">
-          <Input label="Nama Layanan" required value={name} onChange={(e) => setName(e.target.value)} placeholder="mis. Jasa Potong Rambut" />
-          <Input label="SKU (opsional)" value={sku} onChange={(e) => setSku(e.target.value)} placeholder="dibuat otomatis jika kosong" />
-          <Input label="Harga (Rp)" type="number" min="0" required value={price} onChange={(e) => setPrice(e.target.value)} />
+          <Input name="service_name" label="Nama Layanan" required value={name} onChange={(e) => setName(e.target.value)} placeholder="mis. Jasa Potong Rambut" />
+          <Input name="service_sku" label="SKU (opsional)" value={sku} onChange={(e) => setSku(e.target.value)} placeholder="dibuat otomatis jika kosong" />
+          <Input name="service_price" label="Harga (Rp)" type="number" min="0" required value={price} onChange={(e) => setPrice(e.target.value)} />
           <div className="sm:col-span-3">
             <Button type="submit" isLoading={isSubmitting}>
               Simpan Layanan

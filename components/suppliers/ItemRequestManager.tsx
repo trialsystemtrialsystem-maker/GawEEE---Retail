@@ -115,9 +115,9 @@ export function ItemRequestManager({ outletId, canDecide }: { outletId: string; 
               ))}
             </select>
           </div>
-          <Input label="Jumlah" type="number" min="1" required value={form.quantity_requested} onChange={(e) => setForm((f) => ({ ...f, quantity_requested: e.target.value }))} />
+          <Input name="quantity_requested" label="Jumlah" type="number" min="1" required value={form.quantity_requested} onChange={(e) => setForm((f) => ({ ...f, quantity_requested: e.target.value }))} />
           <div className="sm:col-span-3">
-            <Input label="Alasan" value={form.reason} onChange={(e) => setForm((f) => ({ ...f, reason: e.target.value }))} />
+            <Input name="request_reason" label="Alasan" value={form.reason} onChange={(e) => setForm((f) => ({ ...f, reason: e.target.value }))} />
           </div>
           <div className="sm:col-span-3">
             <Button type="submit" isLoading={isSubmitting}>

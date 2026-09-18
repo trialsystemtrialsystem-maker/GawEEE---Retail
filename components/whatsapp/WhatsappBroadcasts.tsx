@@ -109,6 +109,7 @@ export function WhatsappBroadcasts({ outletId }: { outletId: string }) {
             </select>
           </div>
           <Input
+            name="target_note"
             label="Target Audiens"
             required
             placeholder="Contoh: Pelanggan yang bertransaksi minggu ini"

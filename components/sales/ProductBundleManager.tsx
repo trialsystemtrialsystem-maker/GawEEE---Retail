@@ -123,8 +123,8 @@ export function ProductBundleManager({ outletId }: { outletId: string }) {
       {showForm && (
         <form onSubmit={handleCreate} className="space-y-3 rounded-lg border border-gray-200 p-4">
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <Input label="Nama Paket" required value={name} onChange={(e) => setName(e.target.value)} placeholder="mis. Paket Hemat Frozen" />
-            <Input label="Harga Paket (Rp)" type="number" min="0" required value={bundlePrice} onChange={(e) => setBundlePrice(e.target.value)} />
+            <Input name="bundle_name" label="Nama Paket" required value={name} onChange={(e) => setName(e.target.value)} placeholder="mis. Paket Hemat Frozen" />
+            <Input name="bundle_price" label="Harga Paket (Rp)" type="number" min="0" required value={bundlePrice} onChange={(e) => setBundlePrice(e.target.value)} />
           </div>
 
           <div className="space-y-2">

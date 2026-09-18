@@ -138,6 +138,7 @@ export function JournalEntryManager({ outletId, canPost }: { outletId: string; c
         <form onSubmit={handleSubmit} className="space-y-3 rounded-lg border border-gray-200 p-4">
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <Input
+              name="entry_date"
               label="Tanggal"
               type="date"
               required
@@ -145,6 +146,7 @@ export function JournalEntryManager({ outletId, canPost }: { outletId: string; c
               onChange={(e) => setEntryDate(e.target.value)}
             />
             <Input
+              name="entry_description"
               label="Deskripsi"
               required
               placeholder="Contoh: Bayar sewa toko bulan Agustus"

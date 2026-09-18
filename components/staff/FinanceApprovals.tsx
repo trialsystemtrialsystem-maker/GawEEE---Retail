@@ -113,6 +113,7 @@ export function FinanceApprovals({ outletId, canDecide }: { outletId: string; ca
       {showForm && (
         <form onSubmit={handleCreate} className="grid grid-cols-1 gap-3 rounded-lg border border-gray-200 p-4 sm:grid-cols-3">
           <Input
+            name="expense_description"
             label="Deskripsi"
             required
             placeholder="Beli galon air minum"
@@ -120,6 +121,7 @@ export function FinanceApprovals({ outletId, canDecide }: { outletId: string; ca
             onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
           />
           <Input
+            name="expense_amount"
             label="Nominal (Rp)"
             type="number"
             min="1"

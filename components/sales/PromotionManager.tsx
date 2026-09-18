@@ -79,7 +79,7 @@ export function PromotionManager({ outletId, canManage }: { outletId: string; ca
       {showForm && (
         <form onSubmit={handleCreate} className="grid grid-cols-1 gap-3 rounded-lg border border-gray-200 p-4 sm:grid-cols-3">
           <div className="sm:col-span-2">
-            <Input label="Nama Promosi" required placeholder="Diskon Akhir Pekan" value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} />
+            <Input name="promotion_name" label="Nama Promosi" required placeholder="Diskon Akhir Pekan" value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} />
           </div>
           <div className="space-y-1">
             <label className="block text-sm font-medium text-gray-700">Tipe Diskon</label>
@@ -88,9 +88,9 @@ export function PromotionManager({ outletId, canManage }: { outletId: string; ca
               <option value="fixed">Nominal (Rp)</option>
             </select>
           </div>
-          <Input label="Nilai Diskon" type="number" min="0" required value={form.discount_value} onChange={(e) => setForm((f) => ({ ...f, discount_value: e.target.value }))} />
-          <Input label="Mulai" type="date" required value={form.start_date} onChange={(e) => setForm((f) => ({ ...f, start_date: e.target.value }))} />
-          <Input label="Selesai" type="date" required value={form.end_date} onChange={(e) => setForm((f) => ({ ...f, end_date: e.target.value }))} />
+          <Input name="discount_value" label="Nilai Diskon" type="number" min="0" required value={form.discount_value} onChange={(e) => setForm((f) => ({ ...f, discount_value: e.target.value }))} />
+          <Input name="start_date" label="Mulai" type="date" required value={form.start_date} onChange={(e) => setForm((f) => ({ ...f, start_date: e.target.value }))} />
+          <Input name="end_date" label="Selesai" type="date" required value={form.end_date} onChange={(e) => setForm((f) => ({ ...f, end_date: e.target.value }))} />
           <div className="sm:col-span-3">
             <Button type="submit" isLoading={isSubmitting}>
               Simpan

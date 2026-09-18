@@ -118,6 +118,7 @@ export function ScheduleManager({ outletId, canManage }: { outletId: string; can
         {showShiftForm && (
           <form onSubmit={handleAddShift} className="grid grid-cols-1 gap-3 rounded-lg border border-gray-200 p-4 sm:grid-cols-4">
             <Input
+              name="shift_name"
               label="Nama Shift"
               required
               placeholder="Pagi"
@@ -125,6 +126,7 @@ export function ScheduleManager({ outletId, canManage }: { outletId: string; can
               onChange={(e) => setShiftForm((f) => ({ ...f, name: e.target.value }))}
             />
             <Input
+              name="shift_start_time"
               label="Mulai"
               type="time"
               required
@@ -132,6 +134,7 @@ export function ScheduleManager({ outletId, canManage }: { outletId: string; can
               onChange={(e) => setShiftForm((f) => ({ ...f, start_time: e.target.value }))}
             />
             <Input
+              name="shift_end_time"
               label="Selesai"
               type="time"
               required

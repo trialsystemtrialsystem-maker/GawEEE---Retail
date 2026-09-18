@@ -177,12 +177,14 @@ export function OnlineOrdersManager({ outletId }: { outletId: string }) {
               </select>
             </div>
             <Input
+              name="order_customer_name"
               label="Nama Pelanggan"
               required
               value={form.customer_name}
               onChange={(e) => setForm((f) => ({ ...f, customer_name: e.target.value }))}
             />
             <Input
+              name="order_customer_phone"
               label="No. Telepon"
               value={form.customer_phone}
               onChange={(e) => setForm((f) => ({ ...f, customer_phone: e.target.value }))}

@@ -158,8 +158,8 @@ export function PurchaseReturnManager({ outletId, canManage }: { outletId: strin
                 ))}
               </select>
             </div>
-            <Input label="Tanggal Retur" type="date" required value={form.return_date} onChange={(e) => setForm((f) => ({ ...f, return_date: e.target.value }))} />
-            <Input label="Alasan" required value={form.reason} onChange={(e) => setForm((f) => ({ ...f, reason: e.target.value }))} />
+            <Input name="return_date" label="Tanggal Retur" type="date" required value={form.return_date} onChange={(e) => setForm((f) => ({ ...f, return_date: e.target.value }))} />
+            <Input name="return_reason" label="Alasan" required value={form.reason} onChange={(e) => setForm((f) => ({ ...f, reason: e.target.value }))} />
             <div className="space-y-1">
               <label className="block text-sm font-medium text-gray-700">Kaitkan ke Invoice Pembelian (opsional)</label>
               <select

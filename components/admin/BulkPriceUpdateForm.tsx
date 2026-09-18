@@ -75,6 +75,7 @@ export function BulkPriceUpdateForm() {
         </fieldset>
 
         <Input
+          name="percentage"
           label="Persentase (%)"
           type="number"
           min={0.1}

@@ -131,8 +131,8 @@ export function DeliveryManager({ outletId }: { outletId: string }) {
               ))}
             </select>
           </div>
-          <Input label="Kurir (opsional)" value={courierName} onChange={(e) => setCourierName(e.target.value)} placeholder="mis. JNE, Gojek" />
-          <Input label="No. Resi (opsional)" value={trackingNumber} onChange={(e) => setTrackingNumber(e.target.value)} />
+          <Input name="courier_name" label="Kurir (opsional)" value={courierName} onChange={(e) => setCourierName(e.target.value)} placeholder="mis. JNE, Gojek" />
+          <Input name="tracking_number" label="No. Resi (opsional)" value={trackingNumber} onChange={(e) => setTrackingNumber(e.target.value)} />
           <div className="sm:col-span-3">
             <Button type="submit" isLoading={isSubmitting}>
               Simpan

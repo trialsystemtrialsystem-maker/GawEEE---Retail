@@ -181,18 +181,21 @@ export function OutletPerformance() {
         <Card>
           <form onSubmit={handleCreate} className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <Input
+              name="outlet_name"
               label="Nama Outlet"
               required
               value={form.name}
               onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
             />
-            <Input label="Kota" value={form.city} onChange={(e) => setForm((f) => ({ ...f, city: e.target.value }))} />
+            <Input name="outlet_city" label="Kota" value={form.city} onChange={(e) => setForm((f) => ({ ...f, city: e.target.value }))} />
             <Input
+              name="outlet_address"
               label="Alamat"
               value={form.address}
               onChange={(e) => setForm((f) => ({ ...f, address: e.target.value }))}
             />
             <Input
+              name="outlet_phone"
               label="Telepon"
               value={form.phone}
               onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}

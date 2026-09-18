@@ -196,6 +196,7 @@ export function ModifierManager() {
 
               <form onSubmit={(e) => handleAddOption(g.id, e)} className="mt-3 flex flex-wrap items-end gap-2">
                 <Input
+                  name={`modifier_option_label_${g.id}`}
                   label="Nama Pilihan"
                   required
                   value={optionDraft[g.id]?.label ?? ''}
@@ -226,7 +227,7 @@ export function ModifierManager() {
           ))}
 
           <form onSubmit={handleAddGroup} className="flex flex-wrap items-end gap-2 rounded-lg border border-dashed border-gray-300 p-4">
-            <Input label="Nama Grup Baru" required value={groupName} onChange={(e) => setGroupName(e.target.value)} placeholder="mis. Level Pedas" className="w-48" />
+            <Input name="modifier_group_name" label="Nama Grup Baru" required value={groupName} onChange={(e) => setGroupName(e.target.value)} placeholder="mis. Level Pedas" className="w-48" />
             <Button type="submit" size="sm" variant="secondary" isLoading={isSubmittingGroup}>
               + Tambah Grup
             </Button>

@@ -123,6 +123,7 @@ export function PayrollManager({ outletId, canManage }: { outletId: string; canM
       {showForm && (
         <form onSubmit={handleGenerate} className="grid grid-cols-1 gap-3 rounded-lg border border-gray-200 p-4 sm:grid-cols-3">
           <Input
+            name="period_start"
             label="Periode Mulai"
             type="date"
             required
@@ -130,6 +131,7 @@ export function PayrollManager({ outletId, canManage }: { outletId: string; canM
             onChange={(e) => setPeriod((p) => ({ ...p, period_start: e.target.value }))}
           />
           <Input
+            name="period_end"
             label="Periode Selesai"
             type="date"
             required

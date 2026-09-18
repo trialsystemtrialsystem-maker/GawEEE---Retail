@@ -76,22 +76,26 @@ export function SupplierList() {
       {showForm && (
         <form onSubmit={handleCreate} className="grid grid-cols-1 gap-3 rounded-lg border border-gray-200 p-4 sm:grid-cols-2">
           <Input
+            name="supplier_name"
             label="Nama Supplier"
             required
             value={form.name}
             onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
           />
           <Input
+            name="supplier_contact_person"
             label="Kontak Person"
             value={form.contact_person}
             onChange={(e) => setForm((f) => ({ ...f, contact_person: e.target.value }))}
           />
           <Input
+            name="supplier_phone"
             label="Telepon"
             value={form.phone}
             onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
           />
           <Input
+            name="supplier_email"
             label="Email"
             type="email"
             value={form.email}

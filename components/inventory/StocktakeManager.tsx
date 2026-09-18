@@ -81,7 +81,7 @@ export function StocktakeManager({ outletId, canManage }: { outletId: string; ca
 
       {showForm && (
         <form onSubmit={handleCreate} className="flex items-end gap-3 rounded-lg border border-gray-200 p-4">
-          <Input label="Tanggal" type="date" required value={scheduledDate} onChange={(e) => setScheduledDate(e.target.value)} />
+          <Input name="scheduled_date" label="Tanggal" type="date" required value={scheduledDate} onChange={(e) => setScheduledDate(e.target.value)} />
           <Button type="submit" isLoading={isSubmitting}>
             Mulai
           </Button>

@@ -60,8 +60,8 @@ export function ProfitLossReport() {
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-end gap-3">
-        <Input label="Dari Tanggal" type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)} />
-        <Input label="Sampai Tanggal" type="date" value={toDate} onChange={(e) => setToDate(e.target.value)} />
+        <Input name="from_date" label="Dari Tanggal" type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)} />
+        <Input name="to_date" label="Sampai Tanggal" type="date" value={toDate} onChange={(e) => setToDate(e.target.value)} />
       </div>
 
       {error && <Alert variant="danger">{error}</Alert>}

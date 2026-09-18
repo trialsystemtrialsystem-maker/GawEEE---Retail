@@ -124,7 +124,7 @@ export function OjolPriceListManager() {
             ))}
           </select>
         </div>
-        <Input label="Harga di Platform (Rp)" type="number" min="0" required value={price} onChange={(e) => setPrice(e.target.value)} className="w-40" />
+        <Input name="platform_price" label="Harga di Platform (Rp)" type="number" min="0" required value={price} onChange={(e) => setPrice(e.target.value)} className="w-40" />
         <Button type="submit" isLoading={isSubmitting}>
           + Simpan
         </Button>

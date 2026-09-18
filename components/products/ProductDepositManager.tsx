@@ -135,8 +135,8 @@ export function ProductDepositManager({ outletId }: { outletId: string }) {
 
       {showForm && (
         <form onSubmit={handleAdd} className="grid grid-cols-1 gap-3 rounded-lg border border-gray-200 p-4 sm:grid-cols-2">
-          <Input label="Nama Pelanggan" required value={customerName} onChange={(e) => setCustomerName(e.target.value)} />
-          <Input label="Telepon (opsional)" value={customerPhone} onChange={(e) => setCustomerPhone(e.target.value)} />
+          <Input name="customer_name" label="Nama Pelanggan" required value={customerName} onChange={(e) => setCustomerName(e.target.value)} />
+          <Input name="customer_phone" label="Telepon (opsional)" value={customerPhone} onChange={(e) => setCustomerPhone(e.target.value)} />
           <div className="space-y-1">
             <label className="block text-sm font-medium text-gray-700">Produk</label>
             <select
@@ -153,9 +153,9 @@ export function ProductDepositManager({ outletId }: { outletId: string }) {
               ))}
             </select>
           </div>
-          <Input label="Jumlah" type="number" min={1} required value={quantity} onChange={(e) => handleQuantityChange(e.target.value)} />
-          <Input label="Uang Muka / Deposit (Rp)" type="number" min="0" required value={depositAmount} onChange={(e) => setDepositAmount(e.target.value)} />
-          <Input label="Total Harga (Rp)" type="number" min="0" required value={totalPrice} onChange={(e) => setTotalPrice(e.target.value)} />
+          <Input name="deposit_quantity" label="Jumlah" type="number" min={1} required value={quantity} onChange={(e) => handleQuantityChange(e.target.value)} />
+          <Input name="deposit_amount" label="Uang Muka / Deposit (Rp)" type="number" min="0" required value={depositAmount} onChange={(e) => setDepositAmount(e.target.value)} />
+          <Input name="total_price" label="Total Harga (Rp)" type="number" min="0" required value={totalPrice} onChange={(e) => setTotalPrice(e.target.value)} />
           <div className="sm:col-span-2">
             <Button type="submit" isLoading={isSubmitting}>
               Simpan Deposit

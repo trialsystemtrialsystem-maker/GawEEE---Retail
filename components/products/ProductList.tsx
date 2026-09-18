@@ -96,10 +96,11 @@ export function ProductList() {
 
       {showForm && (
         <form onSubmit={handleCreate} className="grid grid-cols-1 gap-3 rounded-lg border border-gray-200 p-4 sm:grid-cols-2 lg:grid-cols-3">
-          <Input label="SKU" required value={form.sku} onChange={(e) => setForm((f) => ({ ...f, sku: e.target.value }))} />
-          <Input label="Nama Produk" required value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} />
-          <Input label="Barcode" value={form.barcode} onChange={(e) => setForm((f) => ({ ...f, barcode: e.target.value }))} />
+          <Input name="sku" label="SKU" required value={form.sku} onChange={(e) => setForm((f) => ({ ...f, sku: e.target.value }))} />
+          <Input name="product_name" label="Nama Produk" required value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} />
+          <Input name="barcode" label="Barcode" value={form.barcode} onChange={(e) => setForm((f) => ({ ...f, barcode: e.target.value }))} />
           <Input
+            name="purchase_price"
             label="Harga Beli"
             type="number"
             required
@@ -107,20 +108,23 @@ export function ProductList() {
             onChange={(e) => setForm((f) => ({ ...f, purchase_price: e.target.value }))}
           />
           <Input
+            name="selling_price"
             label="Harga Jual"
             type="number"
             required
             value={form.selling_price}
             onChange={(e) => setForm((f) => ({ ...f, selling_price: e.target.value }))}
           />
-          <Input label="Satuan" value={form.unit_type} onChange={(e) => setForm((f) => ({ ...f, unit_type: e.target.value }))} />
+          <Input name="unit_type" label="Satuan" value={form.unit_type} onChange={(e) => setForm((f) => ({ ...f, unit_type: e.target.value }))} />
           <Input
+            name="reorder_level"
             label="Reorder Level"
             type="number"
             value={form.reorder_level}
             onChange={(e) => setForm((f) => ({ ...f, reorder_level: e.target.value }))}
           />
           <Input
+            name="reorder_quantity"
             label="Reorder Quantity"
             type="number"
             value={form.reorder_quantity}

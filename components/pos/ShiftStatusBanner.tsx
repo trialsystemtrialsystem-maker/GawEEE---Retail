@@ -66,7 +66,7 @@ export function ShiftStatusBanner({ outletId }: { outletId: string }) {
         </div>
       ) : (
         <form onSubmit={handleOpen} className="flex flex-wrap items-end gap-2">
-          <Input label="Kas Awal (Rp)" type="number" min="0" required value={openingCash} onChange={(e) => setOpeningCash(e.target.value)} />
+          <Input name="opening_cash" label="Kas Awal (Rp)" type="number" min="0" required value={openingCash} onChange={(e) => setOpeningCash(e.target.value)} />
           <Button type="submit" size="sm" isLoading={isSubmitting}>
             Buka
           </Button>

@@ -118,7 +118,7 @@ export function SpecialPricingManager({ outletId }: { outletId: string }) {
               ))}
             </select>
           </div>
-          <Input label="Harga Khusus (Rp)" type="number" min="0" required value={form.price} onChange={(e) => setForm((f) => ({ ...f, price: e.target.value }))} />
+          <Input name="special_price" label="Harga Khusus (Rp)" type="number" min="0" required value={form.price} onChange={(e) => setForm((f) => ({ ...f, price: e.target.value }))} />
           <div className="sm:col-span-3">
             <Button type="submit" isLoading={isSubmitting}>
               Simpan

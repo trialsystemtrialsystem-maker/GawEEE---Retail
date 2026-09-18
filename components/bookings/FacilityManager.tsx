@@ -82,9 +82,9 @@ export function FacilityManager({ outletId }: { outletId: string }) {
 
       {showForm && (
         <form onSubmit={handleAdd} className="grid grid-cols-1 gap-3 rounded-lg border border-gray-200 p-4 sm:grid-cols-3">
-          <Input label="Nama Fasilitas" required value={name} onChange={(e) => setName(e.target.value)} placeholder="mis. Ruang VIP 1" />
-          <Input label="Kapasitas (opsional)" type="number" min="1" value={capacity} onChange={(e) => setCapacity(e.target.value)} />
-          <Input label="Deskripsi (opsional)" value={description} onChange={(e) => setDescription(e.target.value)} />
+          <Input name="facility_name" label="Nama Fasilitas" required value={name} onChange={(e) => setName(e.target.value)} placeholder="mis. Ruang VIP 1" />
+          <Input name="facility_capacity" label="Kapasitas (opsional)" type="number" min="1" value={capacity} onChange={(e) => setCapacity(e.target.value)} />
+          <Input name="facility_description" label="Deskripsi (opsional)" value={description} onChange={(e) => setDescription(e.target.value)} />
           <div className="sm:col-span-3">
             <Button type="submit" isLoading={isSubmitting}>
               Simpan Fasilitas

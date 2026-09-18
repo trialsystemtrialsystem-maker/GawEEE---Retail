@@ -151,7 +151,7 @@ export function RecipeChangeScheduler({ outletId }: { outletId: string }) {
                 ))}
               </select>
             </div>
-            <Input label="Berlaku Mulai" type="date" required value={effectiveDate} onChange={(e) => setEffectiveDate(e.target.value)} />
+            <Input name="effective_date" label="Berlaku Mulai" type="date" required value={effectiveDate} onChange={(e) => setEffectiveDate(e.target.value)} />
           </div>
 
           <div className="space-y-2">

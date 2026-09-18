@@ -130,8 +130,8 @@ export function CustomerSatisfactionManager({ outletId }: { outletId: string }) 
 
       {showForm && (
         <form onSubmit={handleAdd} className="grid grid-cols-1 gap-3 rounded-lg border border-gray-200 p-4 sm:grid-cols-2">
-          <Input label="Nama Pelanggan (opsional)" value={name} onChange={(e) => setName(e.target.value)} />
-          <Input label="Telepon (opsional)" value={phone} onChange={(e) => setPhone(e.target.value)} />
+          <Input name="customer_name" label="Nama Pelanggan (opsional)" value={name} onChange={(e) => setName(e.target.value)} />
+          <Input name="customer_phone" label="Telepon (opsional)" value={phone} onChange={(e) => setPhone(e.target.value)} />
           <div className="space-y-1">
             <label className="block text-sm font-medium text-gray-700">Rating</label>
             <select
@@ -147,7 +147,7 @@ export function CustomerSatisfactionManager({ outletId }: { outletId: string }) 
               ))}
             </select>
           </div>
-          <Input label="Komentar (opsional)" value={comment} onChange={(e) => setComment(e.target.value)} />
+          <Input name="comment" label="Komentar (opsional)" value={comment} onChange={(e) => setComment(e.target.value)} />
           <div className="sm:col-span-2">
             <Button type="submit" isLoading={isSubmitting}>
               Simpan Ulasan

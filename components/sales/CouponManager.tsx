@@ -80,7 +80,7 @@ export function CouponManager({ outletId, canManage }: { outletId: string; canMa
 
       {showForm && (
         <form onSubmit={handleCreate} className="grid grid-cols-1 gap-3 rounded-lg border border-gray-200 p-4 sm:grid-cols-3">
-          <Input label="Kode Kupon" required placeholder="HEMAT10" value={form.code} onChange={(e) => setForm((f) => ({ ...f, code: e.target.value }))} />
+          <Input name="coupon_code" label="Kode Kupon" required placeholder="HEMAT10" value={form.code} onChange={(e) => setForm((f) => ({ ...f, code: e.target.value }))} />
           <div className="space-y-1">
             <label className="block text-sm font-medium text-gray-700">Tipe Diskon</label>
             <select value={form.discount_type} onChange={(e) => setForm((f) => ({ ...f, discount_type: e.target.value }))} className="w-full rounded-sm border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
@@ -88,9 +88,9 @@ export function CouponManager({ outletId, canManage }: { outletId: string; canMa
               <option value="fixed">Nominal (Rp)</option>
             </select>
           </div>
-          <Input label="Nilai Diskon" type="number" min="0" required value={form.discount_value} onChange={(e) => setForm((f) => ({ ...f, discount_value: e.target.value }))} />
-          <Input label="Batas Pemakaian (opsional)" type="number" min="1" value={form.usage_limit} onChange={(e) => setForm((f) => ({ ...f, usage_limit: e.target.value }))} />
-          <Input label="Kadaluarsa (opsional)" type="date" value={form.expires_at} onChange={(e) => setForm((f) => ({ ...f, expires_at: e.target.value }))} />
+          <Input name="discount_value" label="Nilai Diskon" type="number" min="0" required value={form.discount_value} onChange={(e) => setForm((f) => ({ ...f, discount_value: e.target.value }))} />
+          <Input name="usage_limit" label="Batas Pemakaian (opsional)" type="number" min="1" value={form.usage_limit} onChange={(e) => setForm((f) => ({ ...f, usage_limit: e.target.value }))} />
+          <Input name="expires_at" label="Kadaluarsa (opsional)" type="date" value={form.expires_at} onChange={(e) => setForm((f) => ({ ...f, expires_at: e.target.value }))} />
           <div className="sm:col-span-3">
             <Button type="submit" isLoading={isSubmitting}>
               Simpan

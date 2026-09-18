@@ -62,8 +62,8 @@ export function CustomerGroupList({ outletId }: { outletId: string }) {
 
       {showForm && (
         <form onSubmit={handleCreate} className="grid grid-cols-1 gap-3 rounded-lg border border-gray-200 p-4 sm:grid-cols-2">
-          <Input label="Nama Grup" required placeholder="Pelanggan VIP" value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} />
-          <Input label="Deskripsi" value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} />
+          <Input name="group_name" label="Nama Grup" required placeholder="Pelanggan VIP" value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} />
+          <Input name="group_description" label="Deskripsi" value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} />
           <div className="sm:col-span-2">
             <Button type="submit" isLoading={isSubmitting}>
               Simpan

@@ -115,7 +115,7 @@ export function ChecklistActivity({ outletId, canManage }: { outletId: string; c
             ))}
           </ul>
           <form onSubmit={handleAddItem} className="flex flex-wrap items-end gap-2">
-            <Input label="Item Baru" required value={newLabel} onChange={(e) => setNewLabel(e.target.value)} placeholder="mis. Nyalakan freezer" className="flex-1" />
+            <Input name="checklist_item_label" label="Item Baru" required value={newLabel} onChange={(e) => setNewLabel(e.target.value)} placeholder="mis. Nyalakan freezer" className="flex-1" />
             <div className="space-y-1">
               <label className="block text-sm font-medium text-gray-700">Kategori</label>
               <select

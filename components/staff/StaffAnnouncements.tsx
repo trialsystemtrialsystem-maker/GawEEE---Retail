@@ -57,6 +57,7 @@ export function StaffAnnouncements({ outletId, canPost }: { outletId: string; ca
       {canPost && (
         <form onSubmit={handleSubmit} className="space-y-2 rounded-lg border border-gray-200 p-4">
           <Textarea
+            name="announcement_message"
             label="Pesan Pengumuman"
             required
             rows={3}

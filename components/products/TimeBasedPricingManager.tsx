@@ -113,7 +113,7 @@ export function TimeBasedPricingManager() {
             ))}
           </select>
         </div>
-        <Input label="Harga Khusus (Rp)" type="number" min="0" required value={price} onChange={(e) => setPrice(e.target.value)} className="w-36" />
+        <Input name="special_price" label="Harga Khusus (Rp)" type="number" min="0" required value={price} onChange={(e) => setPrice(e.target.value)} className="w-36" />
         <div className="space-y-1">
           <label className="block text-sm font-medium text-gray-700">Hari</label>
           <select
@@ -129,8 +129,8 @@ export function TimeBasedPricingManager() {
             ))}
           </select>
         </div>
-        <Input label="Mulai" type="time" required value={startTime} onChange={(e) => setStartTime(e.target.value)} />
-        <Input label="Selesai" type="time" required value={endTime} onChange={(e) => setEndTime(e.target.value)} />
+        <Input name="start_time" label="Mulai" type="time" required value={startTime} onChange={(e) => setStartTime(e.target.value)} />
+        <Input name="end_time" label="Selesai" type="time" required value={endTime} onChange={(e) => setEndTime(e.target.value)} />
         <Button type="submit" isLoading={isSubmitting}>
           + Tambah
         </Button>

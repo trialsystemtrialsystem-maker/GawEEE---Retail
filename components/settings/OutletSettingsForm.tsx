@@ -71,6 +71,7 @@ export function OutletSettingsForm({ outlet, canManage }: { outlet: Outlet; canM
       <form onSubmit={handleSubmit} className="mt-4 space-y-6">
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <Input
+            name="outlet_name"
             label="Nama Outlet"
             required
             disabled={!canManage}
@@ -78,12 +79,14 @@ export function OutletSettingsForm({ outlet, canManage }: { outlet: Outlet; canM
             onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
           />
           <Input
+            name="outlet_phone"
             label="Telepon"
             disabled={!canManage}
             value={form.phone}
             onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
           />
           <Input
+            name="outlet_address"
             label="Alamat"
             required
             disabled={!canManage}
@@ -91,6 +94,7 @@ export function OutletSettingsForm({ outlet, canManage }: { outlet: Outlet; canM
             onChange={(e) => setForm((f) => ({ ...f, address: e.target.value }))}
           />
           <Input
+            name="outlet_city"
             label="Kota"
             required
             disabled={!canManage}
@@ -98,6 +102,7 @@ export function OutletSettingsForm({ outlet, canManage }: { outlet: Outlet; canM
             onChange={(e) => setForm((f) => ({ ...f, city: e.target.value }))}
           />
           <Input
+            name="outlet_province"
             label="Provinsi"
             disabled={!canManage}
             value={form.province}
@@ -112,6 +117,7 @@ export function OutletSettingsForm({ outlet, canManage }: { outlet: Outlet; canM
           </p>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
             <Input
+              name="geofence_lat"
               label="Latitude"
               type="number"
               step="0.0000001"
@@ -120,6 +126,7 @@ export function OutletSettingsForm({ outlet, canManage }: { outlet: Outlet; canM
               onChange={(e) => setForm((f) => ({ ...f, geofence_lat: e.target.value }))}
             />
             <Input
+              name="geofence_lng"
               label="Longitude"
               type="number"
               step="0.0000001"
@@ -128,6 +135,7 @@ export function OutletSettingsForm({ outlet, canManage }: { outlet: Outlet; canM
               onChange={(e) => setForm((f) => ({ ...f, geofence_lng: e.target.value }))}
             />
             <Input
+              name="geofence_radius_m"
               label="Radius (meter)"
               type="number"
               min="1"

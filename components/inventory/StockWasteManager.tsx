@@ -104,9 +104,9 @@ export function StockWasteManager({ outletId, canManage }: { outletId: string; c
               ))}
             </select>
           </div>
-          <Input label="Jumlah" type="number" min="1" required value={form.quantity} onChange={(e) => setForm((f) => ({ ...f, quantity: e.target.value }))} />
+          <Input name="waste_quantity" label="Jumlah" type="number" min="1" required value={form.quantity} onChange={(e) => setForm((f) => ({ ...f, quantity: e.target.value }))} />
           <div className="sm:col-span-2">
-            <Input label="Alasan" required placeholder="Kadaluarsa, rusak saat pengiriman, dll" value={form.reason} onChange={(e) => setForm((f) => ({ ...f, reason: e.target.value }))} />
+            <Input name="waste_reason" label="Alasan" required placeholder="Kadaluarsa, rusak saat pengiriman, dll" value={form.reason} onChange={(e) => setForm((f) => ({ ...f, reason: e.target.value }))} />
           </div>
           <div className="sm:col-span-3">
             <Button type="submit" isLoading={isSubmitting}>

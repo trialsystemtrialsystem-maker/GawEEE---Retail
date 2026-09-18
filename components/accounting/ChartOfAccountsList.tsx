@@ -89,6 +89,7 @@ export function ChartOfAccountsList({ outletId }: { outletId: string }) {
       {showForm && (
         <form onSubmit={handleCreate} className="grid grid-cols-1 gap-3 rounded-lg border border-gray-200 p-4 sm:grid-cols-3">
           <Input
+            name="account_code"
             label="Kode Akun"
             required
             placeholder="6000"
@@ -96,6 +97,7 @@ export function ChartOfAccountsList({ outletId }: { outletId: string }) {
             onChange={(e) => setForm((f) => ({ ...f, account_code: e.target.value }))}
           />
           <Input
+            name="account_name"
             label="Nama Akun"
             required
             value={form.account_name}

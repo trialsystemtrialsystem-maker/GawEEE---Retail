@@ -91,7 +91,7 @@ export function RecipeManager({ outletId, canManage }: { outletId: string; canMa
       {showForm && (
         <form onSubmit={handleCreate} className="space-y-3 rounded-lg border border-gray-200 p-4">
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-            <Input label="Nama Resep" required placeholder="Roti Tawar 1 Loyang" value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} />
+            <Input name="recipe_name" label="Nama Resep" required placeholder="Roti Tawar 1 Loyang" value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} />
             <div className="space-y-1">
               <label className="block text-sm font-medium text-gray-700">Produk Hasil</label>
               <select required value={form.output_product_id} onChange={(e) => setForm((f) => ({ ...f, output_product_id: e.target.value }))} className="w-full rounded-sm border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
@@ -103,7 +103,7 @@ export function RecipeManager({ outletId, canManage }: { outletId: string; canMa
                 ))}
               </select>
             </div>
-            <Input label="Jumlah Hasil per Batch" type="number" min="1" required value={form.output_quantity} onChange={(e) => setForm((f) => ({ ...f, output_quantity: e.target.value }))} />
+            <Input name="output_quantity" label="Jumlah Hasil per Batch" type="number" min="1" required value={form.output_quantity} onChange={(e) => setForm((f) => ({ ...f, output_quantity: e.target.value }))} />
           </div>
 
           <div className="space-y-2">

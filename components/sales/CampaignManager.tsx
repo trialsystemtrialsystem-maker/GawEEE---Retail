@@ -112,7 +112,7 @@ export function CampaignManager({ outletId, canDecide }: { outletId: string; can
 
       {showForm && (
         <form onSubmit={handleCreate} className="grid grid-cols-1 gap-3 rounded-lg border border-gray-200 p-4 sm:grid-cols-2">
-          <Input label="Nama Kampanye" required value={form.campaign_name} onChange={(e) => setForm((f) => ({ ...f, campaign_name: e.target.value }))} placeholder="mis. Promo Akhir Tahun" />
+          <Input name="campaign_name" label="Nama Kampanye" required value={form.campaign_name} onChange={(e) => setForm((f) => ({ ...f, campaign_name: e.target.value }))} placeholder="mis. Promo Akhir Tahun" />
           <div className="space-y-1">
             <label className="block text-sm font-medium text-gray-700">Platform</label>
             <select
@@ -127,8 +127,8 @@ export function CampaignManager({ outletId, canDecide }: { outletId: string; can
               ))}
             </select>
           </div>
-          <Input label="Anggaran (Rp)" type="number" min="1" required value={form.budget_amount} onChange={(e) => setForm((f) => ({ ...f, budget_amount: e.target.value }))} />
-          <Input label="Catatan (opsional)" value={form.notes} onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))} />
+          <Input name="budget_amount" label="Anggaran (Rp)" type="number" min="1" required value={form.budget_amount} onChange={(e) => setForm((f) => ({ ...f, budget_amount: e.target.value }))} />
+          <Input name="campaign_notes" label="Catatan (opsional)" value={form.notes} onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))} />
           <div className="sm:col-span-2">
             <Button type="submit" isLoading={isSubmitting}>
               Kirim Pengajuan

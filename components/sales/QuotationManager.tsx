@@ -168,9 +168,9 @@ export function QuotationManager({ outletId }: { outletId: string }) {
       {showForm && (
         <form onSubmit={handleCreate} className="space-y-3 rounded-lg border border-gray-200 p-4">
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-            <Input label="Nama Pelanggan" required value={customerName} onChange={(e) => setCustomerName(e.target.value)} />
-            <Input label="Telepon (opsional)" value={customerPhone} onChange={(e) => setCustomerPhone(e.target.value)} />
-            <Input label="Berlaku Sampai (opsional)" type="date" value={validUntil} onChange={(e) => setValidUntil(e.target.value)} />
+            <Input name="customer_name" label="Nama Pelanggan" required value={customerName} onChange={(e) => setCustomerName(e.target.value)} />
+            <Input name="customer_phone" label="Telepon (opsional)" value={customerPhone} onChange={(e) => setCustomerPhone(e.target.value)} />
+            <Input name="valid_until" label="Berlaku Sampai (opsional)" type="date" value={validUntil} onChange={(e) => setValidUntil(e.target.value)} />
           </div>
 
           <div className="space-y-2">

@@ -83,12 +83,14 @@ export function WhatsappTemplates({ outletId }: { outletId: string }) {
       {showForm && (
         <form onSubmit={handleCreate} className="space-y-3 rounded-lg border border-gray-200 p-4">
           <Input
+            name="template_name"
             label="Nama Template"
             required
             value={form.name}
             onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
           />
           <Textarea
+            name="template_content"
             label="Isi Pesan"
             required
             rows={3}

@@ -113,8 +113,8 @@ export function PriceSchedulerManager() {
             ))}
           </select>
         </div>
-        <Input label="Harga Baru (Rp)" type="number" min="0" required value={newPrice} onChange={(e) => setNewPrice(e.target.value)} className="w-36" />
-        <Input label="Berlaku Mulai" type="date" required value={effectiveDate} onChange={(e) => setEffectiveDate(e.target.value)} />
+        <Input name="new_price" label="Harga Baru (Rp)" type="number" min="0" required value={newPrice} onChange={(e) => setNewPrice(e.target.value)} className="w-36" />
+        <Input name="effective_date" label="Berlaku Mulai" type="date" required value={effectiveDate} onChange={(e) => setEffectiveDate(e.target.value)} />
         <Button type="submit" isLoading={isSubmitting}>
           + Jadwalkan
         </Button>

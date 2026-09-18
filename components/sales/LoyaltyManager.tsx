@@ -115,6 +115,7 @@ export function LoyaltyManager({ outletId, canManage }: { outletId: string; canM
           <h2 className="mb-3 text-base font-semibold text-gray-900">Pengaturan Poin</h2>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
             <Input
+              name="loyalty_points_per_1000"
               label="Poin per Rp1.000 belanja"
               type="number"
               min="0"
@@ -122,6 +123,7 @@ export function LoyaltyManager({ outletId, canManage }: { outletId: string; canM
               onChange={(e) => setSettings((s) => ({ ...s, loyalty_points_per_1000: Number(e.target.value) }))}
             />
             <Input
+              name="loyalty_rp_per_point"
               label="Nilai tukar 1 poin (Rp)"
               type="number"
               min="1"
@@ -162,8 +164,8 @@ export function LoyaltyManager({ outletId, canManage }: { outletId: string; canM
             {error && <Alert variant="danger">{error}</Alert>}
 
             <div className="flex flex-wrap items-end gap-3">
-              <Input label="Jumlah Poin" type="number" min="1" value={adjustForm.points} onChange={(e) => setAdjustForm((f) => ({ ...f, points: e.target.value }))} />
-              <Input label="Alasan" value={adjustForm.reason} onChange={(e) => setAdjustForm((f) => ({ ...f, reason: e.target.value }))} placeholder="Belanja Rp150.000 / Tukar diskon" />
+              <Input name="adjust_points" label="Jumlah Poin" type="number" min="1" value={adjustForm.points} onChange={(e) => setAdjustForm((f) => ({ ...f, points: e.target.value }))} />
+              <Input name="adjust_reason" label="Alasan" value={adjustForm.reason} onChange={(e) => setAdjustForm((f) => ({ ...f, reason: e.target.value }))} placeholder="Belanja Rp150.000 / Tukar diskon" />
               <Button onClick={() => adjust(1)} isLoading={isAdjusting} size="sm">
                 + Beri Poin
               </Button>

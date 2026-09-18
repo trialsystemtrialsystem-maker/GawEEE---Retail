@@ -108,8 +108,9 @@ export function ProductUnitsEditor({ productId, baseUnitLabel, baseUnitPrice }: 
       )}
 
       <form onSubmit={handleAdd} className="flex flex-wrap items-end gap-2">
-        <Input label="Nama Satuan" required value={label} onChange={(e) => setLabel(e.target.value)} placeholder="mis. Dus" className="w-32" />
+        <Input name="unit_label" label="Nama Satuan" required value={label} onChange={(e) => setLabel(e.target.value)} placeholder="mis. Dus" className="w-32" />
         <Input
+          name="unit_conversion"
           label={`Isi (x ${baseUnitLabel})`}
           type="number"
           min={2}
@@ -118,7 +119,7 @@ export function ProductUnitsEditor({ productId, baseUnitLabel, baseUnitPrice }: 
           onChange={(e) => setConversion(e.target.value)}
           className="w-28"
         />
-        <Input label="Harga Satuan (Rp)" type="number" min="0" required value={price} onChange={(e) => setPrice(e.target.value)} className="w-36" />
+        <Input name="unit_price" label="Harga Satuan (Rp)" type="number" min="0" required value={price} onChange={(e) => setPrice(e.target.value)} className="w-36" />
         <Button type="submit" size="sm" isLoading={isSubmitting}>
           + Tambah Satuan
         </Button>

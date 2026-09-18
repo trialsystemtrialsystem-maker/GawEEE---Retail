@@ -80,7 +80,7 @@ export function CustomerFieldDefinitionManager({ outletId }: { outletId: string 
   return (
     <div className="space-y-4">
       <form onSubmit={handleAdd} className="flex items-end gap-3 rounded-lg border border-gray-200 p-4">
-        <Input label="Nama Kolom" required placeholder="Tanggal Lahir" value={label} onChange={(e) => setLabel(e.target.value)} />
+        <Input name="field_label" label="Nama Kolom" required placeholder="Tanggal Lahir" value={label} onChange={(e) => setLabel(e.target.value)} />
         <Button type="submit" isLoading={isSubmitting}>
           Tambah Kolom
         </Button>
