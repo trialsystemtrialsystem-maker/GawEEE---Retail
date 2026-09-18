@@ -1190,6 +1190,34 @@ which had real data ready to aggregate immediately.
       place afterward since it's realistic, useful demo data rather than a throwaway test artifact — an
       empty-state-only AP report would be a worse demo than one with something to actually show.
 
+## Phase 22 — Wire up system_alerts (cash variance + payment failed)
+Same audit angle as Phase 21, applied to writes instead of whole tables: which tables are ever
+`.select()`ed but never `.insert()`ed into by real app logic. `system_alerts` (006_hr_ops.sql) stood out —
+its own column comment documents five intended `alert_type` values (`low_stock`, `overstock`,
+`payment_pending`, `cash_variance`, `payment_failed`), and `GET /api/notifications` + `NotificationBell`
+already read and render unresolved alerts generically (dismiss button, severity color, badge count all
+already worked) — but nothing anywhere ever actually inserted a row outside the demo seed. `low_stock`/
+`overstock` turned out fine as-is (already covered live via `v_low_stock_alerts`, a deliberately better
+mechanism than remembering to insert an alert everywhere — see the code comment on
+`GET /api/notifications`). The other two were genuine gaps with a real, already-computed trigger sitting
+right there unused.
+- [x] **`cash_variance`**: `POST /api/cashier-shifts/:id/close` already computes `cash_variance` (a
+      generated column) but never did anything with it besides storing it. Now inserts a `system_alerts`
+      row when `abs(variance) >= Rp10.000` (`critical` at ≥ Rp50.000, else `warning`) — additive, after the
+      close itself succeeds, so a failed alert insert can never block a shift from closing.
+- [x] **`payment_failed`**: the Doku Pay webhook's `FAILED` branch already flips `payment_transactions.status`
+      but never surfaced it anywhere a manager would see it. Now inserts a matching alert there too.
+- [x] Live-verified `cash_variance` end-to-end: opened a shift with Rp500.000, closed it with Rp550.000
+      (Rp50.000 over), confirmed the alert landed with the right severity (`critical`) and message, and
+      confirmed it actually renders in `NotificationBell` on the dashboard (screenshotted, correct red dot
+      + title + description + timestamp, badge count incremented).
+- [x] `payment_failed` could not be verified through the real webhook end-to-end — `DOKU_SECRET_KEY` isn't
+      provisioned in this environment (same `[!]`-blocked limitation as the rest of that route, documented
+      since Phase 4/16), so the route 501s before reaching the new code at all. Verified the insert's exact
+      shape directly against the live `system_alerts` table instead (correct columns/types, no error),
+      which is what the new code actually does differently — the surrounding webhook auth/signature logic
+      is unrelated, pre-existing, and already covered by that same blocked-on-credentials note.
+
 ## Notes on scope
 This todo tracks the **engineering deliverables** of the PRD (a working Next.js + Supabase codebase
 implementing Phase 1 features, with payment gateways behind a swappable mock interface). Items marked

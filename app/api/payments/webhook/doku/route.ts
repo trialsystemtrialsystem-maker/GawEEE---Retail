@@ -45,6 +45,23 @@ export async function POST(request: NextRequest) {
     await earnLoyaltyPoints(admin, payment.invoice_id)
   } else {
     await admin.from('payment_transactions').update({ status: 'failed' }).eq('id', payment.id)
+
+    // system_alerts (006_hr_ops.sql) was defined with 'payment_failed' as one
+    // of its documented alert_type values but nothing ever actually inserted
+    // one — GET /api/notifications already reads and renders unresolved
+    // alerts generically, this was just missing the write side.
+    const { data: invoice } = await admin.from('invoices').select('outlet_id, invoice_number, total').eq('id', payment.invoice_id).maybeSingle()
+    if (invoice) {
+      await admin.from('system_alerts').insert({
+        outlet_id: invoice.outlet_id,
+        alert_type: 'payment_failed',
+        severity: 'warning',
+        title: `Pembayaran e-wallet gagal — ${invoice.invoice_number}`,
+        description: `Doku Pay melaporkan status gagal untuk invoice senilai Rp${invoice.total.toLocaleString('id-ID')}.`,
+        reference_entity_type: 'payment',
+        reference_entity_id: payment.id,
+      })
+    }
   }
 
   return NextResponse.json({ status: 'received' })

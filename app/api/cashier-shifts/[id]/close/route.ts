@@ -55,5 +55,24 @@ export async function POST(request: NextRequest, ctx: RouteContext<'/api/cashier
     return NextResponse.json({ error: message }, { status })
   }
 
+  // system_alerts (006_hr_ops.sql) was defined with 'cash_variance' as one
+  // of its documented alert_type values but nothing ever actually inserted
+  // one — GET /api/notifications already reads and renders unresolved
+  // alerts generically, this was just missing the write side. Additive
+  // follow-up, same non-blocking trade-off as everywhere else in this file:
+  // a failed alert insert should never stop a shift from closing.
+  const variance = data.cash_variance ?? 0
+  if (Math.abs(variance) >= 10000) {
+    await auth.supabase.from('system_alerts').insert({
+      outlet_id: shift.outlet_id,
+      alert_type: 'cash_variance',
+      severity: Math.abs(variance) >= 50000 ? 'critical' : 'warning',
+      title: `Selisih kas ${variance > 0 ? 'lebih' : 'kurang'} Rp${Math.abs(variance).toLocaleString('id-ID')}`,
+      description: `Shift ditutup dengan kas fisik Rp${result.data.closing_cash.toLocaleString('id-ID')} vs. perkiraan Rp${(data.expected_closing_cash ?? 0).toLocaleString('id-ID')}.`,
+      reference_entity_type: 'cashier_shift',
+      reference_entity_id: id,
+    })
+  }
+
   return NextResponse.json({ shift: data })
 }
