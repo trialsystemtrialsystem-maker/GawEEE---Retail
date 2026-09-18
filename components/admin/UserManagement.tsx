@@ -84,7 +84,7 @@ export function UserManagement() {
             <select
               value={form.role}
               onChange={(e) => setForm((f) => ({ ...f, role: e.target.value }))}
-              className="w-full rounded-sm border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full rounded-sm border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
             >
               <option value="outlet_manager">Manajer Outlet</option>
               <option value="cashier">Kasir</option>

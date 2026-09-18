@@ -37,8 +37,8 @@ test.describe('POS transaction flow', () => {
     await cashInput.fill('1000000')
     await page.getByRole('button', { name: 'Konfirmasi Pembayaran' }).click()
 
-    await expect(page.locator('text=PEMBAYARAN BERHASIL')).toBeVisible()
-    await expect(page.locator('text=/INV-\\d+/')).toBeVisible()
+    await expect(page.locator('text=Pembayaran Berhasil')).toBeVisible()
+    await expect(page.locator('text=/INV-\\d+/').first()).toBeVisible()
   })
 
   test('rejects checkout with an empty cart', async ({ page }) => {

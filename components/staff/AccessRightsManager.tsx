@@ -144,7 +144,7 @@ export function AccessRightsManager({ isMasterAdmin }: { isMasterAdmin: boolean 
                         value={u.role}
                         disabled={savingId === u.user_id}
                         onChange={(e) => changeRole(u.user_id, e.target.value)}
-                        className="rounded-sm border border-gray-200 px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="rounded-sm border border-gray-200 px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
                       >
                         {ROLES.map((r) => (
                           <option key={r} value={r}>

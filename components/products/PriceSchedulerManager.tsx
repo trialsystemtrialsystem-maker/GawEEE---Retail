@@ -103,7 +103,7 @@ export function PriceSchedulerManager() {
             required
             value={productId}
             onChange={(e) => setProductId(e.target.value)}
-            className="min-w-[200px] rounded-sm border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="min-w-[200px] rounded-sm border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
           >
             <option value="">Pilih produk…</option>
             {products.map((p) => (

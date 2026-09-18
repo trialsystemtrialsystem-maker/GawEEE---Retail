@@ -78,7 +78,7 @@ export function AttendanceManager({ outletId }: { outletId: string }) {
           type="date"
           value={date}
           onChange={(e) => setDate(e.target.value)}
-          className="w-full rounded-sm border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="w-full rounded-sm border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
         />
       </div>
 
@@ -116,7 +116,7 @@ export function AttendanceManager({ outletId }: { outletId: string }) {
                   </td>
                   <td className="px-4 py-2">
                     {r.attendance ? (
-                      <span className="rounded-full bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700">
+                      <span className="rounded-full bg-brand-50 px-2 py-0.5 text-xs font-medium text-brand-700">
                         {STATUS_LABEL[r.attendance.status] ?? r.attendance.status}
                       </span>
                     ) : (
@@ -130,7 +130,7 @@ export function AttendanceManager({ outletId }: { outletId: string }) {
                       <button
                         onClick={() => clockIn(r.staff.id)}
                         disabled={busyStaffId === r.staff.id}
-                        className="text-sm font-medium text-blue-600 hover:text-blue-700 disabled:opacity-50"
+                        className="text-sm font-medium text-brand-600 hover:text-brand-700 disabled:opacity-50"
                       >
                         Clock In
                       </button>
@@ -138,7 +138,7 @@ export function AttendanceManager({ outletId }: { outletId: string }) {
                       <button
                         onClick={() => clockOut(r.attendance!.id, r.staff.id)}
                         disabled={busyStaffId === r.staff.id}
-                        className="text-sm font-medium text-blue-600 hover:text-blue-700 disabled:opacity-50"
+                        className="text-sm font-medium text-brand-600 hover:text-brand-700 disabled:opacity-50"
                       >
                         Clock Out
                       </button>

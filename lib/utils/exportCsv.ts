@@ -3,8 +3,11 @@
  * object-shaped row (not just `Record<string, unknown>`) since most callers
  * pass state typed as an `interface`, which TS doesn't give an implicit
  * index signature — same reasoning as this codebase's Supabase Row types. */
-export function exportToCsv(filename: string, rows: object[]) {
-  if (rows.length === 0) return
+/** Pure CSV-string builder, split out from exportToCsv so the escaping rules
+ * (quoting a value containing a comma/quote/newline, doubling embedded
+ * quotes) are unit-testable without the browser-only download APIs below. */
+export function rowsToCsv(rows: object[]): string {
+  if (rows.length === 0) return ''
 
   const dataRows = rows as Record<string, unknown>[]
   const headers = Object.keys(dataRows[0])
@@ -13,7 +16,13 @@ export function exportToCsv(filename: string, rows: object[]) {
     return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s
   }
 
-  const csv = [headers.join(','), ...dataRows.map((row) => headers.map((h) => escape(row[h])).join(','))].join('\r\n')
+  return [headers.join(','), ...dataRows.map((row) => headers.map((h) => escape(row[h])).join(','))].join('\r\n')
+}
+
+export function exportToCsv(filename: string, rows: object[]) {
+  if (rows.length === 0) return
+
+  const csv = rowsToCsv(rows)
 
   // BOM so Excel opens UTF-8 (Rp, é, etc.) correctly instead of mangling it.
   const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' })

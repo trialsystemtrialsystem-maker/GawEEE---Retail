@@ -148,7 +148,7 @@ export function PurchaseReturnManager({ outletId, canManage }: { outletId: strin
                 required
                 value={form.supplier_id}
                 onChange={(e) => setForm((f) => ({ ...f, supplier_id: e.target.value }))}
-                className="w-full rounded-sm border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full rounded-sm border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
               >
                 <option value="">Pilih supplier…</option>
                 {suppliers.map((s) => (
@@ -165,7 +165,7 @@ export function PurchaseReturnManager({ outletId, canManage }: { outletId: strin
               <select
                 value={form.purchase_invoice_id}
                 onChange={(e) => setForm((f) => ({ ...f, purchase_invoice_id: e.target.value }))}
-                className="w-full rounded-sm border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full rounded-sm border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
               >
                 <option value="">Tanpa invoice tertentu</option>
                 {purchaseInvoices
@@ -189,7 +189,7 @@ export function PurchaseReturnManager({ outletId, canManage }: { outletId: strin
                     const product = products.find((p) => p.id === e.target.value)
                     updateLine(i, { product_id: e.target.value, unit_cost: product ? String(product.purchase_price) : line.unit_cost })
                   }}
-                  className="rounded-sm border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="rounded-sm border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
                 >
                   <option value="">Pilih produk…</option>
                   {products.map((p) => (
@@ -204,7 +204,7 @@ export function PurchaseReturnManager({ outletId, canManage }: { outletId: strin
                   placeholder="Qty"
                   value={line.quantity}
                   onChange={(e) => updateLine(i, { quantity: e.target.value })}
-                  className="rounded-sm border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="rounded-sm border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
                 />
                 <input
                   type="number"
@@ -212,7 +212,7 @@ export function PurchaseReturnManager({ outletId, canManage }: { outletId: strin
                   placeholder="Harga beli"
                   value={line.unit_cost}
                   onChange={(e) => updateLine(i, { unit_cost: e.target.value })}
-                  className="rounded-sm border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="rounded-sm border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
                 />
                 {lines.length > 1 && (
                   <button type="button" onClick={() => setLines((prev) => prev.filter((_, idx) => idx !== i))} className="text-sm text-red-500 hover:text-red-700">
@@ -224,7 +224,7 @@ export function PurchaseReturnManager({ outletId, canManage }: { outletId: strin
             <button
               type="button"
               onClick={() => setLines((prev) => [...prev, { product_id: '', quantity: '1', unit_cost: '' }])}
-              className="text-sm font-medium text-blue-600 hover:text-blue-700"
+              className="text-sm font-medium text-brand-600 hover:text-brand-700"
             >
               + Tambah item
             </button>
@@ -271,7 +271,7 @@ export function PurchaseReturnManager({ outletId, canManage }: { outletId: strin
                   </td>
                   <td className="px-4 py-2">
                     {r.status === 'draft' && canManage && (
-                      <button onClick={() => submitReturn(r.id)} disabled={busyId === r.id} className="text-sm font-medium text-blue-600 hover:text-blue-700 disabled:opacity-50">
+                      <button onClick={() => submitReturn(r.id)} disabled={busyId === r.id} className="text-sm font-medium text-brand-600 hover:text-brand-700 disabled:opacity-50">
                         Selesaikan
                       </button>
                     )}

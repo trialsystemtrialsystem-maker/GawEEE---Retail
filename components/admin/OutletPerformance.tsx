@@ -220,21 +220,21 @@ export function OutletPerformance() {
         <button
           type="button"
           onClick={() => setView('monthly')}
-          className={`border-b-2 px-3 pb-2 text-sm font-semibold ${view === 'monthly' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+          className={`border-b-2 px-3 pb-2 text-sm font-semibold ${view === 'monthly' ? 'border-brand-500 text-brand-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
         >
           Ringkasan Bulanan
         </button>
         <button
           type="button"
           onClick={() => setView('hourly')}
-          className={`border-b-2 px-3 pb-2 text-sm font-semibold ${view === 'hourly' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+          className={`border-b-2 px-3 pb-2 text-sm font-semibold ${view === 'hourly' ? 'border-brand-500 text-brand-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
         >
           Pola Per Jam (Hourly)
         </button>
         <button
           type="button"
           onClick={() => setView('daily')}
-          className={`border-b-2 px-3 pb-2 text-sm font-semibold ${view === 'daily' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+          className={`border-b-2 px-3 pb-2 text-sm font-semibold ${view === 'daily' ? 'border-brand-500 text-brand-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
         >
           Rincian Harian
         </button>
@@ -283,7 +283,7 @@ export function OutletPerformance() {
               <select
                 value={hourlyOutletId}
                 onChange={(e) => setHourlyOutletId(e.target.value)}
-                className="rounded-sm border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="rounded-sm border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
               >
                 <option value="combined">Semua Outlet (Gabungan)</option>
                 {hourlyData.outlets.map((o) => (
@@ -320,7 +320,7 @@ export function OutletPerformance() {
               <select
                 value={dailyOutletId}
                 onChange={(e) => setDailyOutletId(e.target.value)}
-                className="rounded-sm border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="rounded-sm border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
               >
                 <option value="combined">Semua Outlet (Gabungan)</option>
                 {dailyData.outlets.map((o) => (

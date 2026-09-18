@@ -52,7 +52,7 @@ export function ProfitLossView({ outletId }: { outletId: string }) {
             type="date"
             value={start}
             onChange={(e) => setStart(e.target.value)}
-            className="rounded-sm border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="rounded-sm border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
           />
         </div>
         <div className="space-y-1">
@@ -61,7 +61,7 @@ export function ProfitLossView({ outletId }: { outletId: string }) {
             type="date"
             value={end}
             onChange={(e) => setEnd(e.target.value)}
-            className="rounded-sm border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="rounded-sm border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
           />
         </div>
       </div>

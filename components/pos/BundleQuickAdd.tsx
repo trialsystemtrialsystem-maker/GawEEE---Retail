@@ -84,7 +84,7 @@ export function BundleQuickAdd({ outletId }: { outletId: string }) {
                   {b.product_bundle_items.map((it) => `${it.products?.name ?? '?'} x${it.quantity}`).join(', ')}
                 </p>
                 <div className="mt-1 flex justify-end">
-                  <button type="button" onClick={() => handleAdd(b)} className="text-xs font-medium text-blue-600 hover:underline">
+                  <button type="button" onClick={() => handleAdd(b)} className="text-xs font-medium text-brand-600 hover:underline">
                     Tambahkan ke Keranjang
                   </button>
                 </div>

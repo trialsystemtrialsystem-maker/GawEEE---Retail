@@ -145,7 +145,7 @@ export function OnlineOrdersManager({ outletId }: { outletId: string }) {
               key={t.key}
               onClick={() => setTab(t.key)}
               className={`px-3 py-2 text-sm font-medium ${
-                tab === t.key ? 'border-b-2 border-blue-500 text-blue-600' : 'text-gray-500 hover:text-gray-700'
+                tab === t.key ? 'border-b-2 border-brand-500 text-brand-600' : 'text-gray-500 hover:text-gray-700'
               }`}
             >
               {t.label} ({counts[t.key] ?? 0})
@@ -167,7 +167,7 @@ export function OnlineOrdersManager({ outletId }: { outletId: string }) {
               <select
                 value={form.channel}
                 onChange={(e) => setForm((f) => ({ ...f, channel: e.target.value }))}
-                className="w-full rounded-sm border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full rounded-sm border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
               >
                 {Object.entries(CHANNEL_LABEL).map(([value, label]) => (
                   <option key={value} value={value}>
@@ -201,7 +201,7 @@ export function OnlineOrdersManager({ outletId }: { outletId: string }) {
                   onChange={(e) =>
                     setItems((prev) => prev.map((it, idx) => (idx === i ? { ...it, name: e.target.value } : it)))
                   }
-                  className="rounded-sm border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="rounded-sm border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
                 />
                 <input
                   type="number"
@@ -211,7 +211,7 @@ export function OnlineOrdersManager({ outletId }: { outletId: string }) {
                   onChange={(e) =>
                     setItems((prev) => prev.map((it, idx) => (idx === i ? { ...it, quantity: e.target.value } : it)))
                   }
-                  className="rounded-sm border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="rounded-sm border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
                 />
                 <input
                   type="number"
@@ -221,7 +221,7 @@ export function OnlineOrdersManager({ outletId }: { outletId: string }) {
                   onChange={(e) =>
                     setItems((prev) => prev.map((it, idx) => (idx === i ? { ...it, price: e.target.value } : it)))
                   }
-                  className="rounded-sm border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="rounded-sm border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
                 />
                 {items.length > 1 && (
                   <button
@@ -237,7 +237,7 @@ export function OnlineOrdersManager({ outletId }: { outletId: string }) {
             <button
               type="button"
               onClick={() => setItems((prev) => [...prev, { name: '', quantity: '1', price: '' }])}
-              className="text-sm font-medium text-blue-600 hover:text-blue-700"
+              className="text-sm font-medium text-brand-600 hover:text-brand-700"
             >
               + Tambah item
             </button>
@@ -285,7 +285,7 @@ export function OnlineOrdersManager({ outletId }: { outletId: string }) {
                         {next && (
                           <button
                             onClick={() => advanceStatus(o, next.key)}
-                            className="text-sm font-medium text-blue-600 hover:text-blue-700"
+                            className="text-sm font-medium text-brand-600 hover:text-brand-700"
                           >
                             {next.label}
                           </button>

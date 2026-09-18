@@ -20,7 +20,7 @@ interface Notifications {
 }
 
 const SEVERITY_COLOR: Record<string, string> = {
-  info: 'bg-blue-500',
+  info: 'bg-brand-500',
   warning: 'bg-amber-500',
   critical: 'bg-red-500',
 }

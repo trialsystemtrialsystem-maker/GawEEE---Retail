@@ -162,7 +162,7 @@ export function JournalEntryManager({ outletId, canPost }: { outletId: string; c
                   required
                   value={line.account_id}
                   onChange={(e) => updateLine(i, { account_id: e.target.value })}
-                  className="rounded-sm border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="rounded-sm border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
                 >
                   <option value="">Pilih akun…</option>
                   {accounts.map((a) => (
@@ -177,7 +177,7 @@ export function JournalEntryManager({ outletId, canPost }: { outletId: string; c
                   placeholder="Debit"
                   value={line.debit}
                   onChange={(e) => updateLine(i, { debit: e.target.value, credit: '' })}
-                  className="rounded-sm border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="rounded-sm border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
                 />
                 <input
                   type="number"
@@ -185,7 +185,7 @@ export function JournalEntryManager({ outletId, canPost }: { outletId: string; c
                   placeholder="Kredit"
                   value={line.credit}
                   onChange={(e) => updateLine(i, { credit: e.target.value, debit: '' })}
-                  className="rounded-sm border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="rounded-sm border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
                 />
                 {lines.length > 2 && (
                   <button
@@ -204,7 +204,7 @@ export function JournalEntryManager({ outletId, canPost }: { outletId: string; c
             <button
               type="button"
               onClick={() => setLines((prev) => [...prev, emptyLine()])}
-              className="text-sm font-medium text-blue-600 hover:text-blue-700"
+              className="text-sm font-medium text-brand-600 hover:text-brand-700"
             >
               + Tambah baris
             </button>
@@ -258,7 +258,7 @@ export function JournalEntryManager({ outletId, canPost }: { outletId: string; c
                       <button
                         onClick={() => handlePost(e.id)}
                         disabled={postingId === e.id}
-                        className="text-sm font-medium text-blue-600 hover:text-blue-700 disabled:opacity-50"
+                        className="text-sm font-medium text-brand-600 hover:text-brand-700 disabled:opacity-50"
                       >
                         {postingId === e.id ? 'Memposting…' : 'Post'}
                       </button>

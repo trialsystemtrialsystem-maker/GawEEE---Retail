@@ -39,7 +39,7 @@ export function UnitPickerModal({
           <button
             type="button"
             onClick={() => onPick({ unitPrice: item.unit_price, quantity: 1 })}
-            className="flex w-full items-center justify-between rounded-md border border-gray-200 px-3 py-2 text-left text-sm hover:border-blue-400 hover:bg-blue-50"
+            className="flex w-full items-center justify-between rounded-md border border-gray-200 px-3 py-2 text-left text-sm hover:border-blue-400 hover:bg-brand-50"
           >
             <span>Satuan Dasar</span>
             <span className="font-medium text-gray-900">{formatCurrency(item.unit_price)}</span>
@@ -61,7 +61,7 @@ export function UnitPickerModal({
                     unitQuantity: 1,
                   })
                 }
-                className="flex w-full items-center justify-between rounded-md border border-gray-200 px-3 py-2 text-left text-sm hover:border-blue-400 hover:bg-blue-50"
+                className="flex w-full items-center justify-between rounded-md border border-gray-200 px-3 py-2 text-left text-sm hover:border-blue-400 hover:bg-brand-50"
               >
                 <span>
                   {u.unit_label} ({u.conversion_to_base}x satuan dasar)

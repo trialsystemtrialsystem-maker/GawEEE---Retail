@@ -227,7 +227,7 @@ export function StaffManager({ outletId, canManage }: { outletId: string; canMan
                     <td className="px-4 py-2">
                       <button
                         onClick={() => toggleStatus(s)}
-                        className="text-sm font-medium text-blue-600 hover:text-blue-700"
+                        className="text-sm font-medium text-brand-600 hover:text-brand-700"
                       >
                         {s.status === 'active' ? 'Nonaktifkan' : 'Aktifkan'}
                       </button>

@@ -143,7 +143,7 @@ export function ProductDepositManager({ outletId }: { outletId: string }) {
               required
               value={productId}
               onChange={(e) => handleProductChange(e.target.value)}
-              className="w-full rounded-sm border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full rounded-sm border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
             >
               <option value="">Pilih produk…</option>
               {products.map((p) => (

@@ -16,7 +16,7 @@ function FlatLinks({ items, pathname, onNavigate }: { items: NavChild[]; pathnam
           aria-current={pathname === child.href ? 'page' : undefined}
           className={`block rounded-md px-3 py-2 text-sm transition-colors ${
             pathname === child.href
-              ? 'bg-blue-500 text-white shadow-sm shadow-blue-900/40'
+              ? 'bg-brand-500 text-white shadow-sm shadow-brand-900/40'
               : 'text-blue-200 hover:bg-white/10 hover:text-white'
           }`}
         >
@@ -73,7 +73,7 @@ function SidebarAccordion({ groups, pathname, onNavigate }: { groups: NavGroup[]
                     aria-current={pathname === item.href ? 'page' : undefined}
                     className={`block rounded-md px-2 py-1.5 text-sm transition-colors ${
                       pathname === item.href
-                        ? 'bg-blue-500 text-white shadow-sm shadow-blue-900/40'
+                        ? 'bg-brand-500 text-white shadow-sm shadow-brand-900/40'
                         : 'text-blue-200/80 hover:bg-white/10 hover:text-white'
                     }`}
                   >
@@ -96,7 +96,7 @@ export function Sidebar({ outletName, onNavigate }: { outletName?: string; onNav
   return (
     <nav
       aria-label="Navigasi utama"
-      className="flex h-full flex-col text-blue-100"
+      className="flex h-full flex-col text-brand-100"
       style={{ background: 'linear-gradient(180deg, var(--brand-900), var(--brand-950))' }}
     >
       <div className="border-b border-white/10 px-4 py-4">
@@ -111,7 +111,7 @@ export function Sidebar({ outletName, onNavigate }: { outletName?: string; onNav
           aria-current={pathname === '/pos' ? 'page' : undefined}
           className={`mb-2 flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
             pathname === '/pos'
-              ? 'bg-blue-500 text-white shadow-sm shadow-blue-900/40'
+              ? 'bg-brand-500 text-white shadow-sm shadow-brand-900/40'
               : 'text-blue-200 hover:bg-white/10 hover:text-white'
           }`}
         >
@@ -132,7 +132,7 @@ export function Sidebar({ outletName, onNavigate }: { outletName?: string; onNav
                 onClick={onNavigate}
                 aria-current={isActive ? 'page' : undefined}
                 className={`flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
-                  isActive ? 'bg-blue-500 text-white shadow-sm shadow-blue-900/40' : 'text-blue-200 hover:bg-white/10 hover:text-white'
+                  isActive ? 'bg-brand-500 text-white shadow-sm shadow-brand-900/40' : 'text-blue-200 hover:bg-white/10 hover:text-white'
                 }`}
               >
                 <span aria-hidden>{item.icon}</span>

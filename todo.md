@@ -51,14 +51,18 @@ Legend: `[ ]` pending · `[x]` done · `[!]` needs user input/credentials before
       `tests/unit/lib/validation.test.ts`; added `tests/unit/lib/auth-context.test.ts` (`canAccessOutlet`
       role/outlet matrix) and `tests/unit/lib/errors.test.ts` (`handleDatabaseError` Postgres error-code
       mapping, `ApiError`) to close the remaining gap. 26/26 unit tests passing.
-- [ ] Integration tests: login/signup flow (MSW mocks) — the error/validation paths (wrong credentials,
-      mismatched passwords) already have real E2E coverage in `tests/e2e/auth.spec.ts` against the live
-      dev server + Supabase, which is stronger than an MSW-mocked equivalent would be. What's still
-      missing is a full successful signup→login round trip; that's not covered by either suite because it
-      would create a real Supabase Auth user each run (no throwaway/sandbox project separate from the dev
-      one) — needs a decision on either a disposable test-project setup or a teardown step before adding
-      it. Not blocked, just deliberately left for a follow-up decision rather than adding MSW as a new
-      dependency without confirming that's the right tool for it.
+- [x] Integration tests: login/signup flow — resolved the deliberately-deferred decision (teardown step,
+      not a separate sandbox project — no such project exists to set up, see Phase 5's "Local dev database"
+      note for the same underlying constraint). New `tests/e2e/signup-login-roundtrip.spec.ts`: signs up a
+      real throwaway company through the actual UI, logs out (since `signUp()` already leaves an
+      authenticated session — found live: `/auth/login` just redirects straight past the login form via
+      middleware without an explicit logout first), logs back in, confirms it lands in `/onboarding` as a
+      fresh `master_admin` (not `/dashboard`), then deletes the outlet/company/auth user via the
+      service-role admin client in `afterEach` regardless of pass/fail — confirmed no orphaned row
+      afterward. Skips itself if `SUPABASE_SERVICE_ROLE_KEY` isn't set, same guard style as `pos.spec.ts`.
+      Passed clean in isolation; found live that it shares `POST /api/auth/register`'s IP rate limit
+      (5/hour, Phase 16) with the pre-existing mismatched-password test in `auth.spec.ts` — documented
+      there rather than touching the rate limiter itself.
 - [x] `npm run build` passes clean (TypeScript strict, no errors)
 
 ## Phase 2 — Sprint 2: POS & Inventory (roadmap.md Sprint 2)
@@ -166,11 +170,15 @@ Legend: `[ ]` pending · `[x]` done · `[!]` needs user input/credentials before
       correct total from demo data. PPh (income tax) is out of scope — that's a company-level annual
       calculation on net profit, not a per-transaction one, and needs a decision on which PPh regime
       (Final PPh 0.5% UMKM vs. normal rates) applies before it's buildable.
-- [ ] Automated integration test: transaction → journal entry → P&L accuracy — the link itself is now
-      real and live-verified (migration 059, above) via a manual Playwright regression pass, but that
-      pass was a one-off verification script, not a committed automated test in `tests/`. Worth promoting
-      into a real Jest/Playwright test if this trigger logic is touched again, but not needed for the
-      feature itself to be considered done.
+- [x] Automated integration test: transaction → journal entry → P&L accuracy — promoted the one-off manual
+      regression pass into a committed `tests/e2e/journal-accounting-integration.spec.ts`. Runs against the
+      public demo tenant credentials (not gated behind `E2E_TEST_*` env vars like `pos.spec.ts`, since
+      these are not secret — keeps it actually running instead of silently skipping): a real cash sale via
+      the POS UI, then asserts a `posted` journal entry exists with `source_type='sales'` and the exact
+      description `post_invoice_journal_entry()` writes (`Penjualan ${invoice_number}`), and that
+      `GET /api/accounting/reports?type=profit-loss`'s `totalIncome` increased by exactly
+      `subtotal - discount_amount` (the revenue line's credited amount, not the tax-inclusive total).
+      Passed clean.
 - [x] Financial dashboard sub-pages: `/dashboard/financial/cash-position` (KPI cards + recent cash
       transactions) and `/dashboard/financial/reports` (P&L with a date-range picker) — both were
       linked from the sidebar since Sprint 1 but 404'd until now
@@ -205,8 +213,25 @@ Legend: `[ ]` pending · `[x]` done · `[!]` needs user input/credentials before
       `showToast()` call on success.
 
 ## Phase 5 — QA, Deploy & Launch Prep
-- [ ] Full unit + integration + E2E suite green, coverage ≥ 80% (unit tests exist for utils only;
-      no integration/E2E suite yet)
+- [x] Full unit + integration + E2E suite green — this note was stale (an E2E suite already existed,
+      `tests/e2e/`, predating this note). Current state: 53/53 unit tests passing (up from 39; added
+      `productIcon.test.ts` and `exportCsv.test.ts` — the latter required extracting a `rowsToCsv()` pure
+      function out of the browser-only `exportToCsv()` so the escaping rules are testable without DOM
+      APIs, a non-behavior-changing refactor), and all 7 E2E specs pass when run individually against a
+      clear rate-limit window (`journal-accounting-integration.spec.ts` and
+      `signup-login-roundtrip.spec.ts` new this pass, both above). Two real pre-existing test bugs found
+      and fixed along the way: `pos.spec.ts` asserted `PEMBAYARAN BERHASIL` (uppercase) against actual text
+      `Pembayaran Berhasil!` (mixed case) — silently broken since whenever it was written, only ever
+      skipped in practice; and a stale comment on `auth.spec.ts`'s mismatched-password test called it a
+      client-side check when the password-match rule is actually server-side (`signUpSchema`'s `.refine()`)
+      — cosmetic (the test still passed), but the comment was actively misleading about what's covered
+      where. Also fixed `playwright.config.ts`'s `fullyParallel: false`, which only serializes tests
+      *within* one file — adding two more spec files exposed real cross-file races (shared login
+      session/cart state) that made `pos.spec.ts`/`auth.spec.ts` flake when run together; set `workers: 1`
+      to serialize across files too, since these are stateful E2E tests against one shared backend, not
+      independent unit tests. **Not** at ≥80% coverage — this was meaningful incremental expansion (as
+      every prior test-coverage entry in this file has been), not a full coverage push; no coverage
+      tooling is wired up to measure the actual percentage.
 - [!] Local dev database — roadmap.md's plain `docker-compose.yml` (bare `postgres:15-alpine`) won't
       actually work with this schema: migrations reference `auth.users` and RLS policies call
       `auth.uid()`, both provided by Supabase's auth stack, not vanilla Postgres. Local dev needs the
@@ -249,10 +274,15 @@ Legend: `[ ]` pending · `[x]` done · `[!]` needs user input/credentials before
 - [x] Fixed a display bug in the Purchase Order list: it rendered `created_at` (DB insert time — always
       "today" for seeded/backdated rows) instead of `order_date` (the actual order date) in the date
       column, and sorted by the same wrong field.
-- [ ] Color redesign only touched the highest-impact structural surfaces (sidebar, header, KPI cards,
-      landing hero) — most smaller components still use the original gray/blue Tailwind utility classes
-      rather than the new brand tokens throughout. A full systematic pass wasn't attempted (large
-      surface area, diminishing returns for the time available).
+- [x] Color redesign systematic pass — mechanically swapped every exact-match Tailwind `blue-{50,100,500,
+      600,700,800,900}` utility class for the equivalent `brand-{...}` token (`app/globals.css`'s `@theme`
+      block already registers `--color-brand-*` for each of these steps, so `bg-brand-500` etc. were
+      already valid utilities, just unused outside a handful of files) across `components/` and `app/` —
+      ~78 files, every remaining hardcoded blue instance found by grep. Left `blue-200/300/400` alone
+      (no exact brand step exists for these — approximating one risked a worse result than the status quo).
+      Typecheck/lint/build clean; spot-checked 5 representative pages (landing, login, dashboard, journal
+      list, POS) via Playwright screenshots — all render correctly with the unified navy palette, no
+      layout breakage, confirming this was a pure hue swap as intended.
 - [x] Full click-through audit of every sidebar link + all 6 "Fitur Unggulan" landing-page claims
       against the live demo account, prompted by user report that POS "wasn't there." Found and fixed:
       - **Real-time POS had no sidebar link at all** — the page worked (E2E-tested since Sprint 2) but

@@ -38,7 +38,7 @@ export function CashierReport({ outletId }: { outletId: string }) {
             <button
               key={d}
               onClick={() => setDays(d)}
-              className={`rounded px-3 py-1 text-sm font-medium ${days === d ? 'bg-blue-500 text-white' : 'text-gray-600 hover:bg-gray-100'}`}
+              className={`rounded px-3 py-1 text-sm font-medium ${days === d ? 'bg-brand-500 text-white' : 'text-gray-600 hover:bg-gray-100'}`}
             >
               {d} Hari
             </button>

@@ -46,7 +46,7 @@ interface DraftLine {
 const STATUS_LABEL: Record<Order['status'], string> = { draft: 'Draft', confirmed: 'Dikonfirmasi', fulfilled: 'Terpenuhi', cancelled: 'Dibatalkan' }
 const STATUS_STYLE: Record<Order['status'], string> = {
   draft: 'bg-gray-100 text-gray-600',
-  confirmed: 'bg-blue-50 text-blue-700',
+  confirmed: 'bg-brand-50 text-brand-700',
   fulfilled: 'bg-emerald-50 text-emerald-700',
   cancelled: 'bg-red-50 text-red-700',
 }
@@ -196,7 +196,7 @@ export function OrderManager({ outletId }: { outletId: string }) {
               <select
                 value={fromQuotationId}
                 onChange={(e) => applyQuotation(e.target.value)}
-                className="w-full max-w-sm rounded-sm border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full max-w-sm rounded-sm border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
               >
                 <option value="">Buat order baru</option>
                 {quotations.map((q) => (
@@ -219,7 +219,7 @@ export function OrderManager({ outletId }: { outletId: string }) {
                 <select
                   value={line.product_id}
                   onChange={(e) => updateLine(i, { product_id: e.target.value })}
-                  className="min-w-[180px] flex-1 rounded-sm border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="min-w-[180px] flex-1 rounded-sm border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
                 >
                   <option value="">Pilih produk…</option>
                   {products.map((p) => (
@@ -281,7 +281,7 @@ export function OrderManager({ outletId }: { outletId: string }) {
                     <td className="px-4 py-2">
                       <div className="flex flex-wrap gap-2">
                         {o.status === 'draft' && (
-                          <button disabled={busyId === o.id} onClick={() => handleStatusChange(o, 'confirmed')} className="text-xs font-medium text-blue-600 hover:underline disabled:opacity-50">
+                          <button disabled={busyId === o.id} onClick={() => handleStatusChange(o, 'confirmed')} className="text-xs font-medium text-brand-600 hover:underline disabled:opacity-50">
                             Konfirmasi
                           </button>
                         )}

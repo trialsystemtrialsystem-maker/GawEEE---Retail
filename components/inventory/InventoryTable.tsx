@@ -24,7 +24,7 @@ const STATUS_LABEL: Record<string, { label: string; className: string }> = {
   normal: { label: 'OK', className: 'text-emerald-600' },
   low_stock: { label: 'Stok Rendah', className: 'text-amber-600' },
   out_of_stock: { label: 'Habis', className: 'text-red-600' },
-  overstock: { label: 'Overstock', className: 'text-blue-600' },
+  overstock: { label: 'Overstock', className: 'text-brand-600' },
 }
 
 export function InventoryTable({ outletId }: { outletId: string }) {
@@ -123,7 +123,7 @@ export function InventoryTable({ outletId }: { outletId: string }) {
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="rounded-sm border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="rounded-sm border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
           >
             <option value="">Semua Status</option>
             <option value="low_stock">Stok Rendah</option>
@@ -171,7 +171,7 @@ export function InventoryTable({ outletId }: { outletId: string }) {
                       <span className="flex items-center gap-2">
                         <span
                           aria-hidden
-                          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-blue-50 text-sm"
+                          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-brand-50 text-sm"
                         >
                           {getProductIcon({ name: row.name, categoryName: row.category_name })}
                         </span>

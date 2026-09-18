@@ -170,7 +170,7 @@ export function ProductList() {
                       <button
                         type="button"
                         onClick={() => setExpandedId((id) => (id === p.id ? null : p.id))}
-                        className="text-blue-500 hover:underline"
+                        className="text-brand-500 hover:underline"
                       >
                         {expandedId === p.id ? 'Tutup' : 'Kelola'}
                       </button>

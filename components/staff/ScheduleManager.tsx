@@ -148,7 +148,7 @@ export function ScheduleManager({ outletId, canManage }: { outletId: string; can
         )}
         <div className="flex flex-wrap gap-2">
           {shifts.map((s) => (
-            <span key={s.id} className="rounded-full bg-blue-50 px-3 py-1 text-xs font-medium text-blue-700">
+            <span key={s.id} className="rounded-full bg-brand-50 px-3 py-1 text-xs font-medium text-brand-700">
               {s.name} ({s.start_time.slice(0, 5)}-{s.end_time.slice(0, 5)})
             </span>
           ))}
@@ -206,7 +206,7 @@ export function ScheduleManager({ outletId, canManage }: { outletId: string; can
                             <select
                               value={entry?.shift_id ?? ''}
                               onChange={(e) => assign(s.id, dateStr, e.target.value)}
-                              className="rounded-sm border border-gray-200 px-1 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              className="rounded-sm border border-gray-200 px-1 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-brand-500"
                             >
                               <option value="">-</option>
                               {shifts.map((sh) => (

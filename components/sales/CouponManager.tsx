@@ -109,7 +109,7 @@ export function CouponManager({ outletId, canManage }: { outletId: string; canMa
           <Input name="coupon_code" label="Kode Kupon" required placeholder="HEMAT10" value={form.code} onChange={(e) => setForm((f) => ({ ...f, code: e.target.value }))} />
           <div className="space-y-1">
             <label className="block text-sm font-medium text-gray-700">Tipe Diskon</label>
-            <select value={form.discount_type} onChange={(e) => setForm((f) => ({ ...f, discount_type: e.target.value }))} className="w-full rounded-sm border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <select value={form.discount_type} onChange={(e) => setForm((f) => ({ ...f, discount_type: e.target.value }))} className="w-full rounded-sm border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
               <option value="percentage">Persentase (%)</option>
               <option value="fixed">Nominal (Rp)</option>
             </select>
@@ -153,7 +153,7 @@ export function CouponManager({ outletId, canManage }: { outletId: string; canMa
                     <td className="px-4 py-2 text-gray-700">{c.discount_type === 'percentage' ? `${c.discount_value}%` : `Rp ${c.discount_value.toLocaleString('id-ID')}`}</td>
                     <td className="px-4 py-2 text-gray-600">
                       {c.usage_count}
-                      {c.usage_limit ? ` / ${c.usage_limit}` : ''} <span className="text-xs text-blue-500">(lihat rincian)</span>
+                      {c.usage_limit ? ` / ${c.usage_limit}` : ''} <span className="text-xs text-brand-500">(lihat rincian)</span>
                     </td>
                     <td className="px-4 py-2 text-gray-600">{c.expires_at ? formatDate(c.expires_at) : '-'}</td>
                     <td className="px-4 py-2">

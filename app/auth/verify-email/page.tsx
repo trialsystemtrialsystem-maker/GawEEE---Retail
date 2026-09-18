@@ -9,7 +9,7 @@ export default function VerifyEmailPage() {
           Kami telah mengirimkan tautan verifikasi ke email Anda. Klik tautan tersebut untuk
           mengaktifkan akun, lalu masuk untuk mulai menggunakan GawEEE.
         </p>
-        <a href="/auth/login" className="inline-block text-blue-500 hover:underline">
+        <a href="/auth/login" className="inline-block text-brand-500 hover:underline">
           Kembali ke halaman masuk
         </a>
       </div>

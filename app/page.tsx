@@ -64,7 +64,7 @@ export default function LandingPage() {
               <h1 className="text-4xl font-bold leading-tight md:text-5xl">
                 Sistem ERP untuk Toko Retail Anda
               </h1>
-              <p className="text-xl leading-relaxed text-blue-100">
+              <p className="text-xl leading-relaxed text-brand-100">
                 Kelola inventori, penjualan &amp; keuangan dalam satu dashboard. Dari 1 toko hingga
                 50+ outlet.
               </p>
@@ -73,18 +73,18 @@ export default function LandingPage() {
             <div className="flex flex-wrap gap-6 text-sm">
               <div className="flex items-center gap-2 rounded-full bg-white/10 px-3 py-1.5">
                 <span className="text-lg">✅</span>
-                <span className="text-blue-50">2.000+ pengguna aktif</span>
+                <span className="text-brand-50">2.000+ pengguna aktif</span>
               </div>
               <div className="flex items-center gap-2 rounded-full bg-white/10 px-3 py-1.5">
                 <span className="text-lg">⚡</span>
-                <span className="text-blue-50">99.9% uptime</span>
+                <span className="text-brand-50">99.9% uptime</span>
               </div>
             </div>
 
             <div className="flex flex-wrap gap-4">
               <a
                 href="/auth/signup"
-                className="rounded-lg bg-blue-500 px-8 py-3 font-semibold text-white shadow-lg shadow-blue-900/40 transition hover:bg-blue-400"
+                className="rounded-lg bg-brand-500 px-8 py-3 font-semibold text-white shadow-lg shadow-brand-900/40 transition hover:bg-blue-400"
               >
                 Coba Gratis 14 Hari
               </a>
@@ -98,14 +98,14 @@ export default function LandingPage() {
 
             <div className="space-y-3 rounded-xl border border-white/20 bg-white/10 p-4 backdrop-blur-sm">
               <div>
-                <p className="mb-2 text-sm text-blue-100">
+                <p className="mb-2 text-sm text-brand-100">
                   Ingin lihat dulu tanpa daftar? Coba dashboard yang sudah terisi 3 bulan data toko
                   frozen food sungguhan — POS, inventori, supplier, sampai laporan keuangan.
                 </p>
                 <TryDemoButton />
               </div>
               <div className="border-t border-white/20 pt-3">
-                <p className="mb-2 text-sm text-blue-100">
+                <p className="mb-2 text-sm text-brand-100">
                   Khusus ingin coba pengalaman kasirnya saja? Langsung masuk ke Cashier Portal —
                   Kasir, Riwayat, Laporan Harian, Absensi, Checklist, sampai Izin — semua sudah terisi.
                 </p>
@@ -217,7 +217,7 @@ export default function LandingPage() {
                   <div className="mb-2 flex items-center justify-between">
                     <h3 className="text-2xl font-bold">{tier.name}</h3>
                     {isHighlighted && (
-                      <span className="rounded-full bg-yellow-400 px-3 py-1 text-xs font-bold text-blue-900">
+                      <span className="rounded-full bg-yellow-400 px-3 py-1 text-xs font-bold text-brand-900">
                         POPULER
                       </span>
                     )}
@@ -245,8 +245,8 @@ export default function LandingPage() {
                     href="/auth/signup"
                     className={
                       isHighlighted
-                        ? 'block w-full rounded-lg bg-white py-3 text-center font-semibold text-blue-700 transition hover:bg-blue-50'
-                        : 'block w-full rounded-lg border-2 border-blue-500 py-3 text-center font-semibold text-blue-500 transition hover:bg-blue-50'
+                        ? 'block w-full rounded-lg bg-white py-3 text-center font-semibold text-brand-700 transition hover:bg-brand-50'
+                        : 'block w-full rounded-lg border-2 border-brand-500 py-3 text-center font-semibold text-brand-500 transition hover:bg-brand-50'
                     }
                   >
                     {tier.price === null ? 'Hubungi Sales' : 'Pilih Paket Ini'}

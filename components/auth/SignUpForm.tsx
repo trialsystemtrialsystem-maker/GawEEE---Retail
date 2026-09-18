@@ -125,7 +125,7 @@ export function SignUpForm() {
           id="industry"
           value={form.industry}
           onChange={(e) => update('industry', e.target.value)}
-          className="w-full rounded-sm border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="w-full rounded-sm border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
         >
           {Object.entries(INDUSTRY_LABELS).map(([value, label]) => (
             <option key={value} value={value}>
@@ -173,7 +173,7 @@ export function SignUpForm() {
 
       <p className="text-center text-sm text-gray-600">
         Sudah punya akun?{' '}
-        <a href="/auth/login" className="text-blue-500 hover:underline">
+        <a href="/auth/login" className="text-brand-500 hover:underline">
           Masuk di sini
         </a>
       </p>

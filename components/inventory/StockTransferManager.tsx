@@ -149,7 +149,7 @@ export function StockTransferManager({ outletId, view, canManage }: { outletId: 
                 required
                 value={form.source_outlet_id}
                 onChange={(e) => setForm((f) => ({ ...f, source_outlet_id: e.target.value }))}
-                className="w-full rounded-sm border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full rounded-sm border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
               >
                 {outlets.map((o) => (
                   <option key={o.id} value={o.id}>
@@ -164,7 +164,7 @@ export function StockTransferManager({ outletId, view, canManage }: { outletId: 
                 required
                 value={form.destination_outlet_id}
                 onChange={(e) => setForm((f) => ({ ...f, destination_outlet_id: e.target.value }))}
-                className="w-full rounded-sm border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full rounded-sm border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
               >
                 <option value="">Pilih outlet tujuan…</option>
                 {outlets.filter((o) => o.id !== form.source_outlet_id).map((o) => (
@@ -187,7 +187,7 @@ export function StockTransferManager({ outletId, view, canManage }: { outletId: 
                   required
                   value={line.product_id}
                   onChange={(e) => setLines((prev) => prev.map((l, idx) => (idx === i ? { ...l, product_id: e.target.value } : l)))}
-                  className="rounded-sm border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="rounded-sm border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
                 >
                   <option value="">Pilih produk…</option>
                   {products.map((p) => (
@@ -202,7 +202,7 @@ export function StockTransferManager({ outletId, view, canManage }: { outletId: 
                   placeholder="Qty"
                   value={line.quantity}
                   onChange={(e) => setLines((prev) => prev.map((l, idx) => (idx === i ? { ...l, quantity: e.target.value } : l)))}
-                  className="rounded-sm border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="rounded-sm border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
                 />
                 {lines.length > 1 && (
                   <button type="button" onClick={() => setLines((prev) => prev.filter((_, idx) => idx !== i))} className="text-sm text-red-500 hover:text-red-700">
@@ -211,7 +211,7 @@ export function StockTransferManager({ outletId, view, canManage }: { outletId: 
                 )}
               </div>
             ))}
-            <button type="button" onClick={() => setLines((prev) => [...prev, { product_id: '', quantity: '1' }])} className="text-sm font-medium text-blue-600 hover:text-blue-700">
+            <button type="button" onClick={() => setLines((prev) => [...prev, { product_id: '', quantity: '1' }])} className="text-sm font-medium text-brand-600 hover:text-brand-700">
               + Tambah item
             </button>
           </div>
@@ -248,13 +248,13 @@ export function StockTransferManager({ outletId, view, canManage }: { outletId: 
                   <td className="px-4 py-2 text-gray-900">{t.source?.name ?? '-'}</td>
                   <td className="px-4 py-2 text-gray-900">{t.destination?.name ?? '-'}</td>
                   <td className="px-4 py-2">
-                    <span className="rounded-full bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700">{t.status}</span>
+                    <span className="rounded-full bg-brand-50 px-2 py-0.5 text-xs font-medium text-brand-700">{t.status}</span>
                   </td>
                   <td className="px-4 py-2 text-gray-500">{formatDateTime(t.created_at)}</td>
                   {config.action && (
                     <td className="px-4 py-2">
                       {canManage && (
-                        <button onClick={() => handleAction(t.id)} disabled={busyId === t.id} className="text-sm font-medium text-blue-600 hover:text-blue-700 disabled:opacity-50">
+                        <button onClick={() => handleAction(t.id)} disabled={busyId === t.id} className="text-sm font-medium text-brand-600 hover:text-brand-700 disabled:opacity-50">
                           {config.action === 'ship' ? 'Kirim Stok' : 'Terima Stok'}
                         </button>
                       )}

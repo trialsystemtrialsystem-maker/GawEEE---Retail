@@ -40,7 +40,7 @@ const STATUS_LABEL: Record<string, string> = {
 
 const STATUS_COLOR: Record<string, string> = {
   pending: 'bg-amber-50 text-amber-700 border-amber-300',
-  confirmed: 'bg-blue-50 text-blue-700 border-blue-300',
+  confirmed: 'bg-brand-50 text-brand-700 border-blue-300',
   in_progress: 'bg-violet-50 text-violet-700 border-violet-300',
   completed: 'bg-emerald-50 text-emerald-700 border-emerald-300',
   cancelled: 'bg-red-50 text-red-700 border-red-300',
@@ -208,7 +208,7 @@ export function BookingsManager({ outletId }: { outletId: string }) {
             <select
               value={form.staff_id}
               onChange={(e) => setForm((f) => ({ ...f, staff_id: e.target.value }))}
-              className="w-full rounded-sm border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full rounded-sm border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
             >
               <option value="">Belum ditentukan</option>
               {staff.map((s) => (
@@ -223,7 +223,7 @@ export function BookingsManager({ outletId }: { outletId: string }) {
             <select
               value={form.facility_id}
               onChange={(e) => setForm((f) => ({ ...f, facility_id: e.target.value }))}
-              className="w-full rounded-sm border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full rounded-sm border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
             >
               <option value="">Tanpa fasilitas</option>
               {facilities.map((f) => (
@@ -290,7 +290,7 @@ export function BookingsManager({ outletId }: { outletId: string }) {
                         {next && (
                           <button
                             onClick={() => updateStatus(b.id, next)}
-                            className="text-sm font-medium text-blue-600 hover:text-blue-700"
+                            className="text-sm font-medium text-brand-600 hover:text-brand-700"
                           >
                             {STATUS_LABEL[next]}
                           </button>

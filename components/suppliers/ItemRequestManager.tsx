@@ -22,7 +22,7 @@ interface ItemRequest {
 
 const STATUS_COLOR: Record<string, string> = {
   pending: 'bg-amber-50 text-amber-700',
-  approved: 'bg-blue-50 text-blue-700',
+  approved: 'bg-brand-50 text-brand-700',
   rejected: 'bg-red-50 text-red-700',
   converted: 'bg-emerald-50 text-emerald-700',
 }
@@ -105,7 +105,7 @@ export function ItemRequestManager({ outletId, canDecide }: { outletId: string; 
               required
               value={form.product_id}
               onChange={(e) => setForm((f) => ({ ...f, product_id: e.target.value }))}
-              className="w-full rounded-sm border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full rounded-sm border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
             >
               <option value="">Pilih produk…</option>
               {products.map((p) => (
@@ -170,7 +170,7 @@ export function ItemRequestManager({ outletId, canDecide }: { outletId: string; 
                       </div>
                     )}
                     {r.status === 'approved' && (
-                      <button onClick={() => decide(r.id, 'converted')} disabled={busyId === r.id} className="text-sm font-medium text-blue-600 hover:text-blue-700 disabled:opacity-50">
+                      <button onClick={() => decide(r.id, 'converted')} disabled={busyId === r.id} className="text-sm font-medium text-brand-600 hover:text-brand-700 disabled:opacity-50">
                         Tandai Sudah Jadi PO
                       </button>
                     )}

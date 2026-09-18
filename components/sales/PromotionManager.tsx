@@ -109,7 +109,7 @@ export function PromotionManager({ outletId, canManage }: { outletId: string; ca
           </div>
           <div className="space-y-1">
             <label className="block text-sm font-medium text-gray-700">Tipe Diskon</label>
-            <select value={form.discount_type} onChange={(e) => setForm((f) => ({ ...f, discount_type: e.target.value }))} className="w-full rounded-sm border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <select value={form.discount_type} onChange={(e) => setForm((f) => ({ ...f, discount_type: e.target.value }))} className="w-full rounded-sm border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
               <option value="percentage">Persentase (%)</option>
               <option value="fixed">Nominal (Rp)</option>
             </select>
@@ -149,7 +149,7 @@ export function PromotionManager({ outletId, canManage }: { outletId: string; ca
               promotions.map((p) => (
                 <Fragment key={p.id}>
                   <tr onClick={() => toggleApplications(p.id)} className="cursor-pointer hover:bg-gray-50">
-                    <td className="px-4 py-2 text-gray-900">{p.name} <span className="text-xs text-blue-500">(lihat rincian)</span></td>
+                    <td className="px-4 py-2 text-gray-900">{p.name} <span className="text-xs text-brand-500">(lihat rincian)</span></td>
                     <td className="px-4 py-2 text-gray-700">{p.discount_type === 'percentage' ? `${p.discount_value}%` : `Rp ${p.discount_value.toLocaleString('id-ID')}`}</td>
                     <td className="px-4 py-2 text-gray-600">{formatDate(p.start_date)} - {formatDate(p.end_date)}</td>
                     <td className="px-4 py-2">
@@ -164,7 +164,7 @@ export function PromotionManager({ outletId, canManage }: { outletId: string; ca
                             e.stopPropagation()
                             toggleActive(p)
                           }}
-                          className="text-sm font-medium text-blue-600 hover:text-blue-700"
+                          className="text-sm font-medium text-brand-600 hover:text-brand-700"
                         >
                           {p.is_active ? 'Nonaktifkan' : 'Aktifkan'}
                         </button>

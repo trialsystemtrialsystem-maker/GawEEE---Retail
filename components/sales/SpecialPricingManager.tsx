@@ -90,7 +90,7 @@ export function SpecialPricingManager({ outletId }: { outletId: string }) {
         <form onSubmit={handleCreate} className="grid grid-cols-1 gap-3 rounded-lg border border-gray-200 p-4 sm:grid-cols-3">
           <div className="space-y-1">
             <label className="block text-sm font-medium text-gray-700">Grup Pelanggan</label>
-            <select required value={form.group_id} onChange={(e) => setForm((f) => ({ ...f, group_id: e.target.value }))} className="w-full rounded-sm border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <select required value={form.group_id} onChange={(e) => setForm((f) => ({ ...f, group_id: e.target.value }))} className="w-full rounded-sm border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
               <option value="">Pilih grup…</option>
               {groups.map((g) => (
                 <option key={g.id} value={g.id}>
@@ -108,7 +108,7 @@ export function SpecialPricingManager({ outletId }: { outletId: string }) {
                 const product = products.find((p) => p.id === e.target.value)
                 setForm((f) => ({ ...f, product_id: e.target.value, price: product ? String(product.selling_price) : f.price }))
               }}
-              className="w-full rounded-sm border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full rounded-sm border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
             >
               <option value="">Pilih produk…</option>
               {products.map((p) => (

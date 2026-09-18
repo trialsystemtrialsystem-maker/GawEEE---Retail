@@ -111,7 +111,7 @@ export function ProductionRunManager({ outletId, canManage }: { outletId: string
         <form onSubmit={handleCreate} className="flex flex-wrap items-end gap-3 rounded-lg border border-gray-200 p-4">
           <div className="space-y-1">
             <label className="block text-sm font-medium text-gray-700">Resep</label>
-            <select required value={form.recipe_id} onChange={(e) => setForm((f) => ({ ...f, recipe_id: e.target.value }))} className="w-56 rounded-sm border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <select required value={form.recipe_id} onChange={(e) => setForm((f) => ({ ...f, recipe_id: e.target.value }))} className="w-56 rounded-sm border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
               <option value="">Pilih resep…</option>
               {recipes.map((r) => (
                 <option key={r.id} value={r.id}>
@@ -160,7 +160,7 @@ export function ProductionRunManager({ outletId, canManage }: { outletId: string
                   </td>
                   <td className="px-4 py-2">
                     {r.status === 'draft' && canManage && (
-                      <button onClick={() => submitRun(r.id)} disabled={busyId === r.id} className="text-sm font-medium text-blue-600 hover:text-blue-700 disabled:opacity-50">
+                      <button onClick={() => submitRun(r.id)} disabled={busyId === r.id} className="text-sm font-medium text-brand-600 hover:text-brand-700 disabled:opacity-50">
                         Selesaikan Produksi
                       </button>
                     )}

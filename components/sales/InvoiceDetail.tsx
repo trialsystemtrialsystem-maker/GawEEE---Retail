@@ -301,7 +301,7 @@ export function InvoiceDetail({ invoiceId, canVoid }: { invoiceId: string; canVo
                   <select
                     value={refundMethod}
                     onChange={(e) => setRefundMethod(e.target.value as typeof refundMethod)}
-                    className="w-full rounded-sm border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full rounded-sm border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
                   >
                     <option value="cash">Tunai</option>
                     <option value="e_wallet">E-Wallet</option>
@@ -314,7 +314,7 @@ export function InvoiceDetail({ invoiceId, canVoid }: { invoiceId: string; canVo
                     value={refundReason}
                     onChange={(e) => setRefundReason(e.target.value)}
                     placeholder="mis. Produk rusak"
-                    className="w-full rounded-sm border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full rounded-sm border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
                   />
                 </div>
               </div>

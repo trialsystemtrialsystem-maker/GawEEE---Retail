@@ -22,7 +22,7 @@ const TYPE_LABEL: Record<string, string> = {
 }
 
 const TYPE_COLOR: Record<string, string> = {
-  asset: 'bg-blue-50 text-blue-700',
+  asset: 'bg-brand-50 text-brand-700',
   liability: 'bg-amber-50 text-amber-700',
   equity: 'bg-violet-50 text-violet-700',
   income: 'bg-emerald-50 text-emerald-700',
@@ -108,7 +108,7 @@ export function ChartOfAccountsList({ outletId }: { outletId: string }) {
             <select
               value={form.account_type}
               onChange={(e) => setForm((f) => ({ ...f, account_type: e.target.value }))}
-              className="w-full rounded-sm border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full rounded-sm border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
             >
               {Object.entries(TYPE_LABEL).map(([value, label]) => (
                 <option key={value} value={value}>

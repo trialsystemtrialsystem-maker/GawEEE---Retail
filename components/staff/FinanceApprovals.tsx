@@ -190,14 +190,14 @@ export function FinanceApprovals({ outletId, canDecide }: { outletId: string; ca
                           <button
                             onClick={() => markPaid(r.id, 'cash')}
                             disabled={busyId === r.id}
-                            className="text-sm font-medium text-blue-600 hover:text-blue-700 disabled:opacity-50"
+                            className="text-sm font-medium text-brand-600 hover:text-brand-700 disabled:opacity-50"
                           >
                             Bayar Tunai
                           </button>
                           <button
                             onClick={() => markPaid(r.id, 'bank_transfer')}
                             disabled={busyId === r.id}
-                            className="text-sm font-medium text-blue-600 hover:text-blue-700 disabled:opacity-50"
+                            className="text-sm font-medium text-brand-600 hover:text-brand-700 disabled:opacity-50"
                           >
                             Bayar Transfer
                           </button>

@@ -6,7 +6,7 @@ const VARIANT_CLASS: Record<string, string> = {
   success: 'border-emerald-500 bg-emerald-50 text-emerald-800',
   danger: 'border-red-500 bg-red-50 text-red-800',
   warning: 'border-amber-500 bg-amber-50 text-amber-800',
-  info: 'border-blue-500 bg-blue-50 text-blue-800',
+  info: 'border-brand-500 bg-brand-50 text-brand-800',
 }
 
 export function Toaster() {

@@ -44,7 +44,7 @@ export function KasirStatsHeader() {
 
   const colorClasses: Record<string, { border: string; text: string }> = {
     emerald: { border: 'border-t-emerald-500', text: 'text-emerald-700' },
-    blue: { border: 'border-t-blue-500', text: 'text-blue-700' },
+    blue: { border: 'border-t-brand-500', text: 'text-brand-700' },
     amber: { border: 'border-t-amber-500', text: 'text-amber-700' },
     red: { border: 'border-t-red-500', text: 'text-red-700' },
   }

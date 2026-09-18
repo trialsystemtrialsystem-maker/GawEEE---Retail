@@ -200,7 +200,7 @@ export function PurchaseOrderList({ outletId }: { outletId: string }) {
                 value={supplierId}
                 onChange={(e) => setSupplierId(e.target.value)}
                 required
-                className="w-full rounded-sm border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full rounded-sm border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
               >
                 <option value="">Pilih supplier…</option>
                 {suppliers.map((s) => (
@@ -224,7 +224,7 @@ export function PurchaseOrderList({ outletId }: { outletId: string }) {
                         unit_cost: product?.purchase_price ?? line.unit_cost,
                       })
                     }}
-                    className="min-w-[180px] flex-1 rounded-sm border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="min-w-[180px] flex-1 rounded-sm border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
                   >
                     <option value="">Pilih produk…</option>
                     {products.map((p) => (

@@ -96,7 +96,7 @@ export function InvoiceTable({ scope = 'all' }: { scope?: 'today' | 'all' }) {
               invoices.map((inv) => (
                 <tr key={inv.id} className="hover:bg-gray-50">
                   <td className="px-4 py-2">
-                    <Link href={`/dashboard/sales/${inv.id}`} className="font-medium text-blue-500 hover:underline">
+                    <Link href={`/dashboard/sales/${inv.id}`} className="font-medium text-brand-500 hover:underline">
                       {inv.invoice_number}
                     </Link>
                   </td>

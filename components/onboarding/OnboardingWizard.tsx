@@ -221,12 +221,12 @@ export function OnboardingWizard({ outlet }: { outlet: OutletInfo }) {
           <div key={label} className="flex items-center gap-2">
             <div
               className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-semibold ${
-                i + 1 <= step ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-400'
+                i + 1 <= step ? 'bg-brand-500 text-white' : 'bg-gray-100 text-gray-400'
               }`}
             >
               {i + 1}
             </div>
-            {i < STEP_LABELS.length - 1 && <div className={`h-0.5 w-6 ${i + 1 < step ? 'bg-blue-500' : 'bg-gray-200'}`} />}
+            {i < STEP_LABELS.length - 1 && <div className={`h-0.5 w-6 ${i + 1 < step ? 'bg-brand-500' : 'bg-gray-200'}`} />}
           </div>
         ))}
       </div>
@@ -328,7 +328,7 @@ export function OnboardingWizard({ outlet }: { outlet: OutletInfo }) {
             <select
               value={staffRole}
               onChange={(e) => setStaffRole(e.target.value as typeof staffRole)}
-              className="rounded-sm border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="rounded-sm border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
             >
               <option value="outlet_manager">Manajer Outlet</option>
               <option value="cashier">Kasir</option>

@@ -91,7 +91,7 @@ export function CampaignSendManager({ outletId }: { outletId: string }) {
       <form onSubmit={handleSend} className="grid grid-cols-1 gap-3 rounded-lg border border-gray-200 p-4 sm:grid-cols-3">
         <div className="space-y-1">
           <label className="block text-sm font-medium text-gray-700">Template Pesan</label>
-          <select required value={templateId} onChange={(e) => setTemplateId(e.target.value)} className="w-full rounded-sm border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+          <select required value={templateId} onChange={(e) => setTemplateId(e.target.value)} className="w-full rounded-sm border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
             <option value="">Pilih template…</option>
             {templates.map((t) => (
               <option key={t.id} value={t.id}>
@@ -102,7 +102,7 @@ export function CampaignSendManager({ outletId }: { outletId: string }) {
         </div>
         <div className="space-y-1">
           <label className="block text-sm font-medium text-gray-700">Target Grup</label>
-          <select value={groupId} onChange={(e) => setGroupId(e.target.value)} className="w-full rounded-sm border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+          <select value={groupId} onChange={(e) => setGroupId(e.target.value)} className="w-full rounded-sm border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
             <option value="">Semua pelanggan bertransaksi</option>
             {groups.map((g) => (
               <option key={g.id} value={g.id}>

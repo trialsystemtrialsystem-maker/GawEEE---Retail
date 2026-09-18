@@ -22,11 +22,11 @@ export function Header({
   }
 
   return (
-    <header className="flex items-center justify-between border-b-2 border-blue-500/20 bg-white px-4 py-3 shadow-sm">
+    <header className="flex items-center justify-between border-b-2 border-brand-500/20 bg-white px-4 py-3 shadow-sm">
       <button
         type="button"
         onClick={onMenuClick}
-        className="rounded p-2 text-blue-900 hover:bg-blue-50 md:hidden"
+        className="rounded p-2 text-brand-900 hover:bg-brand-50 md:hidden"
         aria-label="Buka menu"
       >
         ☰
@@ -40,7 +40,7 @@ export function Header({
         {outletId && <NotificationBell outletId={outletId} />}
         {userName && (
           <span className="flex items-center gap-2 text-sm text-gray-700">
-            <span className="flex h-7 w-7 items-center justify-center rounded-full bg-blue-500 text-xs font-bold text-white">
+            <span className="flex h-7 w-7 items-center justify-center rounded-full bg-brand-500 text-xs font-bold text-white">
               {userName.charAt(0).toUpperCase()}
             </span>
             {userName}

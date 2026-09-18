@@ -94,7 +94,7 @@ export function RecipeManager({ outletId, canManage }: { outletId: string; canMa
             <Input name="recipe_name" label="Nama Resep" required placeholder="Roti Tawar 1 Loyang" value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} />
             <div className="space-y-1">
               <label className="block text-sm font-medium text-gray-700">Produk Hasil</label>
-              <select required value={form.output_product_id} onChange={(e) => setForm((f) => ({ ...f, output_product_id: e.target.value }))} className="w-full rounded-sm border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+              <select required value={form.output_product_id} onChange={(e) => setForm((f) => ({ ...f, output_product_id: e.target.value }))} className="w-full rounded-sm border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
                 <option value="">Pilih produk…</option>
                 {products.map((p) => (
                   <option key={p.id} value={p.id}>
@@ -114,7 +114,7 @@ export function RecipeManager({ outletId, canManage }: { outletId: string; canMa
                   required
                   value={line.ingredient_product_id}
                   onChange={(e) => setIngredients((prev) => prev.map((l, idx) => (idx === i ? { ...l, ingredient_product_id: e.target.value } : l)))}
-                  className="rounded-sm border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="rounded-sm border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
                 >
                   <option value="">Pilih bahan…</option>
                   {products.map((p) => (
@@ -129,7 +129,7 @@ export function RecipeManager({ outletId, canManage }: { outletId: string; canMa
                   placeholder="Qty"
                   value={line.quantity}
                   onChange={(e) => setIngredients((prev) => prev.map((l, idx) => (idx === i ? { ...l, quantity: e.target.value } : l)))}
-                  className="rounded-sm border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="rounded-sm border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
                 />
                 {ingredients.length > 1 && (
                   <button type="button" onClick={() => setIngredients((prev) => prev.filter((_, idx) => idx !== i))} className="text-sm text-red-500 hover:text-red-700">
@@ -138,7 +138,7 @@ export function RecipeManager({ outletId, canManage }: { outletId: string; canMa
                 )}
               </div>
             ))}
-            <button type="button" onClick={() => setIngredients((prev) => [...prev, { ingredient_product_id: '', quantity: '1' }])} className="text-sm font-medium text-blue-600 hover:text-blue-700">
+            <button type="button" onClick={() => setIngredients((prev) => [...prev, { ingredient_product_id: '', quantity: '1' }])} className="text-sm font-medium text-brand-600 hover:text-brand-700">
               + Tambah bahan
             </button>
           </div>

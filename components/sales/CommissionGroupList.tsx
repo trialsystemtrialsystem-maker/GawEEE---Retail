@@ -84,7 +84,7 @@ export function CommissionGroupList({ outletId, canManage }: { outletId: string;
                       defaultValue={Math.round(s.commission_rate * 1000) / 10}
                       disabled={savingId === s.id}
                       onBlur={(e) => updateRate(s.id, e.target.value)}
-                      className="w-24 rounded-sm border border-gray-200 px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-24 rounded-sm border border-gray-200 px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
                     />
                   ) : (
                     <span className="text-gray-700">{Math.round(s.commission_rate * 1000) / 10}%</span>

@@ -141,7 +141,7 @@ export function RecipeChangeScheduler({ outletId }: { outletId: string }) {
                 required
                 value={recipeId}
                 onChange={(e) => handleRecipeChange(e.target.value)}
-                className="w-full rounded-sm border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full rounded-sm border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
               >
                 <option value="">Pilih resep…</option>
                 {recipes.map((r) => (
@@ -161,7 +161,7 @@ export function RecipeChangeScheduler({ outletId }: { outletId: string }) {
                 <select
                   value={line.ingredient_product_id}
                   onChange={(e) => updateIngredient(i, { ingredient_product_id: e.target.value })}
-                  className="min-w-[180px] flex-1 rounded-sm border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="min-w-[180px] flex-1 rounded-sm border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
                 >
                   <option value="">Pilih bahan…</option>
                   {products.map((p) => (

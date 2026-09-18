@@ -100,7 +100,7 @@ export function OjolPriceListManager() {
             required
             value={productId}
             onChange={(e) => setProductId(e.target.value)}
-            className="min-w-[200px] rounded-sm border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="min-w-[200px] rounded-sm border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
           >
             <option value="">Pilih produk…</option>
             {products.map((p) => (
@@ -115,7 +115,7 @@ export function OjolPriceListManager() {
           <select
             value={channel}
             onChange={(e) => setChannel(e.target.value as ChannelPrice['channel'])}
-            className="rounded-sm border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="rounded-sm border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
           >
             {Object.entries(CHANNEL_LABELS).map(([value, label]) => (
               <option key={value} value={value}>

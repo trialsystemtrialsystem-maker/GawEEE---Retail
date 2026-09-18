@@ -12,7 +12,7 @@ export default function InvoicePaymentPage() {
           Buka detail invoice pada daftar Invoice Supplier untuk mencatat pembayaran — tidak dipisah ke
           halaman sendiri supaya riwayat invoice &amp; pembayarannya tetap dalam satu tempat.
         </p>
-        <Link href="/dashboard/suppliers/invoices" className="inline-block text-sm font-medium text-blue-600 hover:text-blue-700">
+        <Link href="/dashboard/suppliers/invoices" className="inline-block text-sm font-medium text-brand-600 hover:text-brand-700">
           Buka Invoice Supplier →
         </Link>
       </Card>

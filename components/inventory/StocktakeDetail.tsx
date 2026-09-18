@@ -90,7 +90,7 @@ export function StocktakeDetail({ stocktakeId, canManage }: { stocktakeId: strin
 
   return (
     <div className="space-y-6">
-      <Link href="/dashboard/inventory/stocktake" className="text-sm text-blue-600 hover:text-blue-700">
+      <Link href="/dashboard/inventory/stocktake" className="text-sm text-brand-600 hover:text-brand-700">
         ← Kembali ke Daftar Stok Opname
       </Link>
       <h1 className="text-2xl font-bold text-gray-900">Detail Stok Opname</h1>
@@ -132,7 +132,7 @@ export function StocktakeDetail({ stocktakeId, canManage }: { stocktakeId: strin
                             min="0"
                             value={counts[d.id] ?? ''}
                             onChange={(e) => setCounts((c) => ({ ...c, [d.id]: e.target.value }))}
-                            className="w-24 rounded-sm border border-gray-200 px-2 py-1 text-right text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            className="w-24 rounded-sm border border-gray-200 px-2 py-1 text-right text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
                           />
                         ) : (
                           <span className="text-gray-700">{d.counted_quantity}</span>

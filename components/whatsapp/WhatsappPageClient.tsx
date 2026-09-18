@@ -23,7 +23,7 @@ export function WhatsappPageClient({ outletId }: { outletId: string }) {
             onClick={() => setTab(t.key)}
             className={`px-4 py-2 text-sm font-medium ${
               tab === t.key
-                ? 'border-b-2 border-blue-500 text-blue-600'
+                ? 'border-b-2 border-brand-500 text-brand-600'
                 : 'text-gray-500 hover:text-gray-700'
             }`}
           >

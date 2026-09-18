@@ -69,7 +69,7 @@ export function SalesAnalytics() {
                 type="button"
                 onClick={() => setGranularity(opt.value)}
                 className={`rounded px-3 py-1 text-sm font-medium transition-colors ${
-                  granularity === opt.value ? 'bg-blue-500 text-white' : 'text-gray-600 hover:bg-gray-100'
+                  granularity === opt.value ? 'bg-brand-500 text-white' : 'text-gray-600 hover:bg-gray-100'
                 }`}
               >
                 {opt.label}
@@ -83,7 +83,7 @@ export function SalesAnalytics() {
                 type="button"
                 onClick={() => setDays(opt.days)}
                 className={`rounded px-3 py-1 text-sm font-medium transition-colors ${
-                  days === opt.days ? 'bg-blue-500 text-white' : 'text-gray-600 hover:bg-gray-100'
+                  days === opt.days ? 'bg-brand-500 text-white' : 'text-gray-600 hover:bg-gray-100'
                 }`}
               >
                 {opt.label}

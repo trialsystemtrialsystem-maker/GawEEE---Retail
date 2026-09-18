@@ -136,7 +136,7 @@ export function DepartmentManager() {
                 <select
                   value={c.department_id ?? ''}
                   onChange={(e) => handleAssignDepartment(c.id, e.target.value)}
-                  className="rounded-sm border border-gray-200 px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="rounded-sm border border-gray-200 px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-brand-500"
                 >
                   <option value="">Tanpa departemen</option>
                   {departments.map((d) => (

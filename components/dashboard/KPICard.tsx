@@ -3,7 +3,7 @@ import { Card } from '@/components/ui/Card'
 const TONE_STYLES = {
   positive: { border: 'border-l-emerald-500', chip: 'bg-emerald-50 text-emerald-700', icon: '📈' },
   negative: { border: 'border-l-red-500', chip: 'bg-red-50 text-red-700', icon: '📉' },
-  neutral: { border: 'border-l-blue-500', chip: 'bg-blue-50 text-blue-700', icon: '📊' },
+  neutral: { border: 'border-l-brand-500', chip: 'bg-brand-50 text-brand-700', icon: '📊' },
 } as const
 
 export function KPICard({

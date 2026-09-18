@@ -40,7 +40,7 @@ interface DraftLine {
 const STATUS_LABEL: Record<Quotation['status'], string> = { draft: 'Draft', sent: 'Terkirim', accepted: 'Diterima', rejected: 'Ditolak', expired: 'Kedaluwarsa' }
 const STATUS_STYLE: Record<Quotation['status'], string> = {
   draft: 'bg-gray-100 text-gray-600',
-  sent: 'bg-blue-50 text-blue-700',
+  sent: 'bg-brand-50 text-brand-700',
   accepted: 'bg-emerald-50 text-emerald-700',
   rejected: 'bg-red-50 text-red-700',
   expired: 'bg-amber-50 text-amber-700',
@@ -180,7 +180,7 @@ export function QuotationManager({ outletId }: { outletId: string }) {
                 <select
                   value={line.product_id}
                   onChange={(e) => updateLine(i, { product_id: e.target.value })}
-                  className="min-w-[180px] flex-1 rounded-sm border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="min-w-[180px] flex-1 rounded-sm border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
                 >
                   <option value="">Pilih produk…</option>
                   {products.map((p) => (
@@ -244,7 +244,7 @@ export function QuotationManager({ outletId }: { outletId: string }) {
                     <td className="px-4 py-2">
                       <div className="flex flex-wrap gap-2">
                         {next && (
-                          <button disabled={busyId === q.id} onClick={() => handleStatusChange(q, next)} className="text-xs font-medium text-blue-600 hover:underline disabled:opacity-50">
+                          <button disabled={busyId === q.id} onClick={() => handleStatusChange(q, next)} className="text-xs font-medium text-brand-600 hover:underline disabled:opacity-50">
                             Tandai {STATUS_LABEL[next]}
                           </button>
                         )}

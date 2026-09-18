@@ -126,7 +126,7 @@ export function StocktakeManager({ outletId, canManage }: { outletId: string; ca
                     {s.total_variance_value !== null ? formatCurrency(s.total_variance_value) : '-'}
                   </td>
                   <td className="px-4 py-2 text-right">
-                    <Link href={`/dashboard/inventory/stocktake/${s.id}`} className="text-sm font-medium text-blue-600 hover:text-blue-700">
+                    <Link href={`/dashboard/inventory/stocktake/${s.id}`} className="text-sm font-medium text-brand-600 hover:text-brand-700">
                       Lihat →
                     </Link>
                   </td>

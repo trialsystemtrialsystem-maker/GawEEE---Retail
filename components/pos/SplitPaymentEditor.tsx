@@ -48,7 +48,7 @@ export function SplitPaymentEditor({
           <select
             value={line.payment_method}
             onChange={(e) => updateLine(i, { payment_method: e.target.value as SplitLine['payment_method'] })}
-            className="rounded-sm border border-gray-200 px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="rounded-sm border border-gray-200 px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
           >
             {METHODS.map((m) => (
               <option key={m} value={m} disabled={m !== line.payment_method && m !== 'cash' && lines.some((l) => l.payment_method !== 'cash' && l !== line)}>
@@ -62,7 +62,7 @@ export function SplitPaymentEditor({
             value={line.amount}
             onChange={(e) => updateLine(i, { amount: e.target.value })}
             placeholder="Jumlah"
-            className="flex-1 rounded-sm border border-gray-200 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="flex-1 rounded-sm border border-gray-200 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
           />
           <button type="button" onClick={() => removeLine(i)} className="text-sm text-red-500 hover:underline">
             Hapus

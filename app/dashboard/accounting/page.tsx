@@ -89,7 +89,7 @@ export default async function AccountingDashboardPage() {
           <Link
             key={l.href}
             href={l.href}
-            className="flex items-center gap-3 rounded-lg border border-gray-200 bg-white p-4 shadow-sm transition-colors hover:border-blue-300 hover:bg-blue-50"
+            className="flex items-center gap-3 rounded-lg border border-gray-200 bg-white p-4 shadow-sm transition-colors hover:border-blue-300 hover:bg-brand-50"
           >
             <span className="text-2xl">{l.icon}</span>
             <span className="font-medium text-gray-900">{l.label}</span>

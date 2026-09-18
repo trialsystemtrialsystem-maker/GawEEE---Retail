@@ -160,7 +160,7 @@ export function PurchaseInvoiceList({ outletId, canManage }: { outletId: string;
               required
               value={form.po_id}
               onChange={(e) => setForm((f) => ({ ...f, po_id: e.target.value }))}
-              className="w-full rounded-sm border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 sm:w-1/2"
+              className="w-full rounded-sm border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 sm:w-1/2"
             >
               <option value="">Pilih PO…</option>
               {receivedPOs.map((po) => (
@@ -218,7 +218,7 @@ export function PurchaseInvoiceList({ outletId, canManage }: { outletId: string;
                       </span>
                     </td>
                     <td className="px-4 py-2">
-                      <button onClick={() => toggleExpand(inv.id)} className="text-sm font-medium text-blue-600 hover:text-blue-700">
+                      <button onClick={() => toggleExpand(inv.id)} className="text-sm font-medium text-brand-600 hover:text-brand-700">
                         {expandedId === inv.id ? 'Tutup' : 'Detail'}
                       </button>
                     </td>
@@ -259,7 +259,7 @@ export function PurchaseInvoiceList({ outletId, canManage }: { outletId: string;
                               <select
                                 value={paymentForm.payment_method}
                                 onChange={(e) => setPaymentForm((f) => ({ ...f, payment_method: e.target.value }))}
-                                className="rounded-sm border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                className="rounded-sm border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
                               >
                                 <option value="cash">Tunai</option>
                                 <option value="bank_transfer">Transfer Bank</option>

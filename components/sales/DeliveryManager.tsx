@@ -27,7 +27,7 @@ interface Delivery {
 const STATUS_LABEL: Record<Delivery['status'], string> = { preparing: 'Disiapkan', shipped: 'Dikirim', delivered: 'Sampai' }
 const STATUS_STYLE: Record<Delivery['status'], string> = {
   preparing: 'bg-amber-50 text-amber-700',
-  shipped: 'bg-blue-50 text-blue-700',
+  shipped: 'bg-brand-50 text-brand-700',
   delivered: 'bg-emerald-50 text-emerald-700',
 }
 const NEXT_STATUS: Record<Delivery['status'], Delivery['status'] | null> = { preparing: 'shipped', shipped: 'delivered', delivered: null }
@@ -121,7 +121,7 @@ export function DeliveryManager({ outletId }: { outletId: string }) {
               required
               value={invoiceId}
               onChange={(e) => setInvoiceId(e.target.value)}
-              className="w-full rounded-sm border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full rounded-sm border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
             >
               <option value="">Pilih invoice…</option>
               {invoices.map((inv) => (

@@ -30,7 +30,7 @@ export function TopNav() {
             href={item.href}
             aria-current={isActive ? 'page' : undefined}
             className={`whitespace-nowrap rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
-              isActive ? 'bg-blue-500 text-white shadow-sm' : 'text-gray-600 hover:bg-blue-50 hover:text-blue-700'
+              isActive ? 'bg-brand-500 text-white shadow-sm' : 'text-gray-600 hover:bg-brand-50 hover:text-brand-700'
             }`}
           >
             {item.label}
@@ -44,7 +44,7 @@ export function TopNav() {
           onClick={() => setMoreOpen((v) => !v)}
           aria-expanded={moreOpen}
           className={`whitespace-nowrap rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
-            activeInSecondary ? 'bg-blue-500 text-white shadow-sm' : 'text-gray-600 hover:bg-blue-50 hover:text-blue-700'
+            activeInSecondary ? 'bg-brand-500 text-white shadow-sm' : 'text-gray-600 hover:bg-brand-50 hover:text-brand-700'
           }`}
         >
           More ▾
@@ -57,7 +57,7 @@ export function TopNav() {
                 href={item.href}
                 onClick={() => setMoreOpen(false)}
                 className={`flex items-center gap-2 px-4 py-2 text-sm ${
-                  activeItem?.key === item.key ? 'bg-blue-50 font-medium text-blue-700' : 'text-gray-700 hover:bg-gray-50'
+                  activeItem?.key === item.key ? 'bg-brand-50 font-medium text-brand-700' : 'text-gray-700 hover:bg-gray-50'
                 }`}
               >
                 <span aria-hidden>{item.icon}</span>

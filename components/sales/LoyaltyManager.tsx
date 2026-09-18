@@ -146,7 +146,7 @@ export function LoyaltyManager({ outletId, canManage }: { outletId: string; canM
           <select
             value={selectedCustomer}
             onChange={(e) => setSelectedCustomer(e.target.value)}
-            className="w-full rounded-sm border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 sm:w-1/2"
+            className="w-full rounded-sm border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 sm:w-1/2"
           >
             <option value="">Pilih pelanggan…</option>
             {customers.map((c) => (

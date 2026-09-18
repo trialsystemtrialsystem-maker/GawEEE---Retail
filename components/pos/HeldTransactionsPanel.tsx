@@ -165,7 +165,7 @@ export function HeldTransactionsPanel({ outletId }: { outletId: string }) {
                         type="button"
                         disabled={busyId === tx.id}
                         onClick={() => handleResume(tx)}
-                        className="text-xs font-medium text-blue-600 hover:underline disabled:opacity-50"
+                        className="text-xs font-medium text-brand-600 hover:underline disabled:opacity-50"
                       >
                         Lanjutkan
                       </button>

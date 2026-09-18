@@ -160,7 +160,7 @@ export function PayrollManager({ outletId, canManage }: { outletId: string; canM
                   <button
                     onClick={() => setSelectedRun(r.id)}
                     className={`w-full rounded-md border px-3 py-2 text-left text-sm ${
-                      selectedRun === r.id ? 'border-blue-400 bg-blue-50' : 'border-gray-200 hover:bg-gray-50'
+                      selectedRun === r.id ? 'border-blue-400 bg-brand-50' : 'border-gray-200 hover:bg-gray-50'
                     }`}
                   >
                     <p className="font-medium text-gray-900">

@@ -23,7 +23,7 @@ const PLATFORM_LABEL: Record<CampaignRequest['platform'], string> = { meta: 'Met
 const STATUS_LABEL: Record<CampaignRequest['status'], string> = { pending: 'Menunggu', approved: 'Disetujui', rejected: 'Ditolak', completed: 'Selesai' }
 const STATUS_COLOR: Record<CampaignRequest['status'], string> = {
   pending: 'bg-amber-50 text-amber-700',
-  approved: 'bg-blue-50 text-blue-700',
+  approved: 'bg-brand-50 text-brand-700',
   rejected: 'bg-red-50 text-red-700',
   completed: 'bg-emerald-50 text-emerald-700',
 }
@@ -118,7 +118,7 @@ export function CampaignManager({ outletId, canDecide }: { outletId: string; can
             <select
               value={form.platform}
               onChange={(e) => setForm((f) => ({ ...f, platform: e.target.value as CampaignRequest['platform'] }))}
-              className="w-full rounded-sm border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full rounded-sm border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
             >
               {(['meta', 'google', 'tiktok', 'other'] as const).map((p) => (
                 <option key={p} value={p}>
@@ -182,7 +182,7 @@ export function CampaignManager({ outletId, canDecide }: { outletId: string; can
                         </div>
                       )}
                       {r.status === 'approved' && (
-                        <button onClick={() => markCompleted(r.id)} disabled={busyId === r.id} className="text-sm font-medium text-blue-600 hover:text-blue-700 disabled:opacity-50">
+                        <button onClick={() => markCompleted(r.id)} disabled={busyId === r.id} className="text-sm font-medium text-brand-600 hover:text-brand-700 disabled:opacity-50">
                           Tandai Selesai
                         </button>
                       )}

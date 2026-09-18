@@ -144,7 +144,7 @@ export function ModifierManager() {
         <select
           value={productId}
           onChange={(e) => setProductId(e.target.value)}
-          className="mt-1 w-full max-w-md rounded-sm border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 sm:w-auto"
+          className="mt-1 w-full max-w-md rounded-sm border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 sm:w-auto"
         >
           <option value="">Pilih produk…</option>
           {products.map((p) => (
@@ -209,7 +209,7 @@ export function ModifierManager() {
                   <select
                     value={optionDraft[g.id]?.linked_product_id ?? ''}
                     onChange={(e) => setOptionDraft((d) => ({ ...d, [g.id]: { label: d[g.id]?.label ?? '', linked_product_id: e.target.value } }))}
-                    className="mt-1 rounded-sm border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="mt-1 rounded-sm border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
                   >
                     <option value="">Tanpa biaya tambahan</option>
                     {products.map((p) => (

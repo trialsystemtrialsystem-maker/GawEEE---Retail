@@ -80,10 +80,10 @@ export function LoginForm() {
       </Button>
 
       <div className="flex items-center justify-between text-sm">
-        <a href="/auth/signup" className="text-blue-500 hover:underline">
+        <a href="/auth/signup" className="text-brand-500 hover:underline">
           Buat akun baru
         </a>
-        <a href="/auth/reset-password" className="text-blue-500 hover:underline">
+        <a href="/auth/reset-password" className="text-brand-500 hover:underline">
           Lupa password?
         </a>
       </div>
