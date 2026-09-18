@@ -1157,6 +1157,39 @@ existed from migration 063.
       `-50` redemption row and a separate `+16` auto-earn row landed in `loyalty_ledger` against the same
       invoice — the dedup fix above confirmed working by seeing both rows coexist correctly.
 
+## Phase 21 — Accounts Receivable / Accounts Payable aging reports
+Continuation of the same audit pattern (Phases 18-20): a scripted sweep checking every `create table` in
+`combined_migration.sql` against `.from('table_name')` usage anywhere in `app`/`lib` found exactly three
+tables with zero references outside their own `create table` statement: `accounts_receivable`,
+`accounts_payable`, `payment_reconciliation` (all `005_financial.sql`, one of the earliest migrations in
+the project). Confirmed there is no AR/AP aging report anywhere in the dashboard at all — not even a raw
+list — despite `pay_later` customer invoices and unpaid `purchase_invoices` both already existing as real,
+reachable states. `payment_reconciliation` was left alone: it's specifically for reconciling a real
+payment gateway's settlement report against GawEEE's own records, and there is no real gateway connected
+(`[!]`-blocked on credentials per Phase 4/16) — nothing could ever populate it honestly, unlike AR/AP
+which had real data ready to aggregate immediately.
+- [x] **`GET /api/reports/accounts-payable`** — supplier aging report computed live from
+      `purchase_invoices`/`purchase_payments` (same non-snapshot choice already made for Purchase Return
+      Reconciliation), rather than trying to keep the disused `accounts_payable` table in sync. Buckets by
+      days past `due_date`: belum jatuh tempo / 1-30 / 31-60 / 61-90 / 90+.
+- [x] **`GET /api/reports/accounts-receivable`** — customer aging report computed live from `invoices`
+      where `payment_status IN ('pending','partial')`. Matches to a customer by phone, falling back to
+      grouping by the raw checkout name when no phone was captured (same disclosed limitation as Customer
+      Summary Report — no FK from invoices to customers). Buckets by days since the invoice was created:
+      0-30 / 31-60 / 61-90 / 90+.
+- [x] New `/dashboard/accounting/accounts-payable` and `/dashboard/accounting/accounts-receivable` pages
+      (summary cards, an aging bar chart, a per-supplier/per-customer rollup table, and a full invoice-line
+      table), added to the Accounting nav section.
+- [x] Live-verified via Playwright against the demo tenant: the demo already had 6 real pending customer
+      invoices (some with a matched phone, some walk-ins with no name/phone at all — confirmed both group
+      correctly), so AR rendered real aggregated numbers immediately. The demo had zero unpaid supplier
+      invoices anywhere (all 13 seeded `purchase_invoices` are `paid`), so AP was seeded one real overdue
+      invoice via the actual `POST /api/purchase-invoices` endpoint (same "seed one via the API" approach
+      already used verifying Purchase Return Reconciliation in Phase 13H) — confirmed it aggregates
+      correctly by supplier and lands in the right aging bucket (44 days overdue → "31-60 hari"). Left in
+      place afterward since it's realistic, useful demo data rather than a throwaway test artifact — an
+      empty-state-only AP report would be a worse demo than one with something to actually show.
+
 ## Notes on scope
 This todo tracks the **engineering deliverables** of the PRD (a working Next.js + Supabase codebase
 implementing Phase 1 features, with payment gateways behind a swappable mock interface). Items marked
