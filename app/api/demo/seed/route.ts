@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/server'
+import { checkRateLimit, clientIp } from '@/lib/utils/rateLimit'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '@/lib/types/database.types'
 import {
@@ -70,6 +71,15 @@ function weightedPickProduct<T extends { popularity: number }>(products: T[]): T
 }
 
 export async function POST(request: NextRequest) {
+  // Public, unauthenticated endpoint (see the module comment above) — a
+  // light per-IP rate limit on top of reseedOnce()'s concurrency guard and
+  // the "always the same tenant" design, since neither of those actually
+  // stops a script from just hammering this route.
+  const ipLimit = await checkRateLimit(`demo-seed:${clientIp(request)}`, 20, 60)
+  if (!ipLimit.allowed) {
+    return NextResponse.json({ error: 'Terlalu banyak permintaan, coba lagi sebentar lagi.' }, { status: 429 })
+  }
+
   const admin = createAdminClient()
   const body = await request.json().catch(() => ({}))
   const wantsCashierLogin = body?.role === 'cashier'

@@ -29,6 +29,13 @@ export function FinancialDashboard() {
         setSummary(data)
       })
       .catch(() => setError('Terjadi kesalahan jaringan'))
+
+    // Fire-and-forget: no real nightly job exists to populate
+    // daily_financial_summary, so this backfills any recently-completed day
+    // that's still missing a row. Doesn't affect what's shown above (that's
+    // always live-computed) — this just archives history for anything that
+    // later reads from the table directly.
+    fetch('/api/reports/daily-summary/backfill', { method: 'POST' }).catch(() => {})
   }, [])
 
   if (error) return <Alert variant="danger">{error}</Alert>

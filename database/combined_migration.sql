@@ -3973,3 +3973,45 @@ create trigger trg_reverse_invoice_journal_entries
   after update on invoices
   for each row
   execute function reverse_invoice_journal_entries();
+
+-- ============================================================
+-- 060_login_lockout.sql
+-- ============================================================
+
+-- 060_login_lockout.sql
+-- design-system.md's login spec ("3 percobaan gagal -> kunci 15 menit +
+-- email keamanan") was never actually implemented — app/api/auth/login/
+-- route.ts just returned "Email atau password salah" on every failure with
+-- no attempt tracking at all, an unlimited-attempts brute-force surface.
+--
+-- Adds the tracking columns; the counting/locking logic itself lives in the
+-- login route (an admin-client pre-check before calling
+-- supabase.auth.signInWithPassword(), then an update after, so a locked
+-- account is rejected without even attempting the real auth call). The
+-- "kirim email keamanan" half of that spec is NOT implemented — there's no
+-- email-sending infrastructure anywhere in this codebase (no Resend/
+-- SendGrid/SMTP integration, only Supabase Auth's own built-in signup
+-- confirmation emails), so this is disclosed as a real, known gap rather
+-- than faked.
+alter table users add column failed_login_attempts int not null default 0;
+alter table users add column locked_until timestamptz;
+
+-- ============================================================
+-- 061_rate_limits.sql
+-- ============================================================
+
+-- 061_rate_limits.sql
+-- No rate limiting exists anywhere in this app (grep confirms it) — every
+-- API route, including public/unauthenticated ones (register, login before
+-- lockout kicks in, the public demo seed endpoint), can be called without
+-- limit. A DB-backed fixed-window counter, not in-memory: this app runs on
+-- Vercel serverless functions, where in-memory state doesn't survive a cold
+-- start or get shared across concurrent instances — a Postgres row is the
+-- only thing guaranteed visible to every invocation. No RLS needed: this
+-- table is only ever touched via the admin client from server-side rate
+-- -limiting code, never exposed to a browser client directly.
+create table api_rate_limits (
+  key text primary key,
+  count int not null default 1,
+  window_start timestamptz not null default now()
+);

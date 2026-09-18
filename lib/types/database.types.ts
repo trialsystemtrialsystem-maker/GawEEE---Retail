@@ -78,6 +78,8 @@ export type AppUser = {
   status: 'active' | 'inactive' | 'suspended'
   last_login_at: string | null
   password_changed_at: string | null
+  failed_login_attempts: number
+  locked_until: string | null
   created_at: string
   updated_at: string
   deleted_at: string | null
@@ -980,6 +982,12 @@ export type RecipeChangeSchedule = {
   created_at: string
 }
 
+export type ApiRateLimit = {
+  key: string
+  count: number
+  window_start: string
+}
+
 export type Recipe = {
   id: string
   outlet_id: string
@@ -1184,6 +1192,7 @@ export type Database = {
       sales_deliveries: Table<SalesDelivery>
       campaign_requests: Table<CampaignRequest>
       recipe_change_schedules: Table<RecipeChangeSchedule>
+      api_rate_limits: Table<ApiRateLimit>
       customers: Table<Customer>
       customer_groups: Table<CustomerGroup>
       special_prices: Table<SpecialPrice>

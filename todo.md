@@ -972,6 +972,70 @@ in that report) actually has something to match against.
       `/dashboard/admin/outlets` page (no route/page duplication — nav items aren't role-filtered
       anywhere in this app, access is already page-gated there for non-master_admin). Live-verified the
       link appears and lands on the per-outlet leaderboard (already the page's default tab).
+- [x] POS accent color retheme (green → navy) — header bar, active nav tab, category filter chips,
+      selected-customer card, modifier picker selection state, "Bayar Sekarang" toggle, and several focus
+      rings switched from hardcoded emerald to the site's `--brand-*` navy/blue palette. Genuinely
+      semantic green left alone (positive cash variance, "hemat" savings amount, split-payment fully-paid
+      indicator, the Kasir stats strip's categorical color set — matches KPICard's "positive" variant
+      convention elsewhere). Live-verified via screenshot + a full checkout smoke test.
+
+## Phase 16 — "Best ERP" gap audit: security, bookkeeping completeness, accessibility, tests
+User asked for an honest gap assessment against "the best ERP system there's ever been," then to fix
+everything that didn't need a business/credential decision first (rate limiting, login lockout, PO
+journal auto-posting, `daily_financial_summary`, accessibility, test coverage). Items still needing the
+user's input before they're buildable (tax compliance/e-Faktur, PPh regime, granular RBAC, real
+marketplace/WhatsApp API integrations, real payment gateways, production infra/monitoring, CI/CD) are
+listed but intentionally NOT started — see the conversation for the full list; not duplicated here since
+most already had their own `[!]`-flagged entries above.
+- [x] **Login lockout** (`060_login_lockout.sql`) — design-system.md's login spec ("3 percobaan gagal ->
+      kunci 15 menit + email keamanan") was never actually implemented; `app/api/auth/login/route.ts`
+      returned "Email atau password salah" on every failure with zero attempt tracking, an unlimited-
+      attempts brute-force surface. Added `users.failed_login_attempts`/`locked_until`; the login route
+      now checks lockout status (admin client, since an unauthenticated request can't read its own row
+      under RLS) before even calling `signInWithPassword`, locks for 15 minutes on the 3rd failure, and
+      resets on a successful login (which also now sets `last_login_at`, previously always null). The
+      "+ email keamanan" half is honestly NOT implemented — no email-sending infrastructure (Resend/
+      SendGrid/SMTP) exists anywhere in this codebase to send it with. Live-verified: 3 wrong-password
+      attempts lock the account (423 with a countdown message), a 4th attempt with the CORRECT password
+      is still rejected during lockout, and a later successful login resets both counters.
+- [x] **Rate limiting** (`061_rate_limits.sql`) — no rate limiting existed anywhere in the app (grep
+      confirmed it). Added a DB-backed fixed-window limiter (`lib/utils/rateLimit.ts`) — not in-memory,
+      since this runs on Vercel serverless where in-memory state doesn't survive a cold start or share
+      across instances — wired into login (10/5min per IP, on top of the per-account lockout above, which
+      alone doesn't stop credential stuffing spread across many emails), register (5/hour per IP), and the
+      public demo seed endpoint (20/min per IP). The window-check logic is split into a pure
+      `evaluateRateLimit()` function specifically so it's unit-testable without a Supabase client (5 new
+      tests). Live-verified: a 6th register call within an hour gets a 429.
+- [x] **Auto-post journal entries for PO receiving** — sales already auto-post (migration 059); PO
+      receiving didn't. Added an additive call (same precedent as Petty Cash and the sales triggers, not
+      a change to the receive route's core logic) in `app/api/purchase-orders/[id]/receive/route.ts`:
+      Dr Persediaan Barang Dagang / Cr Utang Usaha for the received amount, best-effort (missing chart of
+      accounts just skips it, wrapped so a bookkeeping failure can never block a real receiving
+      transaction). Live-verified: created, submitted, approved, and received a PO, confirmed a balanced
+      posted journal entry with the right two account lines.
+- [x] **`daily_financial_summary` backfill** — this table has sat completely empty since it was created;
+      every report reads live from invoices instead (documented, intentional — no real nightly job
+      exists). Added `POST /api/reports/daily-summary/backfill`, same check-on-page-load pattern as Price
+      Scheduler: fired once (fire-and-forget) when the financial dashboard mounts, it fills in any of the
+      last 7 days that are fully in the past and still missing a row, reusing the same computation
+      `GET /api/reports/daily-summary` already does live for "today." Live-verified: 7 rows backfilled
+      with real (non-zero) numbers matching actual invoice history — this one runs slower than most
+      check-on-load features (7 sequential days × 3 queries each against live Supabase), so give it a
+      several-second head start rather than expecting it instantly; it doesn't block the visible dashboard
+      either way since it's fire-and-forget.
+- [x] **Accessibility audit**: the missing-`name`/`id`-on-`<Input>` bug originally found and fixed once in
+      `OnboardingWizard.tsx` (a `<label>` with no `htmlFor` — invisible to screen readers, and to
+      Playwright's `getByLabel()`, which is how it was first found) turned out to be everywhere. Swept
+      every `<Input>`/`<Textarea>` usage across `components/` and `app/` with a `label` prop and no
+      `name`/`id` — found and fixed **123 Input + 2 Textarea instances across 52 files** (full file list
+      in the commit). Live spot-checked 3 of the fixed forms via `getByLabel()` afterward to confirm the
+      fix actually works end-to-end, not just that a prop was added.
+- [x] **Test coverage**: added unit tests for `lib/utils/onlineOrders.ts` (`canTransition()` state machine
+      — every legal transition, every illegal skip/backward/out-of-terminal-state move) and
+      `lib/utils/chartColors.ts` (`colorForIndex()` — in-range, wraparound, stability), on top of the
+      `evaluateRateLimit()` tests above. 39 unit tests passing total, up from 26 at the start of this
+      phase. Still well short of the ≥80% coverage goal tracked separately above — this was "add
+      meaningful coverage for previously-untested pure logic," not a full coverage push.
 
 ## Notes on scope
 This todo tracks the **engineering deliverables** of the PRD (a working Next.js + Supabase codebase

@@ -1,9 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient, createAdminClient } from '@/lib/supabase/server'
 import { validate, signUpSchema } from '@/lib/utils/validation'
+import { checkRateLimit, clientIp } from '@/lib/utils/rateLimit'
 
 // POST /api/auth/register — see prd.md §4.1
 export async function POST(request: NextRequest) {
+  const ipLimit = await checkRateLimit(`register:${clientIp(request)}`, 5, 3600)
+  if (!ipLimit.allowed) {
+    return NextResponse.json(
+      { error: `Terlalu banyak percobaan pendaftaran. Coba lagi dalam ${Math.ceil((ipLimit.retryAfterSeconds ?? 3600) / 60)} menit.` },
+      { status: 429 }
+    )
+  }
+
   const body = await request.json()
   const result = validate(signUpSchema, body)
   if (!result.valid) {

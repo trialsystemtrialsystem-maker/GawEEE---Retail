@@ -65,6 +65,41 @@ export async function POST(request: Request, ctx: RouteContext<'/api/purchase-or
     .update({ status: newStatus, actual_delivery_date: result.data.delivery_date ?? new Date().toISOString().slice(0, 10) })
     .eq('id', id)
 
+  // Additive call, not a create_invoice()-style function change (same
+  // precedent as Petty Cash and 059_auto_post_journal_entries.sql): goods
+  // received increase inventory and create a payable to the supplier, until
+  // the purchase invoice actually gets paid. Best-effort — a missing chart
+  // of accounts (an outlet whose default COA was never seeded) just skips
+  // this, same as the sales-side triggers; receiving must never fail or roll
+  // back because bookkeeping couldn't post.
+  if (totalReceivedAmount > 0) {
+    try {
+      const [{ data: inventoryAccount }, { data: payableAccount }] = await Promise.all([
+        auth.supabase.from('chart_of_accounts').select('id').eq('outlet_id', po.outlet_id).eq('account_code', '1200').maybeSingle(),
+        auth.supabase.from('chart_of_accounts').select('id').eq('outlet_id', po.outlet_id).eq('account_code', '2000').maybeSingle(),
+      ])
+      if (inventoryAccount && payableAccount) {
+        const { data: entryResult } = await auth.supabase
+          .rpc('create_journal_entry', {
+            p_outlet_id: po.outlet_id,
+            p_created_by: auth.authUserId,
+            p_entry_date: new Date().toISOString().slice(0, 10),
+            p_description: `Penerimaan PO ${po.po_number}`,
+            p_lines: [
+              { account_id: inventoryAccount.id, debit: totalReceivedAmount, credit: 0, description: po.po_number },
+              { account_id: payableAccount.id, debit: 0, credit: totalReceivedAmount, description: po.po_number },
+            ],
+            p_source_type: 'purchase',
+            p_source_id: id,
+          })
+          .single()
+        if (entryResult) await auth.supabase.rpc('post_journal_entry', { p_entry_id: entryResult.journal_entry_id })
+      }
+    } catch {
+      // Bookkeeping failure must never block a real receiving transaction.
+    }
+  }
+
   return NextResponse.json({
     receiving_id: id,
     inventory_updated: true,
