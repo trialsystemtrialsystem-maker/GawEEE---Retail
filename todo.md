@@ -1068,9 +1068,9 @@ were never actually re-seeded, so those two pages had been silently empty since 
 User asked what "identification" features were still missing, specifically for sales. Found two real
 gaps: coupon usage was only ever an aggregate counter with no way to trace which invoice actually
 redeemed a given coupon, and invoices had no explicit link to the cashier shift they were made during
-(reconciliation approximated it via a `created_at` time-range query instead). Both closed — code
--complete, typecheck/lint/build clean, committed.
-- [ ] **Coupon redemption audit trail** — new `coupon_redemptions` table (coupon_id, invoice_id,
+(reconciliation approximated it via a `created_at` time-range query instead). Migration 062 run;
+live-verified end-to-end.
+- [x] **Coupon redemption audit trail** — new `coupon_redemptions` table (coupon_id, invoice_id,
       discount_amount, redeemed_by, created_at). `createInvoiceSchema` gained optional `coupon_code`/
       `coupon_discount_amount` fields; `POSScreen` now tracks which coupon was actually applied
       (`appliedCoupon` state, reset on a new transaction) and sends it through at checkout.
@@ -1078,14 +1078,18 @@ redeemed a given coupon, and invoices had no explicit link to the cashier shift 
       succeeds (same non-atomic trade-off already used for `sold_unit_label`/notes) — `create_invoice()`
       itself stays untouched. New `GET /api/coupon-redemptions?coupon_id=` + a click-to-expand redemption
       list in `CouponManager` (invoice number, timestamp, discount amount, invoice status) surface it,
-      instead of leaving it backend-only.
-- [ ] **`invoices.cashier_shift_id`** — stamped at checkout (another additive follow-up) from whichever
+      instead of leaving it backend-only. Live-verified: applied a real coupon in the POS, checked out,
+      confirmed a `coupon_redemptions` row was written with the exact discount amount and the real
+      invoice_id, and confirmed `CouponManager`'s expanded row shows that same invoice number.
+- [x] **`invoices.cashier_shift_id`** — stamped at checkout (another additive follow-up) from whichever
       shift is currently open for the outlet; the app only allows one open shift per outlet at a time, so
       there's no ambiguity to resolve. `POST /api/cashier-shifts/:id/close` switched from its old
       `created_at >= shift_start_time` range query to an exact join on this column — correct today either
       way given the single-open-shift constraint, but the explicit link is what actually carries the
       "which shift" fact now instead of a range that happened to work under a rule from a different route.
-- [ ] Migration 062 is pending — user needs to run it before this can be live-verified.
+      Live-verified: opened a shift, made a sale, confirmed the invoice's `cashier_shift_id` matched the
+      open shift's id, then closed the shift and confirmed `total_transactions` computed correctly from
+      the exact join (no longer the time-range approximation).
 
 ## Notes on scope
 This todo tracks the **engineering deliverables** of the PRD (a working Next.js + Supabase codebase
