@@ -1,19 +1,23 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { getAuthContext } from '@/lib/utils/auth-context'
 import { handleDatabaseError } from '@/lib/utils/errors'
+import { resolveOutletScope } from '@/lib/utils/outletScope'
 
 type BookingRow = { facility_id: string | null; status: string; facilities: { name: string } | null }
 
-// GET /api/reports/facility — booking counts per facility.
-export async function GET() {
+// GET /api/reports/facility?outlet_id= — booking counts per facility.
+export async function GET(request: NextRequest) {
   const auth = await getAuthContext()
   if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  if (!auth.outlet_id) return NextResponse.json({ error: 'Pilih outlet terlebih dahulu' }, { status: 400 })
+
+  const scopeResult = await resolveOutletScope(auth, request.nextUrl.searchParams.get('outlet_id'))
+  if (!scopeResult.scope) return NextResponse.json({ error: scopeResult.error }, { status: scopeResult.status })
+  const { outletIds } = scopeResult.scope
 
   const { data, error } = await auth.supabase
     .from('bookings')
     .select('facility_id, status, facilities(name)')
-    .eq('outlet_id', auth.outlet_id)
+    .in('outlet_id', outletIds)
     .not('facility_id', 'is', null)
 
   if (error) {

@@ -4,6 +4,8 @@ import { useEffect, useState, useCallback } from 'react'
 import { Card } from '@/components/ui/Card'
 import { formatCurrency } from '@/lib/utils/formatting'
 import { ExportCsvButton } from '@/components/ui/ExportCsvButton'
+import { DateRangePicker, type DateRange } from '@/components/ui/DateRangePicker'
+import { OutletSelector } from '@/components/ui/OutletSelector'
 
 interface MonthRow {
   month: string
@@ -14,21 +16,29 @@ interface MonthRow {
 
 const MONTH_LABELS = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des']
 
-export function TaxReport({ outletId }: { outletId: string }) {
+function currentYearRange(): DateRange {
+  const year = new Date().toISOString().slice(0, 4)
+  return { start: `${year}-01-01`, end: new Date().toISOString().slice(0, 10) }
+}
+
+export function TaxReport({ outletId }: { outletId?: string } = {}) {
   const [rows, setRows] = useState<MonthRow[]>([])
   const [totals, setTotals] = useState({ totalTax: 0, totalTaxableSales: 0 })
+  const [range, setRange] = useState<DateRange>(currentYearRange)
+  const [selectedOutlet, setSelectedOutlet] = useState('all')
   const [isLoading, setIsLoading] = useState(true)
+  const effectiveOutlet = outletId ?? selectedOutlet
 
   const load = useCallback(async () => {
     setIsLoading(true)
-    const res = await fetch(`/api/reports/tax-report?outlet_id=${outletId}`)
+    const res = await fetch(`/api/reports/tax-report?outlet_id=${effectiveOutlet}&start=${range.start}&end=${range.end}`)
     const data = await res.json()
     if (res.ok) {
       setRows(data.rows ?? [])
       setTotals({ totalTax: data.totalTax ?? 0, totalTaxableSales: data.totalTaxableSales ?? 0 })
     }
     setIsLoading(false)
-  }, [outletId])
+  }, [effectiveOutlet, range])
 
   useEffect(() => {
     const timeout = setTimeout(load, 0)
@@ -37,7 +47,11 @@ export function TaxReport({ outletId }: { outletId: string }) {
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-end">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          {!outletId && <OutletSelector value={selectedOutlet} onChange={setSelectedOutlet} />}
+          <DateRangePicker value={range} onChange={setRange} />
+        </div>
         <ExportCsvButton filename="tax-report" rows={rows} />
       </div>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">

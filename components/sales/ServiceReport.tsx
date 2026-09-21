@@ -3,6 +3,9 @@
 import { useEffect, useState, useCallback } from 'react'
 import { formatCurrency } from '@/lib/utils/formatting'
 import { CategoryBreakdownChart } from '@/components/charts/CategoryBreakdownChart'
+import { DateRangePicker, defaultDateRange, type DateRange } from '@/components/ui/DateRangePicker'
+import { OutletSelector } from '@/components/ui/OutletSelector'
+import { ExportCsvButton } from '@/components/ui/ExportCsvButton'
 
 interface ServiceRow {
   product_id: string
@@ -15,11 +18,13 @@ export function ServiceReport() {
   const [services, setServices] = useState<ServiceRow[]>([])
   const [totalRevenue, setTotalRevenue] = useState(0)
   const [totalCount, setTotalCount] = useState(0)
+  const [range, setRange] = useState<DateRange>(() => defaultDateRange(30))
+  const [selectedOutlet, setSelectedOutlet] = useState('all')
   const [isLoading, setIsLoading] = useState(true)
 
   const load = useCallback(async () => {
     setIsLoading(true)
-    const res = await fetch('/api/reports/service')
+    const res = await fetch(`/api/reports/service?outlet_id=${selectedOutlet}&start=${range.start}&end=${range.end}`)
     const data = await res.json()
     if (res.ok) {
       setServices(data.services ?? [])
@@ -27,7 +32,7 @@ export function ServiceReport() {
       setTotalCount(data.totalCount ?? 0)
     }
     setIsLoading(false)
-  }, [])
+  }, [selectedOutlet, range])
 
   useEffect(() => {
     const t = setTimeout(load, 0)
@@ -36,7 +41,14 @@ export function ServiceReport() {
 
   return (
     <div className="space-y-4">
-      <p className="text-sm text-gray-500">30 hari terakhir</p>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <OutletSelector value={selectedOutlet} onChange={setSelectedOutlet} />
+          <DateRangePicker value={range} onChange={setRange} />
+        </div>
+        <ExportCsvButton filename="service-report" rows={services} />
+      </div>
+
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <div className="rounded-lg border border-gray-200 p-4">
           <p className="text-sm text-gray-500">Pendapatan Layanan</p>

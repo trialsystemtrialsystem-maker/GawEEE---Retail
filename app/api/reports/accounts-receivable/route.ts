@@ -1,6 +1,7 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { getAuthContext } from '@/lib/utils/auth-context'
 import { handleDatabaseError } from '@/lib/utils/errors'
+import { resolveOutletScope } from '@/lib/utils/outletScope'
 
 // GET /api/reports/accounts-receivable — customer aging report for unpaid
 // sales (pay_later, and any e-wallet/bank sale still awaiting settlement).
@@ -20,15 +21,18 @@ function bucketFor(daysOutstanding: number): (typeof AGING_BUCKETS)[number] {
   return '90+ hari'
 }
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   const auth = await getAuthContext()
   if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  if (!auth.outlet_id) return NextResponse.json({ error: 'Pilih outlet terlebih dahulu' }, { status: 400 })
+
+  const scopeResult = await resolveOutletScope(auth, request.nextUrl.searchParams.get('outlet_id'))
+  if (!scopeResult.scope) return NextResponse.json({ error: scopeResult.error }, { status: scopeResult.status })
+  const { outletIds } = scopeResult.scope
 
   const { data, error } = await auth.supabase
     .from('invoices')
     .select('id, invoice_number, customer_name, customer_phone, total, payment_status, order_status, created_at')
-    .eq('outlet_id', auth.outlet_id)
+    .in('outlet_id', outletIds)
     .in('payment_status', ['pending', 'partial'])
     .neq('order_status', 'voided')
     .order('created_at', { ascending: true })
@@ -41,13 +45,15 @@ export async function GET() {
   type Row = { id: string; invoice_number: string; customer_name: string | null; customer_phone: string | null; total: number; created_at: string }
   const rows = data as unknown as Row[]
 
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
+  // UTC-safe day-diff — invoices.created_at is a timestamptz, its calendar
+  // date is its UTC date (matching how every other report slices it), so
+  // diffing against local-timezone midnight (the old .setHours(0,0,0,0))
+  // could over/under-count days_outstanding by one near local midnight.
+  const todayUtcMs = Date.parse(`${new Date().toISOString().slice(0, 10)}T00:00:00.000Z`)
 
   const invoiceRows = rows.map((inv) => {
-    const createdDate = new Date(inv.created_at)
-    createdDate.setHours(0, 0, 0, 0)
-    const daysOutstanding = Math.max(0, Math.floor((today.getTime() - createdDate.getTime()) / (1000 * 60 * 60 * 24)))
+    const createdUtcMs = Date.parse(`${inv.created_at.slice(0, 10)}T00:00:00.000Z`)
+    const daysOutstanding = Math.max(0, Math.floor((todayUtcMs - createdUtcMs) / (1000 * 60 * 60 * 24)))
     return {
       id: inv.id,
       invoice_number: inv.invoice_number,

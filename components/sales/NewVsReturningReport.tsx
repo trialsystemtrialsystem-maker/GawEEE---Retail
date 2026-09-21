@@ -4,6 +4,8 @@ import { useEffect, useState, useCallback } from 'react'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer } from 'recharts'
 import { Alert } from '@/components/ui/Alert'
 import { formatCurrency } from '@/lib/utils/formatting'
+import { OutletSelector } from '@/components/ui/OutletSelector'
+import { ExportCsvButton } from '@/components/ui/ExportCsvButton'
 
 interface MonthRow {
   month: string
@@ -18,16 +20,18 @@ interface Summary {
   returning_revenue_pct: number
 }
 
-export function NewVsReturningReport({ outletId }: { outletId: string }) {
+export function NewVsReturningReport({ outletId }: { outletId?: string }) {
   const [series, setSeries] = useState<MonthRow[]>([])
   const [summary, setSummary] = useState<Summary | null>(null)
   const [note, setNote] = useState('')
   const [months, setMonths] = useState(6)
+  const [selectedOutlet, setSelectedOutlet] = useState('all')
   const [isLoading, setIsLoading] = useState(true)
+  const effectiveOutlet = outletId ?? selectedOutlet
 
   const load = useCallback(async () => {
     setIsLoading(true)
-    const res = await fetch(`/api/reports/new-vs-returning?months=${months}`)
+    const res = await fetch(`/api/reports/new-vs-returning?outlet_id=${effectiveOutlet}&months=${months}`)
     const data = await res.json()
     if (res.ok) {
       setSeries(data.series ?? [])
@@ -35,24 +39,28 @@ export function NewVsReturningReport({ outletId }: { outletId: string }) {
       setNote(data.note ?? '')
     }
     setIsLoading(false)
-  }, [months])
+  }, [effectiveOutlet, months])
 
   useEffect(() => {
     const t = setTimeout(load, 0)
     return () => clearTimeout(t)
-  }, [load, outletId])
+  }, [load])
 
   return (
     <div className="space-y-4">
       {note && <Alert variant="info">{note}</Alert>}
 
-      <div className="flex items-center gap-2">
-        <label className="text-sm font-medium text-gray-700">Periode:</label>
-        <select value={months} onChange={(e) => setMonths(Number(e.target.value))} className="rounded-sm border border-gray-200 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--brand-500)]">
-          <option value={3}>3 bulan terakhir</option>
-          <option value={6}>6 bulan terakhir</option>
-          <option value={12}>12 bulan terakhir</option>
-        </select>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          {!outletId && <OutletSelector value={selectedOutlet} onChange={setSelectedOutlet} />}
+          <label className="text-sm font-medium text-gray-700">Periode:</label>
+          <select value={months} onChange={(e) => setMonths(Number(e.target.value))} className="rounded-sm border border-gray-200 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--brand-500)]">
+            <option value={3}>3 bulan terakhir</option>
+            <option value={6}>6 bulan terakhir</option>
+            <option value={12}>12 bulan terakhir</option>
+          </select>
+        </div>
+        <ExportCsvButton filename="new-vs-returning" rows={series} />
       </div>
 
       {summary && (

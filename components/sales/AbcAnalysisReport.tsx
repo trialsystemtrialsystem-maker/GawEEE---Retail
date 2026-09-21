@@ -3,6 +3,9 @@
 import { useEffect, useState, useCallback } from 'react'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts'
 import { formatCurrency } from '@/lib/utils/formatting'
+import { DateRangePicker, defaultDateRange, type DateRange } from '@/components/ui/DateRangePicker'
+import { OutletSelector } from '@/components/ui/OutletSelector'
+import { ExportCsvButton } from '@/components/ui/ExportCsvButton'
 
 interface Product {
   product_id: string
@@ -28,40 +31,41 @@ const CLASS_DESC: Record<string, string> = {
   C: 'Kontributor kecil (ekor panjang) — kurangi stok berlebih, evaluasi kelayakan jual.',
 }
 
-export function AbcAnalysisReport({ outletId }: { outletId: string }) {
+export function AbcAnalysisReport({ outletId }: { outletId?: string }) {
   const [products, setProducts] = useState<Product[]>([])
   const [summary, setSummary] = useState<SummaryRow[]>([])
-  const [days, setDays] = useState(90)
+  const [range, setRange] = useState<DateRange>(() => defaultDateRange(90))
+  const [selectedOutlet, setSelectedOutlet] = useState('all')
   const [filter, setFilter] = useState<'A' | 'B' | 'C' | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const effectiveOutlet = outletId ?? selectedOutlet
 
   const load = useCallback(async () => {
     setIsLoading(true)
-    const res = await fetch(`/api/reports/abc-analysis?days=${days}`)
+    const res = await fetch(`/api/reports/abc-analysis?outlet_id=${effectiveOutlet}&start=${range.start}&end=${range.end}`)
     const data = await res.json()
     if (res.ok) {
       setProducts(data.products ?? [])
       setSummary(data.summary ?? [])
     }
     setIsLoading(false)
-  }, [days])
+  }, [effectiveOutlet, range])
 
   useEffect(() => {
     const t = setTimeout(load, 0)
     return () => clearTimeout(t)
-  }, [load, outletId])
+  }, [load])
 
   const visibleProducts = filter ? products.filter((p) => p.class === filter) : products
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-2">
-        <label className="text-sm font-medium text-gray-700">Periode:</label>
-        <select value={days} onChange={(e) => setDays(Number(e.target.value))} className="rounded-sm border border-gray-200 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--brand-500)]">
-          <option value={30}>30 hari terakhir</option>
-          <option value={90}>90 hari terakhir</option>
-          <option value={365}>1 tahun terakhir</option>
-        </select>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          {!outletId && <OutletSelector value={selectedOutlet} onChange={setSelectedOutlet} />}
+          <DateRangePicker value={range} onChange={setRange} />
+        </div>
+        <ExportCsvButton filename="abc-analysis" rows={products} />
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">

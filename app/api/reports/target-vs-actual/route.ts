@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getAuthContext, canAccessOutlet } from '@/lib/utils/auth-context'
+import { getAuthContext } from '@/lib/utils/auth-context'
 import { handleDatabaseError } from '@/lib/utils/errors'
+import { resolveOutletScope } from '@/lib/utils/outletScope'
 
 // GET /api/reports/target-vs-actual?outlet_id= — sales target vs. actual
 // tracking, one of the most fundamental tools in any enterprise sales
@@ -9,24 +10,23 @@ import { handleDatabaseError } from '@/lib/utils/errors'
 // schema since the very first migration — defined, even typed in
 // database.types.ts, but never read or written by any route or UI until
 // now (same "defined but never wired" pattern closed repeatedly this
-// session — AR/AP, system_alerts, loyalty redemption). outlet_id is
-// optional (defaults to the caller's own outlet) for the same master_admin
-// drill-down reason as the other report APIs.
+// session — AR/AP, system_alerts, loyalty redemption). outlet_id=all sums
+// every in-scope outlet's target_daily_revenue and actuals together.
 export async function GET(request: NextRequest) {
   const auth = await getAuthContext()
   if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const outletId = request.nextUrl.searchParams.get('outlet_id') ?? auth.outlet_id
-  if (!outletId) return NextResponse.json({ error: 'Pilih outlet terlebih dahulu' }, { status: 400 })
-  if (!canAccessOutlet(auth, outletId)) return NextResponse.json({ error: 'Tidak memiliki izin' }, { status: 403 })
+  const scopeResult = await resolveOutletScope(auth, request.nextUrl.searchParams.get('outlet_id'))
+  if (!scopeResult.scope) return NextResponse.json({ error: scopeResult.error }, { status: scopeResult.status })
+  const { outletIds } = scopeResult.scope
 
-  const { data: outlet, error: outletError } = await auth.supabase.from('outlets').select('target_daily_revenue').eq('id', outletId).single()
+  const { data: outlets, error: outletError } = await auth.supabase.from('outlets').select('target_daily_revenue').in('id', outletIds)
   if (outletError) {
     const { status, message } = handleDatabaseError(outletError)
     return NextResponse.json({ error: message }, { status })
   }
 
-  const target = outlet?.target_daily_revenue
+  const target = (outlets ?? []).reduce((sum, o) => sum + (o.target_daily_revenue ?? 0), 0)
   if (!target || target <= 0) {
     return NextResponse.json({ configured: false, note: 'Target penjualan harian belum ditetapkan. Atur di menu Pengaturan > Outlet Info.' })
   }
@@ -48,7 +48,7 @@ export async function GET(request: NextRequest) {
   const { data: invoices, error } = await auth.supabase
     .from('invoices')
     .select('total, created_at')
-    .eq('outlet_id', outletId)
+    .in('outlet_id', outletIds)
     .neq('order_status', 'voided')
     .gte('created_at', monthStart.toISOString())
 

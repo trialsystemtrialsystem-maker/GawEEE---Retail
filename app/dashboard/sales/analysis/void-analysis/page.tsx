@@ -1,15 +1,6 @@
-import { createClient } from '@/lib/supabase/server'
-import { Alert } from '@/components/ui/Alert'
 import { VoidAnalysisReport } from '@/components/sales/VoidAnalysisReport'
 
-export default async function VoidAnalysisPage() {
-  const supabase = await createClient()
-  const {
-    data: { session },
-  } = await supabase.auth.getSession()
-  const user = session?.user
-  const { data: profile } = await supabase.from('users').select('outlet_id').eq('id', user!.id).single()
-
+export default function VoidAnalysisPage() {
   return (
     <div className="space-y-6">
       <div>
@@ -18,11 +9,7 @@ export default async function VoidAnalysisPage() {
           Pemantauan pencegahan kecurangan — tingkat pembatalan tinggi atau terkonsentrasi pada satu kasir patut diperiksa.
         </p>
       </div>
-      {profile?.outlet_id ? (
-        <VoidAnalysisReport outletId={profile.outlet_id} />
-      ) : (
-        <Alert variant="warning">Pilih outlet terlebih dahulu.</Alert>
-      )}
+      <VoidAnalysisReport />
     </div>
   )
 }

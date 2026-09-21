@@ -35,7 +35,8 @@ interface HourBucket {
   transaction_count: number
 }
 interface HourlyResponse {
-  days: number
+  start: string
+  end: string
   combined: HourBucket[]
   outlets: { outlet_id: string; outlet_name: string; hourly: HourBucket[] }[]
 }
@@ -50,7 +51,8 @@ interface DailyBucket {
   transaction_count: number
 }
 interface DailyResponse {
-  days: number
+  start: string
+  end: string
   dates: string[]
   combined: DailyBucket[]
   outlets: { outlet_id: string; outlet_name: string; daily: DailyBucket[] }[]

@@ -1,26 +1,31 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { getAuthContext } from '@/lib/utils/auth-context'
 import { handleDatabaseError } from '@/lib/utils/errors'
+import { resolveDateRange } from '@/lib/utils/dateRange'
+import { resolveOutletScope } from '@/lib/utils/outletScope'
 
 type ItemRow = { product_id: string; quantity: number; unit_price: number; item_discount: number; products: { name: string; product_type: string } | null }
 
-// GET /api/reports/service — revenue/count per service product, last 30 days.
-export async function GET() {
+// GET /api/reports/service?outlet_id=&start=&end= — revenue/count per
+// service product.
+export async function GET(request: NextRequest) {
   const auth = await getAuthContext()
   if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  if (!auth.outlet_id) return NextResponse.json({ error: 'Pilih outlet terlebih dahulu' }, { status: 400 })
 
-  const start = new Date()
-  start.setDate(start.getDate() - 29)
-  start.setHours(0, 0, 0, 0)
+  const { searchParams } = request.nextUrl
+  const scopeResult = await resolveOutletScope(auth, searchParams.get('outlet_id'))
+  if (!scopeResult.scope) return NextResponse.json({ error: scopeResult.error }, { status: scopeResult.status })
+  const { outletIds } = scopeResult.scope
+  const { startIso, endIso } = resolveDateRange(searchParams, 30, 180)
 
   const { data, error } = await auth.supabase
     .from('invoice_items')
     .select('product_id, quantity, unit_price, item_discount, products!inner(name, product_type), invoices!inner(outlet_id, created_at, order_status)')
-    .eq('invoices.outlet_id', auth.outlet_id)
+    .in('invoices.outlet_id', outletIds)
     .eq('products.product_type', 'service')
     .neq('invoices.order_status', 'voided')
-    .gte('invoices.created_at', start.toISOString())
+    .gte('invoices.created_at', startIso)
+    .lte('invoices.created_at', endIso)
 
   if (error) {
     const { status, message } = handleDatabaseError(error)

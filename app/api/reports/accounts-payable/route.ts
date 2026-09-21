@@ -1,6 +1,7 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { getAuthContext } from '@/lib/utils/auth-context'
 import { handleDatabaseError } from '@/lib/utils/errors'
+import { resolveOutletScope } from '@/lib/utils/outletScope'
 
 // GET /api/reports/accounts-payable — supplier aging report. The standalone
 // `accounts_payable` table (005_financial.sql) was defined but never written
@@ -18,12 +19,15 @@ function bucketFor(daysOverdue: number): (typeof AGING_BUCKETS)[number] {
   return '90+ hari'
 }
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   const auth = await getAuthContext()
   if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  if (!auth.outlet_id) return NextResponse.json({ error: 'Pilih outlet terlebih dahulu' }, { status: 400 })
 
-  const { data: pos } = await auth.supabase.from('purchase_orders').select('id').eq('outlet_id', auth.outlet_id)
+  const scopeResult = await resolveOutletScope(auth, request.nextUrl.searchParams.get('outlet_id'))
+  if (!scopeResult.scope) return NextResponse.json({ error: scopeResult.error }, { status: scopeResult.status })
+  const { outletIds } = scopeResult.scope
+
+  const { data: pos } = await auth.supabase.from('purchase_orders').select('id').in('outlet_id', outletIds)
   const poIds = (pos ?? []).map((p) => p.id)
   if (poIds.length === 0) return NextResponse.json({ invoices: [], bySupplier: [], byBucket: [] })
 
@@ -50,15 +54,17 @@ export async function GET() {
     purchase_payments: { amount: number }[]
   }
 
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
+  // UTC-safe — due_date is a plain date column (parses as UTC midnight); the
+  // old local-midnight `today` could shift days_overdue by one near local
+  // midnight, same class of bug fixed across every other report this phase.
+  const todayUtcMs = Date.parse(`${new Date().toISOString().slice(0, 10)}T00:00:00.000Z`)
 
   const invoiceRows = (invoices as unknown as Row[])
     .map((inv) => {
       const paid = inv.purchase_payments.reduce((s, p) => s + p.amount, 0)
       const outstanding = Math.max(0, inv.total - paid)
-      const dueDate = new Date(inv.due_date)
-      const daysOverdue = Math.floor((today.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24))
+      const dueUtcMs = Date.parse(`${inv.due_date.slice(0, 10)}T00:00:00.000Z`)
+      const daysOverdue = Math.floor((todayUtcMs - dueUtcMs) / (1000 * 60 * 60 * 24))
       return {
         id: inv.id,
         invoice_number: inv.invoice_number,

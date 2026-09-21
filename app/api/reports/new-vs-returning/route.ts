@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthContext } from '@/lib/utils/auth-context'
 import { handleDatabaseError } from '@/lib/utils/errors'
+import { resolveOutletScope } from '@/lib/utils/outletScope'
 
 // GET /api/reports/new-vs-returning?months=6 — new vs. returning customer
 // revenue/count per month, a standard KPI on every enterprise sales
@@ -15,14 +16,16 @@ type InvoiceRow = { customer_phone: string | null; total: number; created_at: st
 export async function GET(request: NextRequest) {
   const auth = await getAuthContext()
   if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  if (!auth.outlet_id) return NextResponse.json({ error: 'Pilih outlet terlebih dahulu' }, { status: 400 })
 
+  const scopeResult = await resolveOutletScope(auth, request.nextUrl.searchParams.get('outlet_id'))
+  if (!scopeResult.scope) return NextResponse.json({ error: scopeResult.error }, { status: scopeResult.status })
+  const { outletIds } = scopeResult.scope
   const months = Math.min(Number(request.nextUrl.searchParams.get('months') ?? '6'), 24)
 
   const { data, error } = await auth.supabase
     .from('invoices')
     .select('customer_phone, total, created_at')
-    .eq('outlet_id', auth.outlet_id)
+    .in('outlet_id', outletIds)
     .neq('order_status', 'voided')
     .not('customer_phone', 'is', null)
     .order('created_at', { ascending: true })
@@ -43,11 +46,16 @@ export async function GET(request: NextRequest) {
     if (!existing || month < existing) firstPurchaseMonth.set(phone, month)
   }
 
-  const now = new Date()
+  // UTC-safe month-window construction — see todo.md Phase 27/28 for the
+  // local-timezone version of this bug (new Date(y, m, 1) + .getFullYear()/
+  // .getMonth() are local-time, which can add/drop a month boundary versus
+  // the UTC calendar months invoices.created_at is actually grouped by).
+  const nowUtcYear = Number(new Date().toISOString().slice(0, 4))
+  const nowUtcMonth = Number(new Date().toISOString().slice(5, 7)) - 1 // 0-indexed, matching Date.UTC's month arg
   const windowMonths: string[] = []
   for (let i = months - 1; i >= 0; i--) {
-    const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
-    windowMonths.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`)
+    const d = new Date(Date.UTC(nowUtcYear, nowUtcMonth - i, 1))
+    windowMonths.push(`${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`)
   }
 
   type Bucket = { month: string; new_customers: Set<string>; returning_customers: Set<string>; new_revenue: number; returning_revenue: number }

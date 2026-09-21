@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthContext } from '@/lib/utils/auth-context'
 import { handleDatabaseError } from '@/lib/utils/errors'
+import { resolveDateRange } from '@/lib/utils/dateRange'
 
 // GET /api/admin/outlets/hourly?days=7 — master_admin only. Hour-of-day
 // revenue/transaction breakdown for every one of the company's outlets, plus
@@ -15,10 +16,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Tidak memiliki izin' }, { status: 403 })
   }
 
-  const days = Math.min(Number(request.nextUrl.searchParams.get('days') ?? '7'), 90)
-  const start = new Date()
-  start.setDate(start.getDate() - days + 1)
-  start.setHours(0, 0, 0, 0)
+  const { startIso, endIso, startDate, endDate } = resolveDateRange(request.nextUrl.searchParams, 7, 90)
 
   const { data: outlets } = await auth.supabase.from('outlets').select('id, name').eq('company_id', auth.company_id)
 
@@ -27,7 +25,8 @@ export async function GET(request: NextRequest) {
     .select('outlet_id, created_at, total')
     .in('outlet_id', (outlets ?? []).map((o) => o.id))
     .neq('order_status', 'voided')
-    .gte('created_at', start.toISOString())
+    .gte('created_at', startIso)
+    .lte('created_at', endIso)
 
   if (error) {
     const { status, message } = handleDatabaseError(error)
@@ -42,7 +41,7 @@ export async function GET(request: NextRequest) {
   const perOutlet = new Map((outlets ?? []).map((o) => [o.id, { outlet_id: o.id, outlet_name: o.name, hourly: emptyHours() }]))
 
   for (const inv of invoices ?? []) {
-    const hour = new Date(inv.created_at).getHours()
+    const hour = new Date(inv.created_at).getUTCHours()
     combined[hour].revenue += inv.total
     combined[hour].transaction_count += 1
     const bucket = perOutlet.get(inv.outlet_id)
@@ -53,7 +52,8 @@ export async function GET(request: NextRequest) {
   }
 
   return NextResponse.json({
-    days,
+    start: startDate,
+    end: endDate,
     combined,
     outlets: Array.from(perOutlet.values()),
   })

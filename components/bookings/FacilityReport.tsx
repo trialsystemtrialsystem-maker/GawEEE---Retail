@@ -2,6 +2,8 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer } from 'recharts'
+import { OutletSelector } from '@/components/ui/OutletSelector'
+import { ExportCsvButton } from '@/components/ui/ExportCsvButton'
 
 interface FacilityRow {
   facility_id: string
@@ -13,15 +15,16 @@ interface FacilityRow {
 
 export function FacilityReport() {
   const [facilities, setFacilities] = useState<FacilityRow[]>([])
+  const [selectedOutlet, setSelectedOutlet] = useState('all')
   const [isLoading, setIsLoading] = useState(true)
 
   const load = useCallback(async () => {
     setIsLoading(true)
-    const res = await fetch('/api/reports/facility')
+    const res = await fetch(`/api/reports/facility?outlet_id=${selectedOutlet}`)
     const data = await res.json()
     if (res.ok) setFacilities(data.facilities ?? [])
     setIsLoading(false)
-  }, [])
+  }, [selectedOutlet])
 
   useEffect(() => {
     const t = setTimeout(load, 0)
@@ -30,6 +33,11 @@ export function FacilityReport() {
 
   return (
     <div className="space-y-4">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <OutletSelector value={selectedOutlet} onChange={setSelectedOutlet} />
+        <ExportCsvButton filename="facility-report" rows={facilities} />
+      </div>
+
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div className="rounded-lg border border-gray-200 p-4">
           <p className="text-sm text-gray-500">Total Booking Berfasilitas</p>

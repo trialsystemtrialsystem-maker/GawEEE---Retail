@@ -1440,14 +1440,33 @@ Excel") rather than adding a new `xlsx` library dependency for an equivalent pra
       distinctly (checked each page does NOT show the other's defining content — no "Revenue MTD" on the
       CRUD page, no "+ Tambah Outlet" on the identification page); the drill-down still works at its new
       URL; the status activate/deactivate toggle round-tripped correctly through a real PATCH.
-- [ ] Remaining reports still need the same treatment: Promo & Loyalty already done above, but Service
-      Report, Facility Report, Customer Satisfaction, Tax Report, and every Report Analysis-section item
-      built in Phases 25-27 (RFM/Customer Segmentation, ABC Analysis, Market Basket, New vs Returning, Void
-      Analysis, Target vs Actual) plus AR/AP still need date range/outlet scope/export added — continuing
-      in the next batch. Two more timezone-bug routes the Phase 27 audit flagged are also still open:
-      `app/api/accounting/reports/route.ts` (P&L's default month boundary) and
-      `app/api/admin/outlets/hourly` / `.../daily` (same hour/day-of-week bucketing issue just fixed in
-      `peak-time`, not yet applied there).
+- [x] **Part 2 — finished the rollout.** Converted the rest: Facility Report, Service Report (full date
+      range + outlet scope + export), Customer Satisfaction (export button only — kept as a manual
+      review-logging tool, not a date/outlet-filtered report), Tax Report (dropped its ad-hoc `start`/`end`
+      handling and local-timezone year default for `resolveDateRange`/`resolveOutletScope`, default window
+      is the current year), Customer Segmentation/RFM and ABC Analysis and Market Basket (outlet scope +
+      export; ABC/Market Basket's old 30/90/365-day dropdown became a real `<DateRangePicker>`), New vs
+      Returning (kept its month-count dropdown since it's month-bucketed, added outlet scope + export, and
+      fixed a local-timezone bug in the month-window construction — `new Date(y, m, 1)` + `.getMonth()`
+      could add/drop a month boundary depending on server timezone), Void Analysis (full date range + outlet
+      scope + export, replacing its old `days`-dropdown + single-outlet-only route), Target vs Actual
+      (its own report page gained an outlet selector; the two pinned dashboard/drill-down usages keep their
+      single-outlet prop unchanged since those are per-outlet widgets, not standalone reports — `outlet_id=
+      all` on the route now sums every in-scope outlet's target and actuals together), and AR/AP (both
+      previously had zero outlet scoping or export at all — now outlet-scoped with export, and both had a
+      local-timezone day-diff bug fixed: AR's `days_outstanding`/AP's `days_overdue` compared a local-
+      midnight `today` against a UTC-derived date, which could be off by one near local midnight).
+- [x] Closed the last two timezone-bug routes the Phase 27 audit flagged: `app/api/accounting/reports/route.ts`
+      (P&L's `firstDayOfMonth()` default now builds the boundary from `getUTCFullYear()`/`getUTCMonth()`
+      instead of local getters) and `app/api/admin/outlets/hourly` / `.../daily` (switched to
+      `resolveDateRange()` for their boundaries and `getUTCHours()` for hour bucketing, matching the fix
+      already applied to `peak-time`).
+- [x] Verified: `npx next typegen && npx tsc --noEmit` clean, ESLint clean on every touched file, `npm run
+      build` compiled successfully (243 routes). Live-verified via a Playwright script against the demo
+      account (port 3001): logged in, loaded all 9 newly-touched report pages with no errors and the
+      expected selects/date-inputs/export-button present, then hit 7 of the underlying API routes directly
+      with `outlet_id=all` — all returned 200 with sane aggregated numbers (e.g. target-vs-actual's MTD
+      actual/target scaled correctly across all outlets combined) and zero browser console errors.
 
 ## Notes on scope
 This todo tracks the **engineering deliverables** of the PRD (a working Next.js + Supabase codebase

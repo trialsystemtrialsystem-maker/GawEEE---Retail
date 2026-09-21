@@ -2,6 +2,9 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import { Alert } from '@/components/ui/Alert'
+import { DateRangePicker, defaultDateRange, type DateRange } from '@/components/ui/DateRangePicker'
+import { OutletSelector } from '@/components/ui/OutletSelector'
+import { ExportCsvButton } from '@/components/ui/ExportCsvButton'
 
 interface Pair {
   product_a: string
@@ -13,16 +16,18 @@ interface Pair {
   lift: number
 }
 
-export function MarketBasketReport({ outletId }: { outletId: string }) {
+export function MarketBasketReport({ outletId }: { outletId?: string }) {
   const [pairs, setPairs] = useState<Pair[]>([])
   const [totalBaskets, setTotalBaskets] = useState(0)
-  const [days, setDays] = useState(90)
+  const [range, setRange] = useState<DateRange>(() => defaultDateRange(90))
+  const [selectedOutlet, setSelectedOutlet] = useState('all')
   const [note, setNote] = useState('')
   const [isLoading, setIsLoading] = useState(true)
+  const effectiveOutlet = outletId ?? selectedOutlet
 
   const load = useCallback(async () => {
     setIsLoading(true)
-    const res = await fetch(`/api/reports/market-basket?days=${days}`)
+    const res = await fetch(`/api/reports/market-basket?outlet_id=${effectiveOutlet}&start=${range.start}&end=${range.end}`)
     const data = await res.json()
     if (res.ok) {
       setPairs(data.pairs ?? [])
@@ -30,25 +35,24 @@ export function MarketBasketReport({ outletId }: { outletId: string }) {
       setNote(data.note ?? '')
     }
     setIsLoading(false)
-  }, [days])
+  }, [effectiveOutlet, range])
 
   useEffect(() => {
     const t = setTimeout(load, 0)
     return () => clearTimeout(t)
-  }, [load, outletId])
+  }, [load])
 
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="flex items-center gap-2">
-          <label className="text-sm font-medium text-gray-700">Periode:</label>
-          <select value={days} onChange={(e) => setDays(Number(e.target.value))} className="rounded-sm border border-gray-200 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--brand-500)]">
-            <option value={30}>30 hari terakhir</option>
-            <option value={90}>90 hari terakhir</option>
-            <option value={365}>1 tahun terakhir</option>
-          </select>
+        <div className="flex flex-wrap items-center gap-2">
+          {!outletId && <OutletSelector value={selectedOutlet} onChange={setSelectedOutlet} />}
+          <DateRangePicker value={range} onChange={setRange} />
         </div>
-        <p className="text-sm text-gray-500">{totalBaskets} transaksi dianalisis</p>
+        <div className="flex items-center gap-2">
+          <p className="text-sm text-gray-500">{totalBaskets} transaksi dianalisis</p>
+          <ExportCsvButton filename="market-basket" rows={pairs} />
+        </div>
       </div>
 
       {note && <Alert variant="info">{note}</Alert>}

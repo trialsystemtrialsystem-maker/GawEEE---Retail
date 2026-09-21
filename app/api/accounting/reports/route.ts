@@ -6,7 +6,11 @@ type AccountRow = { id: string; account_code: string; account_name: string; acco
 type LineRow = { account_id: string; debit: number; credit: number; journal_entries: { entry_date: string } | { entry_date: string }[] }
 
 function firstDayOfMonth(d = new Date()) {
-  return new Date(d.getFullYear(), d.getMonth(), 1).toISOString().slice(0, 10)
+  // UTC-safe — journal_entries.entry_date is a plain date column compared
+  // against these YYYY-MM-DD strings, so a local-timezone month boundary
+  // (the old new Date(d.getFullYear(), d.getMonth(), 1)) could point at the
+  // wrong month depending on the server's local timezone.
+  return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-01`
 }
 
 // GET /api/accounting/reports?outlet_id=&type=profit-loss|balance-sheet&start=&end=&as_of=

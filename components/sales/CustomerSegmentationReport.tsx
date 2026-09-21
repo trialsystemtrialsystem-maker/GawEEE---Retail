@@ -4,6 +4,8 @@ import { useEffect, useState, useCallback } from 'react'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts'
 import { Alert } from '@/components/ui/Alert'
 import { formatCurrency } from '@/lib/utils/formatting'
+import { OutletSelector } from '@/components/ui/OutletSelector'
+import { ExportCsvButton } from '@/components/ui/ExportCsvButton'
 
 interface Customer {
   name: string
@@ -37,16 +39,18 @@ const SEGMENT_COLORS: Record<string, string> = {
   attention: 'var(--chart-4)',
 }
 
-export function CustomerSegmentationReport({ outletId }: { outletId: string }) {
+export function CustomerSegmentationReport({ outletId }: { outletId?: string }) {
   const [customers, setCustomers] = useState<Customer[]>([])
   const [bySegment, setBySegment] = useState<SegmentRow[]>([])
   const [note, setNote] = useState('')
   const [filter, setFilter] = useState<string | null>(null)
+  const [selectedOutlet, setSelectedOutlet] = useState('all')
   const [isLoading, setIsLoading] = useState(true)
+  const effectiveOutlet = outletId ?? selectedOutlet
 
   const load = useCallback(async () => {
     setIsLoading(true)
-    const res = await fetch('/api/reports/customer-segmentation')
+    const res = await fetch(`/api/reports/customer-segmentation?outlet_id=${effectiveOutlet}`)
     const data = await res.json()
     if (res.ok) {
       setCustomers(data.customers ?? [])
@@ -54,18 +58,23 @@ export function CustomerSegmentationReport({ outletId }: { outletId: string }) {
       setNote(data.note ?? '')
     }
     setIsLoading(false)
-  }, [])
+  }, [effectiveOutlet])
 
   useEffect(() => {
     const t = setTimeout(load, 0)
     return () => clearTimeout(t)
-  }, [load, outletId])
+  }, [load])
 
   const chartData = bySegment.filter((s) => s.customer_count > 0)
   const visibleCustomers = filter ? customers.filter((c) => c.segment === filter) : customers
 
   return (
     <div className="space-y-4">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        {!outletId && <OutletSelector value={selectedOutlet} onChange={setSelectedOutlet} />}
+        <ExportCsvButton filename="customer-segmentation-rfm" rows={customers} />
+      </div>
+
       {note && <Alert variant="info">{note}</Alert>}
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">

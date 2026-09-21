@@ -1,15 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthContext } from '@/lib/utils/auth-context'
 import { handleDatabaseError } from '@/lib/utils/errors'
+import { resolveDateRange } from '@/lib/utils/dateRange'
+import { resolveOutletScope } from '@/lib/utils/outletScope'
 
-// GET /api/reports/abc-analysis?outlet_id=&days=90 — Pareto (ABC) product
-// classification by revenue contribution, standard in enterprise retail/
-// merchandising systems (SAP Retail, Oracle Retail) for deciding which
-// products get the tightest stock control and shelf priority: class A is
-// the small set of products driving most revenue, C is the long tail.
-// Class boundaries follow the standard convention (A up to 80% cumulative
-// revenue, B up to 95%, C the rest) — the product whose cumulative sum
-// crosses a threshold is counted in the class it crosses into.
+// GET /api/reports/abc-analysis?outlet_id=&days=90&start=&end= — Pareto
+// (ABC) product classification by revenue contribution, standard in
+// enterprise retail/merchandising systems (SAP Retail, Oracle Retail) for
+// deciding which products get the tightest stock control and shelf
+// priority: class A is the small set of products driving most revenue, C
+// is the long tail. Class boundaries follow the standard convention (A up
+// to 80% cumulative revenue, B up to 95%, C the rest) — the product whose
+// cumulative sum crosses a threshold is counted in the class it crosses into.
 type Row = {
   product_id: string
   quantity: number
@@ -21,19 +23,20 @@ type Row = {
 export async function GET(request: NextRequest) {
   const auth = await getAuthContext()
   if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  if (!auth.outlet_id) return NextResponse.json({ error: 'Pilih outlet terlebih dahulu' }, { status: 400 })
 
-  const days = Math.min(Number(request.nextUrl.searchParams.get('days') ?? '90'), 365)
-  const start = new Date()
-  start.setDate(start.getDate() - days + 1)
-  start.setHours(0, 0, 0, 0)
+  const { searchParams } = request.nextUrl
+  const scopeResult = await resolveOutletScope(auth, searchParams.get('outlet_id'))
+  if (!scopeResult.scope) return NextResponse.json({ error: scopeResult.error }, { status: scopeResult.status })
+  const { outletIds } = scopeResult.scope
+  const { startIso, endIso } = resolveDateRange(searchParams, 90, 365)
 
   const { data, error } = await auth.supabase
     .from('invoice_items')
     .select('product_id, quantity, subtotal, cost_of_goods_sold, products(name), invoices!inner(outlet_id, order_status, created_at)')
-    .eq('invoices.outlet_id', auth.outlet_id)
+    .in('invoices.outlet_id', outletIds)
     .neq('invoices.order_status', 'voided')
-    .gte('invoices.created_at', start.toISOString())
+    .gte('invoices.created_at', startIso)
+    .lte('invoices.created_at', endIso)
 
   if (error) {
     const { status, message } = handleDatabaseError(error)
@@ -81,5 +84,5 @@ export async function GET(request: NextRequest) {
     }
   })
 
-  return NextResponse.json({ products, summary, total_revenue: totalRevenue, days })
+  return NextResponse.json({ products, summary, total_revenue: totalRevenue })
 }

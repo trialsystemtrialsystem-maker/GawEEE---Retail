@@ -1,6 +1,7 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { getAuthContext } from '@/lib/utils/auth-context'
 import { handleDatabaseError } from '@/lib/utils/errors'
+import { resolveOutletScope } from '@/lib/utils/outletScope'
 
 // GET /api/reports/customer-segmentation — RFM (Recency/Frequency/Monetary)
 // customer segmentation, a standard enterprise CRM/sales-analytics tool
@@ -40,19 +41,22 @@ function segment(r: number, f: number, m: number): string {
   return 'attention'
 }
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   const auth = await getAuthContext()
   if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  if (!auth.outlet_id) return NextResponse.json({ error: 'Pilih outlet terlebih dahulu' }, { status: 400 })
+
+  const scopeResult = await resolveOutletScope(auth, request.nextUrl.searchParams.get('outlet_id'))
+  if (!scopeResult.scope) return NextResponse.json({ error: scopeResult.error }, { status: scopeResult.status })
+  const { outletIds } = scopeResult.scope
 
   const [invoicesRes, customersRes] = await Promise.all([
     auth.supabase
       .from('invoices')
       .select('customer_phone, total, created_at')
-      .eq('outlet_id', auth.outlet_id)
+      .in('outlet_id', outletIds)
       .neq('order_status', 'voided')
       .not('customer_phone', 'is', null),
-    auth.supabase.from('customers').select('id, name, phone').eq('outlet_id', auth.outlet_id),
+    auth.supabase.from('customers').select('id, name, phone').in('outlet_id', outletIds),
   ])
 
   if (invoicesRes.error) {

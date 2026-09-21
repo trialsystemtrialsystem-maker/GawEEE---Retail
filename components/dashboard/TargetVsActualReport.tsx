@@ -5,6 +5,8 @@ import Link from 'next/link'
 import { Bar, Line, ComposedChart, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer } from 'recharts'
 import { Alert } from '@/components/ui/Alert'
 import { formatCurrency, formatDate } from '@/lib/utils/formatting'
+import { OutletSelector } from '@/components/ui/OutletSelector'
+import { ExportCsvButton } from '@/components/ui/ExportCsvButton'
 
 interface TargetData {
   configured: boolean
@@ -27,31 +29,38 @@ function AchievementBadge({ pct }: { pct: number }) {
 
 export function TargetVsActualReport({ outletId }: { outletId?: string }) {
   const [data, setData] = useState<TargetData | null>(null)
+  const [selectedOutlet, setSelectedOutlet] = useState('all')
   const [isLoading, setIsLoading] = useState(true)
+  const effectiveOutlet = outletId ?? selectedOutlet
 
   const load = useCallback(async () => {
     setIsLoading(true)
-    const res = await fetch(`/api/reports/target-vs-actual${outletId ? `?outlet_id=${outletId}` : ''}`)
+    const res = await fetch(`/api/reports/target-vs-actual?outlet_id=${effectiveOutlet}`)
     const json = await res.json()
     if (res.ok) setData(json)
     setIsLoading(false)
-  }, [outletId])
+  }, [effectiveOutlet])
 
   useEffect(() => {
     const t = setTimeout(load, 0)
     return () => clearTimeout(t)
-  }, [load, outletId])
+  }, [load])
+
+  const selector = !outletId && <OutletSelector value={selectedOutlet} onChange={setSelectedOutlet} />
 
   if (isLoading) return <p className="text-sm text-gray-400">Memuat…</p>
 
   if (!data?.configured) {
     return (
-      <Alert variant="info">
-        {data?.note ?? 'Target penjualan belum ditetapkan.'}{' '}
-        <Link href="/dashboard/settings" className="font-medium underline">
-          Atur target sekarang
-        </Link>
-      </Alert>
+      <div className="space-y-3">
+        {selector}
+        <Alert variant="info">
+          {data?.note ?? 'Target penjualan belum ditetapkan.'}{' '}
+          <Link href="/dashboard/settings" className="font-medium underline">
+            Atur target sekarang
+          </Link>
+        </Alert>
+      </div>
     )
   }
 
@@ -59,6 +68,12 @@ export function TargetVsActualReport({ outletId }: { outletId?: string }) {
 
   return (
     <div className="space-y-4">
+      {(selector || (daily && daily.length > 0)) && (
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div>{selector}</div>
+          {daily && daily.length > 0 && <ExportCsvButton filename="target-vs-actual" rows={daily} />}
+        </div>
+      )}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <div className="rounded-lg border border-gray-200 p-4">
           <div className="flex items-center justify-between">

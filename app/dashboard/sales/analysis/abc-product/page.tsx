@@ -1,15 +1,6 @@
-import { createClient } from '@/lib/supabase/server'
-import { Alert } from '@/components/ui/Alert'
 import { AbcAnalysisReport } from '@/components/sales/AbcAnalysisReport'
 
-export default async function AbcAnalysisPage() {
-  const supabase = await createClient()
-  const {
-    data: { session },
-  } = await supabase.auth.getSession()
-  const user = session?.user
-  const { data: profile } = await supabase.from('users').select('outlet_id').eq('id', user!.id).single()
-
+export default function AbcAnalysisPage() {
   return (
     <div className="space-y-6">
       <div>
@@ -19,11 +10,7 @@ export default async function AbcAnalysisPage() {
           menyumbang sebagian besar pendapatan, Kelas C adalah ekor panjang bernilai kecil.
         </p>
       </div>
-      {profile?.outlet_id ? (
-        <AbcAnalysisReport outletId={profile.outlet_id} />
-      ) : (
-        <Alert variant="warning">Pilih outlet terlebih dahulu.</Alert>
-      )}
+      <AbcAnalysisReport />
     </div>
   )
 }

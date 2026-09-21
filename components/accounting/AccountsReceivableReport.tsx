@@ -4,6 +4,8 @@ import { useEffect, useState, useCallback } from 'react'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts'
 import { Alert } from '@/components/ui/Alert'
 import { formatCurrency, formatDateTime } from '@/lib/utils/formatting'
+import { OutletSelector } from '@/components/ui/OutletSelector'
+import { ExportCsvButton } from '@/components/ui/ExportCsvButton'
 
 interface CustomerRow {
   key: string
@@ -35,16 +37,18 @@ const BUCKET_COLORS: Record<string, string> = {
   '90+ hari': 'var(--status-critical)',
 }
 
-export function AccountsReceivableReport({ outletId }: { outletId: string }) {
+export function AccountsReceivableReport({ outletId }: { outletId?: string }) {
   const [byCustomer, setByCustomer] = useState<CustomerRow[]>([])
   const [invoices, setInvoices] = useState<InvoiceRow[]>([])
   const [byBucket, setByBucket] = useState<BucketRow[]>([])
   const [note, setNote] = useState('')
+  const [selectedOutlet, setSelectedOutlet] = useState('all')
   const [isLoading, setIsLoading] = useState(true)
+  const effectiveOutlet = outletId ?? selectedOutlet
 
   const load = useCallback(async () => {
     setIsLoading(true)
-    const res = await fetch('/api/reports/accounts-receivable')
+    const res = await fetch(`/api/reports/accounts-receivable?outlet_id=${effectiveOutlet}`)
     const data = await res.json()
     if (res.ok) {
       setByCustomer(data.byCustomer ?? [])
@@ -53,18 +57,23 @@ export function AccountsReceivableReport({ outletId }: { outletId: string }) {
       setNote(data.note ?? '')
     }
     setIsLoading(false)
-  }, [])
+  }, [effectiveOutlet])
 
   useEffect(() => {
     const t = setTimeout(load, 0)
     return () => clearTimeout(t)
-  }, [load, outletId])
+  }, [load])
 
   const totalOutstanding = byCustomer.reduce((s, r) => s + r.total_outstanding, 0)
   const over60Count = invoices.filter((i) => i.days_outstanding > 60).length
 
   return (
     <div className="space-y-4">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div>{!outletId && <OutletSelector value={selectedOutlet} onChange={setSelectedOutlet} />}</div>
+        <ExportCsvButton filename="accounts-receivable" rows={invoices} />
+      </div>
+
       {note && <Alert variant="info">{note}</Alert>}
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">

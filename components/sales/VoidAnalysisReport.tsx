@@ -3,6 +3,9 @@
 import { useEffect, useState, useCallback } from 'react'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts'
 import { formatCurrency, formatDate } from '@/lib/utils/formatting'
+import { DateRangePicker, defaultDateRange, type DateRange } from '@/components/ui/DateRangePicker'
+import { OutletSelector } from '@/components/ui/OutletSelector'
+import { ExportCsvButton } from '@/components/ui/ExportCsvButton'
 
 interface Summary {
   total_invoices: number
@@ -27,17 +30,19 @@ interface DayRow {
   count: number
 }
 
-export function VoidAnalysisReport({ outletId }: { outletId: string }) {
+export function VoidAnalysisReport({ outletId }: { outletId?: string }) {
   const [summary, setSummary] = useState<Summary | null>(null)
   const [byCashier, setByCashier] = useState<CashierRow[]>([])
   const [byReason, setByReason] = useState<ReasonRow[]>([])
   const [byDay, setByDay] = useState<DayRow[]>([])
-  const [days, setDays] = useState(30)
+  const [range, setRange] = useState<DateRange>(() => defaultDateRange(30))
+  const [selectedOutlet, setSelectedOutlet] = useState('all')
   const [isLoading, setIsLoading] = useState(true)
+  const effectiveOutlet = outletId ?? selectedOutlet
 
   const load = useCallback(async () => {
     setIsLoading(true)
-    const res = await fetch(`/api/reports/void-analysis?days=${days}`)
+    const res = await fetch(`/api/reports/void-analysis?outlet_id=${effectiveOutlet}&start=${range.start}&end=${range.end}`)
     const data = await res.json()
     if (res.ok) {
       setSummary(data.summary ?? null)
@@ -46,22 +51,21 @@ export function VoidAnalysisReport({ outletId }: { outletId: string }) {
       setByDay(data.byDay ?? [])
     }
     setIsLoading(false)
-  }, [days])
+  }, [effectiveOutlet, range])
 
   useEffect(() => {
     const t = setTimeout(load, 0)
     return () => clearTimeout(t)
-  }, [load, outletId])
+  }, [load])
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-2">
-        <label className="text-sm font-medium text-gray-700">Periode:</label>
-        <select value={days} onChange={(e) => setDays(Number(e.target.value))} className="rounded-sm border border-gray-200 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--brand-500)]">
-          <option value={7}>7 hari terakhir</option>
-          <option value={30}>30 hari terakhir</option>
-          <option value={90}>90 hari terakhir</option>
-        </select>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          {!outletId && <OutletSelector value={selectedOutlet} onChange={setSelectedOutlet} />}
+          <DateRangePicker value={range} onChange={setRange} />
+        </div>
+        <ExportCsvButton filename="void-analysis-per-kasir" rows={byCashier} />
       </div>
 
       {summary && (

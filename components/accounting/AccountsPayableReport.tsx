@@ -3,6 +3,8 @@
 import { useEffect, useState, useCallback } from 'react'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts'
 import { formatCurrency, formatDate } from '@/lib/utils/formatting'
+import { OutletSelector } from '@/components/ui/OutletSelector'
+import { ExportCsvButton } from '@/components/ui/ExportCsvButton'
 
 interface SupplierRow {
   supplier_id: string
@@ -36,15 +38,17 @@ const BUCKET_COLORS: Record<string, string> = {
   '90+ hari': 'var(--status-critical)',
 }
 
-export function AccountsPayableReport({ outletId }: { outletId: string }) {
+export function AccountsPayableReport({ outletId }: { outletId?: string }) {
   const [bySupplier, setBySupplier] = useState<SupplierRow[]>([])
   const [invoices, setInvoices] = useState<InvoiceRow[]>([])
   const [byBucket, setByBucket] = useState<BucketRow[]>([])
+  const [selectedOutlet, setSelectedOutlet] = useState('all')
   const [isLoading, setIsLoading] = useState(true)
+  const effectiveOutlet = outletId ?? selectedOutlet
 
   const load = useCallback(async () => {
     setIsLoading(true)
-    const res = await fetch('/api/reports/accounts-payable')
+    const res = await fetch(`/api/reports/accounts-payable?outlet_id=${effectiveOutlet}`)
     const data = await res.json()
     if (res.ok) {
       setBySupplier(data.bySupplier ?? [])
@@ -52,18 +56,23 @@ export function AccountsPayableReport({ outletId }: { outletId: string }) {
       setByBucket(data.byBucket ?? [])
     }
     setIsLoading(false)
-  }, [])
+  }, [effectiveOutlet])
 
   useEffect(() => {
     const t = setTimeout(load, 0)
     return () => clearTimeout(t)
-  }, [load, outletId])
+  }, [load])
 
   const totalOutstanding = bySupplier.reduce((s, r) => s + r.total_outstanding, 0)
   const overdueCount = invoices.filter((i) => i.days_overdue > 0).length
 
   return (
     <div className="space-y-4">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div>{!outletId && <OutletSelector value={selectedOutlet} onChange={setSelectedOutlet} />}</div>
+        <ExportCsvButton filename="accounts-payable" rows={invoices} />
+      </div>
+
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <div className="rounded-lg border border-gray-200 p-4">
           <p className="text-sm text-gray-500">Total Hutang Belum Dibayar</p>

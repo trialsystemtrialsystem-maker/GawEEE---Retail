@@ -1,31 +1,35 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getAuthContext, canAccessOutlet } from '@/lib/utils/auth-context'
+import { getAuthContext } from '@/lib/utils/auth-context'
 import { handleDatabaseError } from '@/lib/utils/errors'
+import { resolveDateRange } from '@/lib/utils/dateRange'
+import { resolveOutletScope } from '@/lib/utils/outletScope'
 
 // GET /api/reports/tax-report?outlet_id=&start=&end= — PPN collected per
 // invoice.tax_amount (already computed at sale time by create_invoice()),
-// grouped by month, for the selected range (default: current calendar year).
+// grouped by month, for the selected range (default: current calendar year,
+// in UTC — resolveDateRange()'s boundaries are always UTC-safe, unlike the
+// previous `now.getFullYear()` default here which read the local year).
 export async function GET(request: NextRequest) {
   const auth = await getAuthContext()
   if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const { searchParams } = request.nextUrl
-  const outletId = searchParams.get('outlet_id') ?? auth.outlet_id
-  if (!outletId || !canAccessOutlet(auth, outletId)) {
-    return NextResponse.json({ error: 'Tidak memiliki izin' }, { status: 403 })
-  }
+  const scopeResult = await resolveOutletScope(auth, searchParams.get('outlet_id'))
+  if (!scopeResult.scope) return NextResponse.json({ error: scopeResult.error }, { status: scopeResult.status })
+  const { outletIds } = scopeResult.scope
 
-  const now = new Date()
-  const start = searchParams.get('start') ?? `${now.getFullYear()}-01-01`
-  const end = searchParams.get('end') ?? now.toISOString().slice(0, 10)
+  const currentYear = new Date().toISOString().slice(0, 4)
+  const { startIso, endIso } = searchParams.get('start') && searchParams.get('end')
+    ? resolveDateRange(searchParams)
+    : resolveDateRange(new URLSearchParams({ start: `${currentYear}-01-01`, end: new Date().toISOString().slice(0, 10) }))
 
   const { data, error } = await auth.supabase
     .from('invoices')
     .select('created_at, subtotal, discount_amount, tax_amount, total')
-    .eq('outlet_id', outletId)
+    .in('outlet_id', outletIds)
     .neq('order_status', 'voided')
-    .gte('created_at', `${start}T00:00:00`)
-    .lte('created_at', `${end}T23:59:59`)
+    .gte('created_at', startIso)
+    .lte('created_at', endIso)
 
   if (error) {
     const { status, message } = handleDatabaseError(error)

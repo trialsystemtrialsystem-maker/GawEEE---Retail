@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthContext } from '@/lib/utils/auth-context'
 import { handleDatabaseError } from '@/lib/utils/errors'
+import { resolveDateRange } from '@/lib/utils/dateRange'
+import { resolveOutletScope } from '@/lib/utils/outletScope'
 
-// GET /api/reports/void-analysis?days=30 — voided-sale (cancellation) loss-
+// GET /api/reports/void-analysis?start=&end=&outlet_id= — voided-sale (cancellation) loss-
 // prevention report, standard in enterprise POS/retail systems (a high or
 // spiking void rate — especially concentrated on one cashier — is one of
 // the most common employee-fraud/error signals, e.g. "sweethearting":
@@ -15,19 +17,20 @@ type InvoiceRow = { id: string; total: number; created_at: string; voided_at: st
 export async function GET(request: NextRequest) {
   const auth = await getAuthContext()
   if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  if (!auth.outlet_id) return NextResponse.json({ error: 'Pilih outlet terlebih dahulu' }, { status: 400 })
 
-  const days = Math.min(Number(request.nextUrl.searchParams.get('days') ?? '30'), 365)
-  const start = new Date()
-  start.setDate(start.getDate() - days + 1)
-  start.setHours(0, 0, 0, 0)
+  const { searchParams } = request.nextUrl
+  const scopeResult = await resolveOutletScope(auth, searchParams.get('outlet_id'))
+  if (!scopeResult.scope) return NextResponse.json({ error: scopeResult.error }, { status: scopeResult.status })
+  const { outletIds } = scopeResult.scope
+  const { startIso, endIso } = resolveDateRange(searchParams, 30, 365)
 
   const [invoicesRes, usersRes] = await Promise.all([
     auth.supabase
       .from('invoices')
       .select('id, total, created_at, voided_at, void_reason, cashier_id, order_status')
-      .eq('outlet_id', auth.outlet_id)
-      .gte('created_at', start.toISOString()),
+      .in('outlet_id', outletIds)
+      .gte('created_at', startIso)
+      .lte('created_at', endIso),
     auth.supabase.from('users').select('id, full_name'),
   ])
 
@@ -89,6 +92,5 @@ export async function GET(request: NextRequest) {
     byCashier,
     byReason,
     byDay,
-    days,
   })
 }

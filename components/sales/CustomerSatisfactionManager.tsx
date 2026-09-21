@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/Input'
 import { Alert } from '@/components/ui/Alert'
 import { formatDateTime } from '@/lib/utils/formatting'
 import { useNotificationStore } from '@/store/notificationStore'
+import { ExportCsvButton } from '@/components/ui/ExportCsvButton'
 
 interface Review {
   id: string
@@ -122,7 +123,8 @@ export function CustomerSatisfactionManager({ outletId }: { outletId: string }) 
         </div>
       </div>
 
-      <div className="flex justify-end">
+      <div className="flex justify-end gap-2">
+        <ExportCsvButton filename="customer-satisfaction" rows={reviews} />
         <Button size="sm" onClick={() => setShowForm((v) => !v)}>
           {showForm ? 'Batal' : '+ Catat Ulasan'}
         </Button>
