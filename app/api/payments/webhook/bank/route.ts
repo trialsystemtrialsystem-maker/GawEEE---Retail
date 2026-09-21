@@ -28,13 +28,21 @@ export async function POST(request: NextRequest) {
 
   const { data: va } = await admin
     .from('virtual_accounts')
-    .select('*, invoices(id, total)')
+    .select('*, invoices(id, total, order_status)')
     .eq('va_number', body.virtual_account)
     .single()
 
   if (!va) return NextResponse.json({ error: 'Virtual account not found' }, { status: 404 })
 
-  const invoice = (va as unknown as { invoices: { id: string; total: number } }).invoices
+  const invoice = (va as unknown as { invoices: { id: string; total: number; order_status: string } }).invoices
+
+  // Same void-safety check as the Doku webhook / simulate-success — a
+  // manager can void a sale within 24h while its bank transfer is still
+  // pending; a late transfer confirmation must not resurrect a voided
+  // invoice's payment_status or award loyalty points for it.
+  if (invoice.order_status === 'voided') {
+    return NextResponse.json({ status: 'ignored', reason: 'invoice voided' })
+  }
 
   if (body.amount_received >= invoice.total) {
     await admin

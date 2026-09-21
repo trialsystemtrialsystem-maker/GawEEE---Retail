@@ -1274,6 +1274,28 @@ that too during verification below).
       `usage_count` dropped back by exactly 1, and `CouponManager`'s expanded redemption list correctly
       shows that redemption as "Dibatalkan."
 
+## Phase 24 — Guard payment settlement against a since-voided invoice
+Direct follow-up to Phase 23: checking the reverse direction of the same clock. Phase 23 fixed voiding a
+*settled* sale; this checks what happens to a sale voided while its digital payment is still *pending*.
+Found none of the three routes that settle a pending payment (`simulate-success`, and the Doku/bank
+webhooks — the latter two currently `[!]`-blocked/unreachable without real gateway credentials, same as
+always, but the code path exists and will matter the moment they're connected) checked whether the invoice
+had been voided in the meantime. A manager can void a sale within 24h while its e-wallet/bank payment is
+still awaiting confirmation; without this guard, a late confirmation (a real customer's payment clearing
+after the fact, a stale open tab, or — once real gateways are connected — a delayed webhook) would flip a
+*voided* invoice's `payment_status` back to `'paid'` and award loyalty points for a sale that officially
+no longer exists.
+- [x] All three routes now check `invoices.order_status` before settling: `simulate-success` returns 409
+      (`"Invoice ini sudah dibatalkan"`) so the POS UI can show a real error; the two webhooks return a
+      plain 200 `{status:'ignored'}` instead (never an error status), since a webhook responding with an
+      error code typically triggers the gateway to retry indefinitely, and there is nothing to retry here.
+- [x] Live-verified `simulate-success` end-to-end: created a real e-wallet sale, voided it while the
+      payment was still `pending`, then attempted to confirm that stale payment. Confirmed: rejected with
+      409, the invoice stayed `voided`/`pending` (never flipped to `paid`), and the customer's loyalty
+      balance was unchanged. The Doku/bank webhooks use the identical guard shape but can't be exercised
+      end-to-end in this environment for the same reason nothing else on that path can (no
+      `DOKU_SECRET_KEY`/`BANK_VA_SECRET` — see Phase 4/22).
+
 ## Notes on scope
 This todo tracks the **engineering deliverables** of the PRD (a working Next.js + Supabase codebase
 implementing Phase 1 features, with payment gateways behind a swappable mock interface). Items marked

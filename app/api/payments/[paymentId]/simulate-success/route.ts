@@ -20,6 +20,16 @@ export async function POST(_request: Request, ctx: RouteContext<'/api/payments/[
 
   if (!payment) return NextResponse.json({ error: 'Pembayaran tidak ditemukan' }, { status: 404 })
 
+  // A manager can void a sale within 24h while its digital payment is still
+  // pending (void_invoice(), see todo.md Phase 23's void-reversal follow-up)
+  // — without this check, confirming that stale payment afterward would
+  // flip a voided invoice's payment_status back to 'paid' and award loyalty
+  // points for a sale that no longer exists.
+  const { data: invoiceForVoidCheck } = await auth.supabase.from('invoices').select('order_status').eq('id', payment.invoice_id).maybeSingle()
+  if (invoiceForVoidCheck?.order_status === 'voided') {
+    return NextResponse.json({ error: 'Invoice ini sudah dibatalkan' }, { status: 409 })
+  }
+
   await auth.supabase
     .from('payment_transactions')
     .update({ status: 'settled', settlement_date: new Date().toISOString(), settlement_amount: payment.amount })

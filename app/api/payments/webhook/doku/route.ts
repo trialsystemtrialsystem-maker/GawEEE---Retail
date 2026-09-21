@@ -36,6 +36,15 @@ export async function POST(request: NextRequest) {
 
   if (!payment) return NextResponse.json({ error: 'Payment not found' }, { status: 404 })
 
+  // Same void-safety check as /api/payments/[paymentId]/simulate-success —
+  // a manager can void a sale within 24h while a Doku payment is still
+  // pending; a late webhook confirming it afterward must not resurrect a
+  // voided invoice's payment_status or award loyalty points for it.
+  const { data: invoiceForVoidCheck } = await admin.from('invoices').select('order_status').eq('id', payment.invoice_id).maybeSingle()
+  if (invoiceForVoidCheck?.order_status === 'voided') {
+    return NextResponse.json({ status: 'ignored', reason: 'invoice voided' })
+  }
+
   if (body.status === 'COMPLETED') {
     await admin
       .from('payment_transactions')
