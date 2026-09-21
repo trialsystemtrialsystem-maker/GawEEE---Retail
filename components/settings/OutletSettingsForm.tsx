@@ -17,6 +17,7 @@ interface Outlet {
   geofence_lat: number | null
   geofence_lng: number | null
   geofence_radius_m: number | null
+  target_daily_revenue: number | null
 }
 
 export function OutletSettingsForm({ outlet, canManage }: { outlet: Outlet; canManage: boolean }) {
@@ -29,6 +30,7 @@ export function OutletSettingsForm({ outlet, canManage }: { outlet: Outlet; canM
     geofence_lat: outlet.geofence_lat?.toString() ?? '',
     geofence_lng: outlet.geofence_lng?.toString() ?? '',
     geofence_radius_m: outlet.geofence_radius_m?.toString() ?? '',
+    target_daily_revenue: outlet.target_daily_revenue?.toString() ?? '',
   })
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -51,6 +53,7 @@ export function OutletSettingsForm({ outlet, canManage }: { outlet: Outlet; canM
           geofence_lat: form.geofence_lat ? Number(form.geofence_lat) : null,
           geofence_lng: form.geofence_lng ? Number(form.geofence_lng) : null,
           geofence_radius_m: form.geofence_radius_m ? Number(form.geofence_radius_m) : null,
+          target_daily_revenue: form.target_daily_revenue ? Number(form.target_daily_revenue) : null,
         }),
       })
       const data = await res.json()
@@ -108,6 +111,18 @@ export function OutletSettingsForm({ outlet, canManage }: { outlet: Outlet; canM
             value={form.province}
             onChange={(e) => setForm((f) => ({ ...f, province: e.target.value }))}
           />
+          <div>
+            <Input
+              name="target_daily_revenue"
+              label="Target Penjualan Harian (Rp)"
+              type="number"
+              min="0"
+              disabled={!canManage}
+              value={form.target_daily_revenue}
+              onChange={(e) => setForm((f) => ({ ...f, target_daily_revenue: e.target.value }))}
+            />
+            <p className="mt-1 text-xs text-gray-500">Dipakai di laporan Target vs Aktual. Kosongkan jika belum ingin menetapkan target.</p>
+          </div>
         </div>
 
         <div>

@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { Alert } from '@/components/ui/Alert'
 import { TodayOverview } from '@/components/dashboard/TodayOverview'
+import { TargetVsActualReport } from '@/components/dashboard/TargetVsActualReport'
 import { SalesAnalytics } from '@/components/charts/SalesAnalytics'
 import { SalesReportGrid } from '@/components/dashboard/SalesReportGrid'
 import { Card } from '@/components/ui/Card'
@@ -45,6 +46,11 @@ export default async function OutletDetailPage({ params }: { params: Promise<{ i
       </div>
 
       <TodayOverview lowStockCount={lowStock?.length ?? 0} outletId={id} />
+
+      <div>
+        <h2 className="mb-4 text-lg font-semibold text-gray-900">Target vs Aktual</h2>
+        <TargetVsActualReport outletId={id} />
+      </div>
 
       <Card>
         <h2 className="mb-4 text-lg font-semibold text-gray-900">Peringatan Stok Rendah</h2>

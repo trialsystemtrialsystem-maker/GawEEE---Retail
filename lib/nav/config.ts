@@ -45,6 +45,7 @@ export const PRIMARY_NAV: NavItem[] = [
         icon: '📋',
         items: [
           { label: 'Sales Report', href: '/dashboard/sales' },
+          { label: 'Target vs Aktual', href: '/dashboard/sales/reports/target-vs-actual' },
           { label: 'Kitchen Report', href: '/dashboard/sales/reports/kitchen' },
           { label: 'Product Report', href: '/dashboard/sales/reports/product' },
           { label: 'Service Report', href: '/dashboard/sales/reports/service' },

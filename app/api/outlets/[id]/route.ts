@@ -49,6 +49,7 @@ export async function PATCH(request: NextRequest, ctx: RouteContext<'/api/outlet
     enabled_payment_methods?: string[]
     business_hours?: Record<string, { open: string; close: string }>
     opening_cash?: number
+    target_daily_revenue?: number | null
   } = {}
   if (typeof body.name === 'string') patch.name = body.name
   if (typeof body.address === 'string') patch.address = body.address
@@ -61,6 +62,7 @@ export async function PATCH(request: NextRequest, ctx: RouteContext<'/api/outlet
   if (Array.isArray(body.enabled_payment_methods)) patch.enabled_payment_methods = body.enabled_payment_methods
   if (body.business_hours && typeof body.business_hours === 'object') patch.business_hours = body.business_hours
   if (typeof body.opening_cash === 'number') patch.opening_cash = body.opening_cash
+  if (typeof body.target_daily_revenue === 'number' || body.target_daily_revenue === null) patch.target_daily_revenue = body.target_daily_revenue
 
   const { data, error } = await auth.supabase.from('outlets').update(patch).eq('id', id).select().single()
 

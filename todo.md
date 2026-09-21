@@ -1361,6 +1361,38 @@ just that outlet.
       the outlet drill-down renders identically to `/dashboard` (screenshotted) for a specific outlet,
       correctly showing that outlet's own zero-sales-today state independent of the demo's other outlets.
 
+## Phase 27 — Sales Target vs Actual tracking
+Continuation of the enterprise-analytics sweep: `outlets.target_daily_revenue` has existed in the schema
+(and even in `database.types.ts`) since the very first migration, but was never read or written by any
+route or UI — the exact "defined but never wired" pattern closed repeatedly this session (AR/AP, system
+alerts, loyalty redemption). Target vs. actual is one of the most fundamental tools in any enterprise sales
+system, so this closes it properly rather than just adding a report on top of dead data.
+- [x] `PATCH /api/outlets/:id` and `OutletSettingsForm` (Pengaturan > Outlet Info) gained a "Target
+      Penjualan Harian" field, so a manager/master_admin can actually set the value that's existed unused
+      all along.
+- [x] `GET /api/reports/target-vs-actual` (`outlet_id` optional, same master_admin drill-down override as
+      the other Phase 26 report APIs) — today's achievement %, month-to-date actual vs. target, a full-month
+      projection, and the daily pace still needed to hit it. New `TargetVsActualReport` surfaced in three
+      places: its own page, the main `/dashboard` (right under Today's Overview — where an owner actually
+      checks daily), and the outlet drill-down page.
+- [x] **Real timezone bug found and fixed before shipping**: the route's own date-boundary/day-key logic
+      used local-timezone `Date` construction (`new Date(year, month, day)`, `.getDate()`) while
+      `invoices.created_at` is a UTC `timestamptz` compared/grouped by its UTC calendar date everywhere
+      else in the app. On this UTC+7 dev machine that silently shifted every date boundary by up to a day —
+      the month-start query filter leaked ~7 hours of the *previous* month's invoices into the MTD total,
+      and the daily chart's date keys were mislabeled by one day, which also made `today`'s actual always
+      read as 0 (its lookup key never matched a real day in the shifted map). Caught by cross-checking the
+      API's numbers against a raw, independent DB query rather than just eyeballing the chart. Fixed by
+      switching every boundary/key to UTC-safe construction (`Date.UTC(...)`, `.getUTCDate()`, etc.) —
+      re-verified against the same raw query afterward, exact match (MTD total and a spot-checked day both
+      matched precisely; today's actual correctly read 0, matching an independent count of 0 real invoices
+      today rather than the bug coincidentally also producing 0).
+- [!] Given how easily this bug class slipped in, worth auditing the *other* report routes doing day/month
+      bucketing (`sales-trend`, `peak-time`, `daily-summary`, `new-vs-returning`, `void-analysis`, the
+      admin outlet hourly/daily routes) for the same local-vs-UTC mismatch — investigation in progress,
+      not yet confirmed which (if any) of those are actually affected or how serious each one is before
+      deciding what, if anything, needs fixing there too.
+
 ## Notes on scope
 This todo tracks the **engineering deliverables** of the PRD (a working Next.js + Supabase codebase
 implementing Phase 1 features, with payment gateways behind a swappable mock interface). Items marked
