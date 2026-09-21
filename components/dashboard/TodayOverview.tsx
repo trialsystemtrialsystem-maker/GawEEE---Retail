@@ -16,12 +16,12 @@ interface DailySummary {
 // nightly-job material, see todo.md), so the overview always showed zeros
 // regardless of actual sales. Uses the live-computed report endpoint instead,
 // the same one the financial dashboard and POS already rely on.
-export function TodayOverview({ lowStockCount }: { lowStockCount: number }) {
+export function TodayOverview({ lowStockCount, outletId }: { lowStockCount: number; outletId?: string }) {
   const [data, setData] = useState<DailySummary | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    fetch('/api/reports/daily-summary')
+    fetch(outletId ? `/api/reports/daily-summary?outlet_id=${outletId}` : '/api/reports/daily-summary')
       .then(async (res) => {
         const json = await res.json()
         if (!res.ok) {
@@ -31,7 +31,7 @@ export function TodayOverview({ lowStockCount }: { lowStockCount: number }) {
         setData(json)
       })
       .catch(() => setError('Terjadi kesalahan jaringan'))
-  }, [])
+  }, [outletId])
 
   return (
     <div className="space-y-4">

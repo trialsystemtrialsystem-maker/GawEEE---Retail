@@ -1,14 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getAuthContext } from '@/lib/utils/auth-context'
+import { getAuthContext, canAccessOutlet } from '@/lib/utils/auth-context'
 
-// GET /api/reports/sales-trend?days=90 — daily revenue/profit series for
-// charting, plus a current-vs-previous-period comparison and a revenue-by-
-// category breakdown. Not in the original prd.md spec — added to back the
-// dashboard's trend chart and comparison cards.
+// GET /api/reports/sales-trend?days=90&outlet_id= — daily revenue/profit
+// series for charting, plus a current-vs-previous-period comparison and a
+// revenue-by-category breakdown. Not in the original prd.md spec — added to
+// back the dashboard's trend chart and comparison cards. outlet_id is
+// optional (defaults to the caller's own outlet) — only needed for a
+// master_admin inspecting one specific outlet (Phase 26 drill-down).
 export async function GET(request: NextRequest) {
   const auth = await getAuthContext()
   if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  if (!auth.outlet_id) return NextResponse.json({ error: 'Pilih outlet terlebih dahulu' }, { status: 400 })
+
+  const outletId = request.nextUrl.searchParams.get('outlet_id') ?? auth.outlet_id
+  if (!outletId) return NextResponse.json({ error: 'Pilih outlet terlebih dahulu' }, { status: 400 })
+  if (!canAccessOutlet(auth, outletId)) return NextResponse.json({ error: 'Tidak memiliki izin' }, { status: 403 })
 
   const days = Math.min(Number(request.nextUrl.searchParams.get('days') ?? '90'), 180)
   const granularity = request.nextUrl.searchParams.get('granularity') ?? 'daily'
@@ -22,7 +27,7 @@ export async function GET(request: NextRequest) {
   const { data: invoices, error } = await auth.supabase
     .from('invoices')
     .select('id, created_at, total, order_status, invoice_items(quantity, cost_of_goods_sold, products(category_id, product_categories(name)))')
-    .eq('outlet_id', auth.outlet_id)
+    .eq('outlet_id', outletId)
     .neq('order_status', 'voided')
     .gte('created_at', startPrevious.toISOString())
 

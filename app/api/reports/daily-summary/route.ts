@@ -1,16 +1,22 @@
-import { NextResponse } from 'next/server'
-import { getAuthContext } from '@/lib/utils/auth-context'
+import { NextRequest, NextResponse } from 'next/server'
+import { getAuthContext, canAccessOutlet } from '@/lib/utils/auth-context'
 
-// GET /api/reports/daily-summary — see prd.md §4.6.
+// GET /api/reports/daily-summary?outlet_id= — see prd.md §4.6. outlet_id is
+// optional and only needed for a master_admin inspecting one specific
+// outlet from the Outlet leaderboard drill-down (Phase 26) — defaults to
+// the caller's own outlet otherwise.
 //
 // Computed live from invoices/invoice_items rather than read from
 // daily_financial_summary, since nothing populates that table yet (it's
 // meant to be filled by a nightly job — see roadmap.md's materialized-view
 // note; out of scope until Phase 2's scheduling infra exists).
-export async function GET() {
+export async function GET(request: NextRequest) {
   const auth = await getAuthContext()
   if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  if (!auth.outlet_id) return NextResponse.json({ error: 'Pilih outlet terlebih dahulu' }, { status: 400 })
+
+  const outletId = request.nextUrl.searchParams.get('outlet_id') ?? auth.outlet_id
+  if (!outletId) return NextResponse.json({ error: 'Pilih outlet terlebih dahulu' }, { status: 400 })
+  if (!canAccessOutlet(auth, outletId)) return NextResponse.json({ error: 'Tidak memiliki izin' }, { status: 403 })
 
   const today = new Date().toISOString().slice(0, 10)
   const startOfDay = `${today}T00:00:00`
@@ -23,18 +29,18 @@ export async function GET() {
     auth.supabase
       .from('invoices')
       .select('*, invoice_items(quantity, cost_of_goods_sold)')
-      .eq('outlet_id', auth.outlet_id)
+      .eq('outlet_id', outletId)
       .neq('order_status', 'voided')
       .gte('created_at', startOfDay)
       .lte('created_at', endOfDay),
     auth.supabase
       .from('payment_transactions')
       .select('payment_method, amount, invoices!inner(outlet_id)')
-      .eq('invoices.outlet_id', auth.outlet_id)
+      .eq('invoices.outlet_id', outletId)
       .gte('created_at', startOfDay)
       .lte('created_at', endOfDay),
-    auth.supabase.from('outlets').select('opening_cash').eq('id', auth.outlet_id).single(),
-    auth.supabase.from('v_low_stock_alerts').select('name').eq('outlet_id', auth.outlet_id).limit(5),
+    auth.supabase.from('outlets').select('opening_cash').eq('id', outletId).single(),
+    auth.supabase.from('v_low_stock_alerts').select('name').eq('outlet_id', outletId).limit(5),
   ])
 
   const rows = invoices ?? []

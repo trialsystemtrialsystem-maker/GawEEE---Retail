@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
+import Link from 'next/link'
 import { KPICard } from '@/components/dashboard/KPICard'
 import { Card } from '@/components/ui/Card'
 import { Alert } from '@/components/ui/Alert'
@@ -257,13 +258,37 @@ export function OutletPerformance() {
               </thead>
               <tbody className="divide-y divide-gray-100">
                 {sorted.map((outlet, i) => (
-                  <tr key={outlet.outlet_id}>
-                    <td className="py-2 pr-4 text-gray-400">{i + 1}</td>
-                    <td className="py-2 pr-4 font-medium text-gray-900">{outlet.outlet_name}</td>
-                    <td className="py-2 pr-4 text-right text-gray-700">{formatCurrency(outlet.revenue_mtd)}</td>
-                    <td className="py-2 pr-4 text-right text-gray-700">{formatPercent(outlet.profit_margin_percent / 100)}</td>
-                    <td className="py-2 pr-4 text-right text-gray-700">{outlet.transaction_count}</td>
-                    <td className="py-2 pr-4 text-right text-gray-700">{outlet.staff_count}</td>
+                  <tr key={outlet.outlet_id} className="cursor-pointer hover:bg-gray-50">
+                    <td className="py-2 pr-4 text-gray-400">
+                      <Link href={`/dashboard/admin/outlets/${outlet.outlet_id}`} className="block">
+                        {i + 1}
+                      </Link>
+                    </td>
+                    <td className="py-2 pr-4 font-medium text-[var(--brand-600)]">
+                      <Link href={`/dashboard/admin/outlets/${outlet.outlet_id}`} className="hover:underline">
+                        {outlet.outlet_name}
+                      </Link>
+                    </td>
+                    <td className="py-2 pr-4 text-right text-gray-700">
+                      <Link href={`/dashboard/admin/outlets/${outlet.outlet_id}`} className="block">
+                        {formatCurrency(outlet.revenue_mtd)}
+                      </Link>
+                    </td>
+                    <td className="py-2 pr-4 text-right text-gray-700">
+                      <Link href={`/dashboard/admin/outlets/${outlet.outlet_id}`} className="block">
+                        {formatPercent(outlet.profit_margin_percent / 100)}
+                      </Link>
+                    </td>
+                    <td className="py-2 pr-4 text-right text-gray-700">
+                      <Link href={`/dashboard/admin/outlets/${outlet.outlet_id}`} className="block">
+                        {outlet.transaction_count}
+                      </Link>
+                    </td>
+                    <td className="py-2 pr-4 text-right text-gray-700">
+                      <Link href={`/dashboard/admin/outlets/${outlet.outlet_id}`} className="block">
+                        {outlet.staff_count}
+                      </Link>
+                    </td>
                   </tr>
                 ))}
               </tbody>

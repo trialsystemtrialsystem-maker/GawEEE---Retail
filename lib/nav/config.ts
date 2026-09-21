@@ -69,6 +69,9 @@ export const PRIMARY_NAV: NavItem[] = [
           { label: 'Customer Satisfaction', href: '/dashboard/sales/analysis/customer-satisfaction' },
           { label: 'Segmentasi Pelanggan (RFM)', href: '/dashboard/sales/analysis/customer-segmentation' },
           { label: 'Analisis ABC Produk', href: '/dashboard/sales/analysis/abc-product' },
+          { label: 'Market Basket', href: '/dashboard/sales/analysis/market-basket' },
+          { label: 'Pelanggan Baru vs Lama', href: '/dashboard/sales/analysis/new-vs-returning' },
+          { label: 'Analisis Pembatalan', href: '/dashboard/sales/analysis/void-analysis' },
         ],
       },
       {

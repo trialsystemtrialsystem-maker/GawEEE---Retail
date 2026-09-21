@@ -36,14 +36,14 @@ function EmptyState({ label }: { label: string }) {
   return <p className="py-8 text-center text-sm text-gray-400">{label}</p>
 }
 
-export function SalesReportGrid({ days }: { days: number }) {
+export function SalesReportGrid({ days, outletId }: { days: number; outletId?: string }) {
   const [data, setData] = useState<Breakdown | null>(null)
 
   const load = useCallback(async () => {
-    const res = await fetch(`/api/reports/sales-breakdown?days=${days}`)
+    const res = await fetch(`/api/reports/sales-breakdown?days=${days}${outletId ? `&outlet_id=${outletId}` : ''}`)
     const json = await res.json()
     if (res.ok) setData(json)
-  }, [days])
+  }, [days, outletId])
 
   useEffect(() => {
     const timeout = setTimeout(load, 0)

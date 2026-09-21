@@ -28,7 +28,7 @@ const GRANULARITY_OPTIONS = [
   { label: 'Monthly', value: 'monthly' },
 ] as const
 
-export function SalesAnalytics() {
+export function SalesAnalytics({ outletId }: { outletId?: string } = {}) {
   const [days, setDays] = useState(30)
   const [granularity, setGranularity] = useState<(typeof GRANULARITY_OPTIONS)[number]['value']>('daily')
   const [data, setData] = useState<TrendResponse | null>(null)
@@ -37,7 +37,7 @@ export function SalesAnalytics() {
   const load = useCallback(async () => {
     setError(null)
     try {
-      const res = await fetch(`/api/reports/sales-trend?days=${days}&granularity=${granularity}`)
+      const res = await fetch(`/api/reports/sales-trend?days=${days}&granularity=${granularity}${outletId ? `&outlet_id=${outletId}` : ''}`)
       const json = await res.json()
       if (!res.ok) {
         setError(json.error ?? 'Gagal memuat data tren')
@@ -47,7 +47,7 @@ export function SalesAnalytics() {
     } catch {
       setError('Terjadi kesalahan jaringan')
     }
-  }, [days, granularity])
+  }, [days, granularity, outletId])
 
   useEffect(() => {
     const timeout = setTimeout(load, 0)

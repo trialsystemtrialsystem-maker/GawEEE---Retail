@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getAuthContext } from '@/lib/utils/auth-context'
+import { getAuthContext, canAccessOutlet } from '@/lib/utils/auth-context'
 
 type InvoiceRow = {
   id: string
@@ -15,13 +15,19 @@ type InvoiceRow = {
 
 type PaymentRow = { payment_method: string; amount: number; invoices: { outlet_id: string } | { outlet_id: string }[] }
 
-// GET /api/reports/sales-breakdown?days=30 — payment-method totals, best
-// sellers, sales+commission per cashier, and a fraud-control watchlist of
-// voided invoices, for the Sales Dashboard report grid (mockup images 1-3).
+// GET /api/reports/sales-breakdown?days=30&outlet_id= — payment-method
+// totals, best sellers, sales+commission per cashier, and a fraud-control
+// watchlist of voided invoices, for the Sales Dashboard report grid (mockup
+// images 1-3). outlet_id is optional (defaults to the caller's own outlet)
+// — only needed for a master_admin inspecting one specific outlet (Phase 26
+// drill-down).
 export async function GET(request: NextRequest) {
   const auth = await getAuthContext()
   if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  if (!auth.outlet_id) return NextResponse.json({ error: 'Pilih outlet terlebih dahulu' }, { status: 400 })
+
+  const outletId = request.nextUrl.searchParams.get('outlet_id') ?? auth.outlet_id
+  if (!outletId) return NextResponse.json({ error: 'Pilih outlet terlebih dahulu' }, { status: 400 })
+  if (!canAccessOutlet(auth, outletId)) return NextResponse.json({ error: 'Tidak memiliki izin' }, { status: 403 })
 
   const days = Math.min(Number(request.nextUrl.searchParams.get('days') ?? '30'), 180)
   const start = new Date()
@@ -34,25 +40,25 @@ export async function GET(request: NextRequest) {
       .select(
         'id, total, cashier_id, created_at, order_status, voided_at, voided_by, void_reason, invoice_items(product_id, quantity, unit_price, item_discount, products(name))'
       )
-      .eq('outlet_id', auth.outlet_id)
+      .eq('outlet_id', outletId)
       .gte('created_at', start.toISOString()),
     auth.supabase
       .from('payment_transactions')
       .select('payment_method, amount, invoices!inner(outlet_id)')
-      .eq('invoices.outlet_id', auth.outlet_id)
+      .eq('invoices.outlet_id', outletId)
       .eq('status', 'settled')
       .gte('created_at', start.toISOString()),
     auth.supabase.from('users').select('id, full_name, email').eq('company_id', auth.company_id),
-    auth.supabase.from('staff_members').select('email, commission_rate').eq('outlet_id', auth.outlet_id),
+    auth.supabase.from('staff_members').select('email, commission_rate').eq('outlet_id', outletId),
     auth.supabase
       .from('v_low_stock_alerts')
       .select('product_id, name, quantity_on_hand, reorder_level')
-      .eq('outlet_id', auth.outlet_id)
+      .eq('outlet_id', outletId)
       .limit(10),
     auth.supabase
       .from('online_orders')
       .select('total_amount')
-      .eq('outlet_id', auth.outlet_id)
+      .eq('outlet_id', outletId)
       .neq('status', 'cancelled')
       .gte('created_at', start.toISOString()),
   ])

@@ -1327,6 +1327,40 @@ following the exact established report pattern (API + chart + table, added under
       agree across all 10 demo customers, and ABC's cumulative-% column is confirmed monotonically
       non-decreasing and reaches exactly 100%.
 
+## Phase 26 — More enterprise sales analytics + per-outlet dashboard drill-down
+Continuation of Phase 25's enterprise-analytics comparison, plus a mid-turn user request: clicking an
+outlet in the Master Admin leaderboard should show a full dashboard identical to `/dashboard`, scoped to
+just that outlet.
+- [x] **Market Basket Analysis** (`/dashboard/sales/analysis/market-basket`) — "customers who bought X
+      also bought Y," computed from real invoice baskets with standard association-rule metrics (support,
+      confidence, lift). One query for all items in the window, grouped into baskets in memory (not N+1 per
+      invoice); oversized baskets (16+ distinct items) are excluded as noise, not a real cross-sell signal.
+- [x] **New vs Returning Customer** (`/dashboard/sales/analysis/new-vs-returning`) — monthly customer count
+      and revenue split by acquisition (first-ever purchase in that month) vs. retention, the standard
+      growth-composition KPI on every enterprise sales dashboard (Shopify Analytics, Square, Amplitude).
+      Needs each customer's full purchase history (not just the windowed slice) to correctly classify which
+      month they count as "new" in.
+- [x] **Void/Cancellation Analysis** (`/dashboard/sales/analysis/void-analysis`) — loss-prevention report:
+      void rate and value overall, per-cashier (grouped by the ORIGINAL cashier who rang the sale, not who
+      approved the void — void_invoice() requires manager+, so that's never the interesting signal), by
+      reason, and a daily trend. A concentrated or spiking void rate on one cashier is one of the most
+      common employee-fraud signals in retail (e.g. "sweethearting").
+- [x] **Per-outlet dashboard drill-down** — clicking a row in the Outlet leaderboard now opens
+      `/dashboard/admin/outlets/:id`, rendering the exact same components as the main `/dashboard`
+      (TodayOverview, low-stock list, SalesAnalytics, SalesReportGrid) but scoped to that one outlet
+      instead of the caller's own. Required adding an optional `outlet_id` query-param override (with a
+      `canAccessOutlet` permission check) to the three report APIs backing those components
+      (`daily-summary`, `sales-trend`, `sales-breakdown`), which previously only ever read the caller's own
+      `auth.outlet_id` — non-breaking for every existing caller, since the param defaults to that same
+      value when omitted.
+- [x] Live-verified all four: Market Basket found real, sensible pairs (top lift 8.93x, "Wortel Potong Beku
+      500gr" + "Bumbu Soto Instan 200gr"); New vs Returning showed the expected shape (10 customers all
+      acquired in one earlier month, 89.9% of revenue since from returning transactions — matches a fixed
+      10-customer demo roster); Void Analysis correctly picked up the real test-void invoices created
+      earlier this session (Phase 23/24's verification voids) with accurate reasons and a 1.4% void rate;
+      the outlet drill-down renders identically to `/dashboard` (screenshotted) for a specific outlet,
+      correctly showing that outlet's own zero-sales-today state independent of the demo's other outlets.
+
 ## Notes on scope
 This todo tracks the **engineering deliverables** of the PRD (a working Next.js + Supabase codebase
 implementing Phase 1 features, with payment gateways behind a swappable mock interface). Items marked
