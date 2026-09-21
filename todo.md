@@ -1248,6 +1248,32 @@ right there unused.
       which is what the new code actually does differently — the surrounding webhook auth/signature logic
       is unrelated, pre-existing, and already covered by that same blocked-on-credentials note.
 
+## Phase 23 — Reverse coupon/loyalty side effects when a sale is voided
+Follow-up audit on the additive-follow-up pattern itself: every sales-identification feature this session
+(coupon redemption tracking, loyalty auto-earn, loyalty point redemption) was deliberately built as a
+non-atomic follow-up after `create_invoice()` rather than a change to it — but `void_invoice()` was never
+given the mirror-image treatment. Checked and confirmed: voiding a sale reverses stock and payment status
+only. A customer who earned or redeemed loyalty points on a sale later voided within the 24h window kept
+that ledger change regardless — free points from a cancelled sale, or real points lost for one. A coupon's
+`usage_count` stayed incremented too, wrongly burning into its `usage_limit` for a sale that no longer
+counts. `promotion_applications` needed no fix — it has no usage counter to begin with (already disclosed
+in Promo & Loyalty Report), and its audit trail already correctly shows "Dibatalkan" via the existing join
+to `invoices.order_status` (same join `coupon_redemptions`'s display already used, confirmed working for
+that too during verification below).
+- [x] `POST /api/invoices/:id/void` gained a best-effort, non-blocking follow-up after the `void_invoice()`
+      RPC succeeds (same trade-off as everywhere else this pattern is used — a failure here must never
+      surface as an error once the void itself already went through): for every `loyalty_ledger` row tied
+      to the voided invoice, inserts a reversal row with the opposite `points_change` (not a delete, so the
+      original earn/redeem stays visible in history, same as reversing rather than deleting elsewhere in
+      this codebase) with the reason `Pembatalan transaksi {invoice_number}`; for every `coupon_redemptions`
+      row tied to it, decrements that coupon's `usage_count` by 1 (floored at 0).
+- [x] Live-verified end-to-end: a real POS sale redeeming 10 loyalty points and applying coupon `HEMAT10`
+      (auto-earning 13 new points on top), then voided within the 24h window. Confirmed: the invoice's net
+      `loyalty_ledger` change is exactly 0 (two reversal rows exactly offsetting the original two), the
+      customer's overall balance landed back at precisely its pre-transaction value, `HEMAT10`'s
+      `usage_count` dropped back by exactly 1, and `CouponManager`'s expanded redemption list correctly
+      shows that redemption as "Dibatalkan."
+
 ## Notes on scope
 This todo tracks the **engineering deliverables** of the PRD (a working Next.js + Supabase codebase
 implementing Phase 1 features, with payment gateways behind a swappable mock interface). Items marked
