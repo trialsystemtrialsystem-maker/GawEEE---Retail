@@ -67,6 +67,8 @@ export const PRIMARY_NAV: NavItem[] = [
           { label: 'Sales Peak Time', href: '/dashboard/sales/analysis/sales-peak-time' },
           { label: 'Stock Turnover', href: '/dashboard/sales/analysis/stock-turnover' },
           { label: 'Customer Satisfaction', href: '/dashboard/sales/analysis/customer-satisfaction' },
+          { label: 'Segmentasi Pelanggan (RFM)', href: '/dashboard/sales/analysis/customer-segmentation' },
+          { label: 'Analisis ABC Produk', href: '/dashboard/sales/analysis/abc-product' },
         ],
       },
       {

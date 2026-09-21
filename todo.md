@@ -1296,6 +1296,37 @@ no longer exists.
       end-to-end in this environment for the same reason nothing else on that path can (no
       `DOKU_SECRET_KEY`/`BANK_VA_SECRET` — see Phase 4/22).
 
+## Phase 25 — Enterprise-grade sales analytics: RFM segmentation + ABC product analysis
+User asked to compare against what large enterprise systems (SAP, Oracle, Salesforce-class CRM/retail
+tools) typically ship for sales identification — by customer, by hour, by product — and close any real
+gap. Sales-by-hour (`peak-time`, both sales and product, plus day-of-week in the same endpoint) and
+sales-by-product (Product Report, Product Peak Time, Stock Turnover) were already fully covered. Customer
+identification had only raw totals (Customer Summary Report: spend/visits/last-visit) — missing the
+segmentation layer every enterprise CRM ships on top of that (RFM: Recency/Frequency/Monetary scoring into
+actionable segments). Product identification was missing the classic retail/merchandising Pareto tool
+(ABC analysis) for deciding stock-control priority. Both built as live-computed reports, no new tables,
+following the exact established report pattern (API + chart + table, added under "Report Analysis").
+- [x] **RFM Customer Segmentation** (`/dashboard/sales/analysis/customer-segmentation`) — quintile-scores
+      every registered customer with phone-matched purchase history on Recency/Frequency/Monetary (1-5
+      each), then classifies into 8 standard segments (Champions, Loyal, Potential, New, At Risk, Can't
+      Lose Them, Hibernating, Need Attention) each with a concrete recommended action in the UI — the part
+      that makes RFM actually useful to a sales head, not just a score. Same phone-matching disclosure as
+      every other invoice-to-customer report in this codebase.
+- [x] **ABC Product Analysis** (`/dashboard/sales/analysis/abc-product`) — classic Pareto classification by
+      revenue contribution (Class A ≈ top 80% of revenue, B ≈ next 15%, C ≈ remaining 5%), selectable
+      30/90/365-day window, per-product revenue/profit/cumulative-%, plus a class-level summary with the
+      stock-control implication for each class.
+- [x] **Real bug found and fixed during live verification**: RFM's Frequency and Monetary scores were
+      exactly inverted — the highest-spending, most-frequent customer in the demo data (Rudi Hartono,
+      48 purchases, Rp11.9M) scored F=1/M=1 (worst) while the lowest-value customer scored F=5/M=5 (best).
+      Caught by sorting the full customer list by monetary value and checking the score ordering by eye,
+      not just checking the API returned 200 with values in the 1-5 range — the bug: recency, frequency,
+      and monetary all reused the same "ascending sort, rank 0 = best score" formula, which is only correct
+      for recency (fewer days is better); frequency/monetary needed a descending sort since more is better
+      there. Fixed by sorting those two descending instead. Re-verified: value order and score order now
+      agree across all 10 demo customers, and ABC's cumulative-% column is confirmed monotonically
+      non-decreasing and reaches exactly 100%.
+
 ## Notes on scope
 This todo tracks the **engineering deliverables** of the PRD (a working Next.js + Supabase codebase
 implementing Phase 1 features, with payment gateways behind a swappable mock interface). Items marked
