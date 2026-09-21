@@ -1,8 +1,8 @@
 import { createClient } from '@/lib/supabase/server'
-import { OutletMasterData } from '@/components/admin/OutletMasterData'
+import { OutletPerformance } from '@/components/admin/OutletPerformance'
 import { Alert } from '@/components/ui/Alert'
 
-export default async function AdminOutletsPage() {
+export default async function OutletIdentificationPage() {
   const supabase = await createClient()
   const {
     data: { session },
@@ -17,10 +17,10 @@ export default async function AdminOutletsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Outlets</h1>
-        <p className="text-gray-500">Data master outlet — untuk performa penjualan per outlet, lihat menu Sales &gt; Outlet.</p>
+        <h1 className="text-2xl font-bold text-gray-900">Identifikasi Outlet</h1>
+        <p className="text-gray-500">Performa penjualan per outlet — klik salah satu outlet untuk melihat detailnya.</p>
       </div>
-      <OutletMasterData />
+      <OutletPerformance />
     </div>
   )
 }

@@ -1,5 +1,7 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { getAuthContext } from '@/lib/utils/auth-context'
+import { resolveDateRange } from '@/lib/utils/dateRange'
+import { resolveOutletScope } from '@/lib/utils/outletScope'
 
 type InvoiceRow = {
   customer_name: string | null
@@ -9,24 +11,32 @@ type InvoiceRow = {
   order_status: string
 }
 
-// GET /api/reports/customer-summary — per-customer lifetime spend, visit
-// count, last visit. Matches invoices to a known customer by phone
-// (primary) then falls back to grouping by the raw name typed at checkout
-// when no phone was captured — there's no FK from invoices to customers, so
-// a walk-in sale with no phone can't be attributed to a specific customer
-// record and is grouped under its name only.
-export async function GET() {
+// GET /api/reports/customer-summary?outlet_id=&start=&end= — per-customer
+// spend, visit count, last visit within the selected range. Matches
+// invoices to a known customer by phone (primary) then falls back to
+// grouping by the raw name typed at checkout when no phone was captured —
+// there's no FK from invoices to customers, so a walk-in sale with no phone
+// can't be attributed to a specific customer record and is grouped under
+// its name only.
+export async function GET(request: NextRequest) {
   const auth = await getAuthContext()
   if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  if (!auth.outlet_id) return NextResponse.json({ error: 'Pilih outlet terlebih dahulu' }, { status: 400 })
+
+  const { searchParams } = request.nextUrl
+  const scopeResult = await resolveOutletScope(auth, searchParams.get('outlet_id'))
+  if (!scopeResult.scope) return NextResponse.json({ error: scopeResult.error }, { status: scopeResult.status })
+  const { outletIds } = scopeResult.scope
+  const { startIso, endIso } = resolveDateRange(searchParams, 36500, 36500) // customer summary is lifetime-by-default — a huge default window rather than a hardcoded "no filter" path, so the same start/end params still narrow it down when given
 
   const [invoicesRes, customersRes] = await Promise.all([
     auth.supabase
       .from('invoices')
       .select('customer_name, customer_phone, total, created_at, order_status')
-      .eq('outlet_id', auth.outlet_id)
-      .not('customer_name', 'is', null),
-    auth.supabase.from('customers').select('id, name, phone').eq('outlet_id', auth.outlet_id),
+      .in('outlet_id', outletIds)
+      .not('customer_name', 'is', null)
+      .gte('created_at', startIso)
+      .lte('created_at', endIso),
+    auth.supabase.from('customers').select('id, name, phone').in('outlet_id', outletIds),
   ])
 
   const invoices = ((invoicesRes.data ?? []) as InvoiceRow[]).filter((i) => i.order_status !== 'voided')

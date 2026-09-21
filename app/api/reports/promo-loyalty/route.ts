@@ -1,20 +1,26 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { getAuthContext } from '@/lib/utils/auth-context'
 import { handleDatabaseError } from '@/lib/utils/errors'
+import { resolveOutletScope } from '@/lib/utils/outletScope'
 
-// GET /api/reports/promo-loyalty — coupon usage, loyalty points issued vs
-// redeemed per month, and the active promotions list. Promotions have no
-// usage-tracking column in the schema (confirmed) — only coupons/loyalty
-// get real usage numbers here, disclosed in the response.
-export async function GET() {
+// GET /api/reports/promo-loyalty?outlet_id= — coupon usage, loyalty points
+// issued vs redeemed per month, and the active promotions list. Promotions
+// have no usage-tracking column in the schema (confirmed) — only coupons/
+// loyalty get real usage numbers here, disclosed in the response. Coupons/
+// promotions are current-state lists (not date-filtered), so only the
+// outlet scope applies here, not a date range.
+export async function GET(request: NextRequest) {
   const auth = await getAuthContext()
   if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  if (!auth.outlet_id) return NextResponse.json({ error: 'Pilih outlet terlebih dahulu' }, { status: 400 })
+
+  const scopeResult = await resolveOutletScope(auth, request.nextUrl.searchParams.get('outlet_id'))
+  if (!scopeResult.scope) return NextResponse.json({ error: scopeResult.error }, { status: scopeResult.status })
+  const { outletIds } = scopeResult.scope
 
   const [couponsRes, promotionsRes, customersRes] = await Promise.all([
-    auth.supabase.from('coupons').select('code, discount_type, discount_value, usage_count, usage_limit, is_active').eq('outlet_id', auth.outlet_id).order('usage_count', { ascending: false }),
-    auth.supabase.from('promotions').select('name, discount_type, discount_value, start_date, end_date, is_active').eq('outlet_id', auth.outlet_id).eq('is_active', true),
-    auth.supabase.from('customers').select('id').eq('outlet_id', auth.outlet_id),
+    auth.supabase.from('coupons').select('code, discount_type, discount_value, usage_count, usage_limit, is_active').in('outlet_id', outletIds).order('usage_count', { ascending: false }),
+    auth.supabase.from('promotions').select('name, discount_type, discount_value, start_date, end_date, is_active').in('outlet_id', outletIds).eq('is_active', true),
+    auth.supabase.from('customers').select('id').in('outlet_id', outletIds),
   ])
 
   if (couponsRes.error) {

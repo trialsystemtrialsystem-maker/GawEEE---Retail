@@ -3,6 +3,8 @@
 import { useEffect, useState, useCallback } from 'react'
 import { formatCurrency } from '@/lib/utils/formatting'
 import { ExportCsvButton } from '@/components/ui/ExportCsvButton'
+import { DateRangePicker, defaultDateRange, type DateRange } from '@/components/ui/DateRangePicker'
+import { OutletSelector } from '@/components/ui/OutletSelector'
 
 interface EmployeeRow {
   cashier_id: string
@@ -12,18 +14,20 @@ interface EmployeeRow {
   commission: number
 }
 
-export function EmployeeReport({ outletId }: { outletId: string }) {
+export function EmployeeReport({ outletId }: { outletId?: string }) {
   const [rows, setRows] = useState<EmployeeRow[]>([])
-  const [days, setDays] = useState(30)
+  const [range, setRange] = useState<DateRange>(() => defaultDateRange(30))
+  const [selectedOutlet, setSelectedOutlet] = useState('all')
   const [isLoading, setIsLoading] = useState(true)
+  const effectiveOutlet = outletId ?? selectedOutlet
 
   const load = useCallback(async () => {
     setIsLoading(true)
-    const res = await fetch(`/api/reports/sales-breakdown?outlet_id=${outletId}&days=${days}`)
+    const res = await fetch(`/api/reports/sales-breakdown?outlet_id=${effectiveOutlet}&start=${range.start}&end=${range.end}`)
     const data = await res.json()
     if (res.ok) setRows(data.cashierSales ?? [])
     setIsLoading(false)
-  }, [outletId, days])
+  }, [effectiveOutlet, range])
 
   useEffect(() => {
     const timeout = setTimeout(load, 0)
@@ -33,18 +37,11 @@ export function EmployeeReport({ outletId }: { outletId: string }) {
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex gap-1 rounded-md border border-gray-200 p-1 w-fit">
-          {[30, 90].map((d) => (
-            <button
-              key={d}
-              onClick={() => setDays(d)}
-              className={`rounded px-3 py-1 text-sm font-medium ${days === d ? 'bg-brand-500 text-white' : 'text-gray-600 hover:bg-gray-100'}`}
-            >
-              {d} Hari
-            </button>
-          ))}
+        <div className="flex flex-wrap items-center gap-2">
+          {!outletId && <OutletSelector value={selectedOutlet} onChange={setSelectedOutlet} />}
+          <DateRangePicker value={range} onChange={setRange} />
         </div>
-        <ExportCsvButton filename={`employee-report-${days}hari`} rows={rows} />
+        <ExportCsvButton filename={`employee-report-${range.start}-${range.end}`} rows={rows} />
       </div>
 
       <div className="overflow-x-auto rounded-lg border border-gray-200">

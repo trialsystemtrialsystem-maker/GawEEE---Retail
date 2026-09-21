@@ -1,17 +1,27 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { getAuthContext } from '@/lib/utils/auth-context'
 import { handleDatabaseError } from '@/lib/utils/errors'
+import { resolveDateRange } from '@/lib/utils/dateRange'
+import { resolveOutletScope } from '@/lib/utils/outletScope'
 
-// GET /api/reports/deposit — status breakdown + totals for the Deposit Report.
-export async function GET() {
+// GET /api/reports/deposit?outlet_id=&start=&end= — status breakdown +
+// totals for the Deposit Report.
+export async function GET(request: NextRequest) {
   const auth = await getAuthContext()
   if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  if (!auth.outlet_id) return NextResponse.json({ error: 'Pilih outlet terlebih dahulu' }, { status: 400 })
+
+  const { searchParams } = request.nextUrl
+  const scopeResult = await resolveOutletScope(auth, searchParams.get('outlet_id'))
+  if (!scopeResult.scope) return NextResponse.json({ error: scopeResult.error }, { status: scopeResult.status })
+  const { outletIds } = scopeResult.scope
+  const { startIso, endIso } = resolveDateRange(searchParams, 36500, 36500) // lifetime by default, narrowed when start/end given
 
   const { data, error } = await auth.supabase
     .from('product_deposits')
     .select('id, customer_name, quantity, deposit_amount, total_price, status, created_at, products(name)')
-    .eq('outlet_id', auth.outlet_id)
+    .in('outlet_id', outletIds)
+    .gte('created_at', startIso)
+    .lte('created_at', endIso)
     .order('created_at', { ascending: false })
 
   if (error) {

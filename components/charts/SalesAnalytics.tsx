@@ -6,6 +6,9 @@ import { Alert } from '@/components/ui/Alert'
 import { SalesTrendChart } from '@/components/charts/SalesTrendChart'
 import { CategoryBreakdownChart } from '@/components/charts/CategoryBreakdownChart'
 import { ComparisonKPIRow } from '@/components/charts/ComparisonKPIRow'
+import { DateRangePicker, defaultDateRange, type DateRange } from '@/components/ui/DateRangePicker'
+import { ExportCsvButton } from '@/components/ui/ExportCsvButton'
+import { OutletSelector } from '@/components/ui/OutletSelector'
 
 interface TrendResponse {
   daily: { date: string; total_sales: number; transaction_count: number; gross_profit: number }[]
@@ -17,11 +20,6 @@ interface TrendResponse {
   category_breakdown: { name: string; revenue: number }[]
 }
 
-const RANGE_OPTIONS = [
-  { label: '30 Hari', days: 30 },
-  { label: '90 Hari', days: 90 },
-]
-
 const GRANULARITY_OPTIONS = [
   { label: 'Daily', value: 'daily' },
   { label: 'Weekly', value: 'weekly' },
@@ -29,15 +27,21 @@ const GRANULARITY_OPTIONS = [
 ] as const
 
 export function SalesAnalytics({ outletId }: { outletId?: string } = {}) {
-  const [days, setDays] = useState(30)
+  const [range, setRange] = useState<DateRange>(() => defaultDateRange(30))
   const [granularity, setGranularity] = useState<(typeof GRANULARITY_OPTIONS)[number]['value']>('daily')
+  const [selectedOutlet, setSelectedOutlet] = useState('all')
   const [data, setData] = useState<TrendResponse | null>(null)
   const [error, setError] = useState<string | null>(null)
+
+  // A pinned outletId (outlet drill-down page) always wins over the
+  // selector — the selector only renders for standalone usage (main
+  // dashboard, its own report page) where there's a real choice to make.
+  const effectiveOutlet = outletId ?? selectedOutlet
 
   const load = useCallback(async () => {
     setError(null)
     try {
-      const res = await fetch(`/api/reports/sales-trend?days=${days}&granularity=${granularity}${outletId ? `&outlet_id=${outletId}` : ''}`)
+      const res = await fetch(`/api/reports/sales-trend?start=${range.start}&end=${range.end}&granularity=${granularity}&outlet_id=${effectiveOutlet}`)
       const json = await res.json()
       if (!res.ok) {
         setError(json.error ?? 'Gagal memuat data tren')
@@ -47,7 +51,7 @@ export function SalesAnalytics({ outletId }: { outletId?: string } = {}) {
     } catch {
       setError('Terjadi kesalahan jaringan')
     }
-  }, [days, granularity, outletId])
+  }, [range, granularity, effectiveOutlet])
 
   useEffect(() => {
     const timeout = setTimeout(load, 0)
@@ -76,24 +80,13 @@ export function SalesAnalytics({ outletId }: { outletId?: string } = {}) {
               </button>
             ))}
           </div>
-          <div className="flex gap-1 rounded-md border border-gray-200 p-1">
-            {RANGE_OPTIONS.map((opt) => (
-              <button
-                key={opt.days}
-                type="button"
-                onClick={() => setDays(opt.days)}
-                className={`rounded px-3 py-1 text-sm font-medium transition-colors ${
-                  days === opt.days ? 'bg-brand-500 text-white' : 'text-gray-600 hover:bg-gray-100'
-                }`}
-              >
-                {opt.label}
-              </button>
-            ))}
-          </div>
+          {!outletId && <OutletSelector value={selectedOutlet} onChange={setSelectedOutlet} />}
+          <DateRangePicker value={range} onChange={setRange} />
+          <ExportCsvButton filename="tren-penjualan" rows={data.daily} />
         </div>
       </div>
 
-      <ComparisonKPIRow data={data.comparison} periodLabel={`${days} hari`} />
+      <ComparisonKPIRow data={data.comparison} periodLabel={`${range.start} s/d ${range.end}`} />
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <Card className="lg:col-span-2">

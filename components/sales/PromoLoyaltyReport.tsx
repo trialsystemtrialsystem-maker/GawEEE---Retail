@@ -4,6 +4,8 @@ import { useEffect, useState, useCallback } from 'react'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer } from 'recharts'
 import { Alert } from '@/components/ui/Alert'
 import { formatCurrency, formatDate } from '@/lib/utils/formatting'
+import { OutletSelector } from '@/components/ui/OutletSelector'
+import { ExportCsvButton } from '@/components/ui/ExportCsvButton'
 
 interface Coupon {
   code: string
@@ -31,11 +33,12 @@ export function PromoLoyaltyReport() {
   const [promotions, setPromotions] = useState<Promotion[]>([])
   const [loyaltyByMonth, setLoyaltyByMonth] = useState<LoyaltyMonth[]>([])
   const [note, setNote] = useState('')
+  const [selectedOutlet, setSelectedOutlet] = useState('all')
   const [isLoading, setIsLoading] = useState(true)
 
   const load = useCallback(async () => {
     setIsLoading(true)
-    const res = await fetch('/api/reports/promo-loyalty')
+    const res = await fetch(`/api/reports/promo-loyalty?outlet_id=${selectedOutlet}`)
     const data = await res.json()
     if (res.ok) {
       setCoupons(data.coupons ?? [])
@@ -44,7 +47,7 @@ export function PromoLoyaltyReport() {
       setNote(data.note ?? '')
     }
     setIsLoading(false)
-  }, [])
+  }, [selectedOutlet])
 
   useEffect(() => {
     const t = setTimeout(load, 0)
@@ -57,6 +60,14 @@ export function PromoLoyaltyReport() {
 
   return (
     <div className="space-y-4">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <OutletSelector value={selectedOutlet} onChange={setSelectedOutlet} />
+        <div className="flex gap-2">
+          <ExportCsvButton filename="kupon" rows={coupons} />
+          <ExportCsvButton filename="promosi" rows={promotions} />
+        </div>
+      </div>
+
       {note && <Alert variant="info">{note}</Alert>}
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">

@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getAuthContext, canAccessOutlet } from '@/lib/utils/auth-context'
+import { getAuthContext } from '@/lib/utils/auth-context'
+import { resolveDateRange } from '@/lib/utils/dateRange'
+import { resolveOutletScope } from '@/lib/utils/outletScope'
 
 type InvoiceRow = {
   id: string
@@ -25,14 +27,11 @@ export async function GET(request: NextRequest) {
   const auth = await getAuthContext()
   if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const outletId = request.nextUrl.searchParams.get('outlet_id') ?? auth.outlet_id
-  if (!outletId) return NextResponse.json({ error: 'Pilih outlet terlebih dahulu' }, { status: 400 })
-  if (!canAccessOutlet(auth, outletId)) return NextResponse.json({ error: 'Tidak memiliki izin' }, { status: 403 })
-
-  const days = Math.min(Number(request.nextUrl.searchParams.get('days') ?? '30'), 180)
-  const start = new Date()
-  start.setDate(start.getDate() - days + 1)
-  start.setHours(0, 0, 0, 0)
+  const { searchParams } = request.nextUrl
+  const scopeResult = await resolveOutletScope(auth, searchParams.get('outlet_id'))
+  if (!scopeResult.scope) return NextResponse.json({ error: scopeResult.error }, { status: scopeResult.status })
+  const { outletIds } = scopeResult.scope
+  const { startIso, endIso } = resolveDateRange(searchParams, 30, 180)
 
   const [invoicesRes, paymentsRes, usersRes, staffRes, lowStockRes, onlineOrdersRes] = await Promise.all([
     auth.supabase
@@ -40,27 +39,30 @@ export async function GET(request: NextRequest) {
       .select(
         'id, total, cashier_id, created_at, order_status, voided_at, voided_by, void_reason, invoice_items(product_id, quantity, unit_price, item_discount, products(name))'
       )
-      .eq('outlet_id', outletId)
-      .gte('created_at', start.toISOString()),
+      .in('outlet_id', outletIds)
+      .gte('created_at', startIso)
+      .lte('created_at', endIso),
     auth.supabase
       .from('payment_transactions')
       .select('payment_method, amount, invoices!inner(outlet_id)')
-      .eq('invoices.outlet_id', outletId)
+      .in('invoices.outlet_id', outletIds)
       .eq('status', 'settled')
-      .gte('created_at', start.toISOString()),
+      .gte('created_at', startIso)
+      .lte('created_at', endIso),
     auth.supabase.from('users').select('id, full_name, email').eq('company_id', auth.company_id),
-    auth.supabase.from('staff_members').select('email, commission_rate').eq('outlet_id', outletId),
+    auth.supabase.from('staff_members').select('email, commission_rate').in('outlet_id', outletIds),
     auth.supabase
       .from('v_low_stock_alerts')
       .select('product_id, name, quantity_on_hand, reorder_level')
-      .eq('outlet_id', outletId)
+      .in('outlet_id', outletIds)
       .limit(10),
     auth.supabase
       .from('online_orders')
       .select('total_amount')
-      .eq('outlet_id', outletId)
+      .in('outlet_id', outletIds)
       .neq('status', 'cancelled')
-      .gte('created_at', start.toISOString()),
+      .gte('created_at', startIso)
+      .lte('created_at', endIso),
   ])
 
   const invoices = (invoicesRes.data ?? []) as unknown as InvoiceRow[]

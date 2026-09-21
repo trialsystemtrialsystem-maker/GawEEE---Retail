@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { Card } from '@/components/ui/Card'
 import { formatCurrency } from '@/lib/utils/formatting'
 import { ExportCsvButton } from '@/components/ui/ExportCsvButton'
+import { OutletSelector } from '@/components/ui/OutletSelector'
 
 interface ValuationRow {
   product_id: string
@@ -15,21 +16,23 @@ interface ValuationRow {
   potential_profit: number
 }
 
-export function InventoryReport({ outletId }: { outletId: string }) {
+export function InventoryReport({ outletId }: { outletId?: string }) {
   const [rows, setRows] = useState<ValuationRow[]>([])
   const [totals, setTotals] = useState({ cost_value: 0, retail_value: 0, potential_profit: 0 })
+  const [selectedOutlet, setSelectedOutlet] = useState('all')
   const [isLoading, setIsLoading] = useState(true)
+  const effectiveOutlet = outletId ?? selectedOutlet
 
   const load = useCallback(async () => {
     setIsLoading(true)
-    const res = await fetch(`/api/reports/inventory-report?outlet_id=${outletId}`)
+    const res = await fetch(`/api/reports/inventory-report?outlet_id=${effectiveOutlet}`)
     const data = await res.json()
     if (res.ok) {
       setRows(data.items ?? [])
       setTotals(data.totals ?? { cost_value: 0, retail_value: 0, potential_profit: 0 })
     }
     setIsLoading(false)
-  }, [outletId])
+  }, [effectiveOutlet])
 
   useEffect(() => {
     const timeout = setTimeout(load, 0)
@@ -38,7 +41,8 @@ export function InventoryReport({ outletId }: { outletId: string }) {
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-end">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        {!outletId && <OutletSelector value={selectedOutlet} onChange={setSelectedOutlet} />}
         <ExportCsvButton filename="inventory-report" rows={rows} />
       </div>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">

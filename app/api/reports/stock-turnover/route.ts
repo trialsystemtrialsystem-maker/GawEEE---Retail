@@ -1,37 +1,38 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getAuthContext, canAccessOutlet } from '@/lib/utils/auth-context'
+import { getAuthContext } from '@/lib/utils/auth-context'
 import { handleDatabaseError } from '@/lib/utils/errors'
+import { resolveDateRange } from '@/lib/utils/dateRange'
+import { resolveOutletScope } from '@/lib/utils/outletScope'
 
-// GET /api/reports/stock-turnover?outlet_id=&days=30 — COGS sold per product
-// over the period, divided by that product's *current* inventory value as a
-// turnover ratio. Simplification: a true average inventory value would need
-// historical daily snapshots, which this schema doesn't keep — current stock
-// value is used as the denominator instead (clearly labeled in the UI).
+// GET /api/reports/stock-turnover?outlet_id=&days=30&start=&end= — COGS sold
+// per product over the period, divided by that product's *current*
+// inventory value as a turnover ratio. Simplification: a true average
+// inventory value would need historical daily snapshots, which this schema
+// doesn't keep — current stock value is used as the denominator instead
+// (clearly labeled in the UI). outlet_id=all sums both COGS and current
+// stock value across every outlet in the company.
 export async function GET(request: NextRequest) {
   const auth = await getAuthContext()
   if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const { searchParams } = request.nextUrl
-  const outletId = searchParams.get('outlet_id') ?? auth.outlet_id
-  const days = Math.min(Number(searchParams.get('days') ?? '30'), 180)
-  if (!outletId || !canAccessOutlet(auth, outletId)) {
-    return NextResponse.json({ error: 'Tidak memiliki izin' }, { status: 403 })
-  }
-
-  const start = new Date()
-  start.setDate(start.getDate() - days + 1)
+  const scopeResult = await resolveOutletScope(auth, searchParams.get('outlet_id'))
+  if (!scopeResult.scope) return NextResponse.json({ error: scopeResult.error }, { status: scopeResult.status })
+  const { outletIds } = scopeResult.scope
+  const { startIso, endIso } = resolveDateRange(searchParams, 30, 180)
 
   const [itemsRes, inventoryRes] = await Promise.all([
     auth.supabase
       .from('invoice_items')
       .select('product_id, cost_of_goods_sold, products(name), invoices!inner(outlet_id, created_at, order_status)')
-      .eq('invoices.outlet_id', outletId)
+      .in('invoices.outlet_id', outletIds)
       .neq('invoices.order_status', 'voided')
-      .gte('invoices.created_at', start.toISOString()),
+      .gte('invoices.created_at', startIso)
+      .lte('invoices.created_at', endIso),
     auth.supabase
       .from('inventory')
       .select('product_id, quantity_on_hand, products(purchase_price, name)')
-      .eq('outlet_id', outletId),
+      .in('outlet_id', outletIds),
   ])
 
   if (itemsRes.error) {
@@ -77,5 +78,5 @@ export async function GET(request: NextRequest) {
 
   rows.sort((a, b) => (b.turnover_ratio ?? 0) - (a.turnover_ratio ?? 0))
 
-  return NextResponse.json({ rows, days })
+  return NextResponse.json({ rows })
 }

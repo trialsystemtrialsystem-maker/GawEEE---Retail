@@ -3,6 +3,9 @@
 import { useEffect, useState, useCallback } from 'react'
 import { formatCurrency, formatDateTime } from '@/lib/utils/formatting'
 import { PaymentMethodDonutChart } from '@/components/charts/PaymentMethodDonutChart'
+import { DateRangePicker, defaultDateRange, type DateRange } from '@/components/ui/DateRangePicker'
+import { OutletSelector } from '@/components/ui/OutletSelector'
+import { ExportCsvButton } from '@/components/ui/ExportCsvButton'
 
 interface Deposit {
   id: string
@@ -22,21 +25,24 @@ interface Summary {
 
 const STATUS_LABELS: Record<Deposit['status'], string> = { pending: 'Menunggu', fulfilled: 'Selesai', cancelled: 'Dibatalkan' }
 
-export function DepositReport() {
+export function DepositReport({ outletId }: { outletId?: string } = {}) {
   const [deposits, setDeposits] = useState<Deposit[]>([])
   const [summary, setSummary] = useState<Summary | null>(null)
+  const [range, setRange] = useState<DateRange>(() => defaultDateRange(365))
+  const [selectedOutlet, setSelectedOutlet] = useState('all')
   const [isLoading, setIsLoading] = useState(true)
+  const effectiveOutlet = outletId ?? selectedOutlet
 
   const load = useCallback(async () => {
     setIsLoading(true)
-    const res = await fetch('/api/reports/deposit')
+    const res = await fetch(`/api/reports/deposit?outlet_id=${effectiveOutlet}&start=${range.start}&end=${range.end}`)
     const data = await res.json()
     if (res.ok) {
       setDeposits(data.deposits ?? [])
       setSummary(data.summary ?? null)
     }
     setIsLoading(false)
-  }, [])
+  }, [effectiveOutlet, range])
 
   useEffect(() => {
     const t = setTimeout(load, 0)
@@ -53,6 +59,14 @@ export function DepositReport() {
 
   return (
     <div className="space-y-4">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          {!outletId && <OutletSelector value={selectedOutlet} onChange={setSelectedOutlet} />}
+          <DateRangePicker value={range} onChange={setRange} />
+        </div>
+        <ExportCsvButton filename="deposit-report" rows={deposits} />
+      </div>
+
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <div className="rounded-lg border border-gray-200 p-4">
           <p className="text-sm text-gray-500">Total Deposit Diterima</p>

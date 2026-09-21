@@ -4,6 +4,8 @@ import { useEffect, useState, useCallback } from 'react'
 import { formatCurrency, formatDateTime } from '@/lib/utils/formatting'
 import { ExportCsvButton } from '@/components/ui/ExportCsvButton'
 import { CategoryBreakdownChart } from '@/components/charts/CategoryBreakdownChart'
+import { DateRangePicker, defaultDateRange, type DateRange } from '@/components/ui/DateRangePicker'
+import { OutletSelector } from '@/components/ui/OutletSelector'
 
 interface CustomerRow {
   key: string
@@ -15,21 +17,24 @@ interface CustomerRow {
   last_visit: string
 }
 
-export function CustomerSummaryReport({ outletId }: { outletId: string }) {
+export function CustomerSummaryReport({ outletId }: { outletId?: string }) {
   const [customers, setCustomers] = useState<CustomerRow[]>([])
   const [matchNote, setMatchNote] = useState('')
+  const [range, setRange] = useState<DateRange>(() => defaultDateRange(365))
+  const [selectedOutlet, setSelectedOutlet] = useState('all')
   const [isLoading, setIsLoading] = useState(true)
+  const effectiveOutlet = outletId ?? selectedOutlet
 
   const load = useCallback(async () => {
     setIsLoading(true)
-    const res = await fetch(`/api/reports/customer-summary?outlet_id=${outletId}`)
+    const res = await fetch(`/api/reports/customer-summary?outlet_id=${effectiveOutlet}&start=${range.start}&end=${range.end}`)
     const data = await res.json()
     if (res.ok) {
       setCustomers(data.customers ?? [])
       setMatchNote(data.matchNote ?? '')
     }
     setIsLoading(false)
-  }, [outletId])
+  }, [effectiveOutlet, range])
 
   useEffect(() => {
     const t = setTimeout(load, 0)
@@ -41,6 +46,11 @@ export function CustomerSummaryReport({ outletId }: { outletId: string }) {
   return (
     <div className="space-y-4">
       {matchNote && <p className="text-xs text-gray-400">{matchNote}</p>}
+
+      <div className="flex flex-wrap items-center gap-2">
+        {!outletId && <OutletSelector value={selectedOutlet} onChange={setSelectedOutlet} />}
+        <DateRangePicker value={range} onChange={setRange} />
+      </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <div className="rounded-lg border border-gray-200 p-4">

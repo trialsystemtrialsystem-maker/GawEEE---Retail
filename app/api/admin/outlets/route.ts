@@ -15,9 +15,13 @@ export async function GET() {
     .select('id, name, status')
     .eq('company_id', auth.company_id)
 
-  const startOfMonth = new Date()
-  startOfMonth.setDate(1)
-  startOfMonth.setHours(0, 0, 0, 0)
+  // UTC-safe month boundary — invoices.created_at is a UTC timestamptz;
+  // local Date construction (new Date().setDate(1)/.setHours(0,0,0,0)) would
+  // silently shift this boundary by up to a day, leaking hours of last
+  // month's revenue into MTD (see todo.md Phase 27/28, the same bug class
+  // fixed across several other reports this session).
+  const now = new Date()
+  const startOfMonthIso = `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, '0')}-01T00:00:00.000Z`
 
   const results = await Promise.all(
     (outlets ?? []).map(async (outlet) => {
@@ -27,7 +31,7 @@ export async function GET() {
           .select('total, created_at, invoice_items(cost_of_goods_sold)')
           .eq('outlet_id', outlet.id)
           .neq('order_status', 'voided')
-          .gte('created_at', startOfMonth.toISOString()),
+          .gte('created_at', startOfMonthIso),
         auth.supabase.from('users').select('id', { count: 'exact', head: true }).eq('outlet_id', outlet.id),
       ])
 

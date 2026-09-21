@@ -1,22 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getAuthContext, canAccessOutlet } from '@/lib/utils/auth-context'
+import { getAuthContext } from '@/lib/utils/auth-context'
 import { handleDatabaseError } from '@/lib/utils/errors'
+import { resolveOutletScope } from '@/lib/utils/outletScope'
 
 // GET /api/reports/inventory-report?outlet_id= — wraps v_inventory_valuation
 // (already used by Phase 1's inventory-valuation logic) as its own report.
+// A point-in-time snapshot (current stock), so no date range applies here —
+// only the outlet scope (outlet_id=all sums every outlet in the company).
 export async function GET(request: NextRequest) {
   const auth = await getAuthContext()
   if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const outletId = request.nextUrl.searchParams.get('outlet_id') ?? auth.outlet_id
-  if (!outletId || !canAccessOutlet(auth, outletId)) {
-    return NextResponse.json({ error: 'Tidak memiliki izin' }, { status: 403 })
-  }
+  const scopeResult = await resolveOutletScope(auth, request.nextUrl.searchParams.get('outlet_id'))
+  if (!scopeResult.scope) return NextResponse.json({ error: scopeResult.error }, { status: scopeResult.status })
+  const { outletIds } = scopeResult.scope
 
   const { data, error } = await auth.supabase
     .from('v_inventory_valuation')
     .select('*')
-    .eq('outlet_id', outletId)
+    .in('outlet_id', outletIds)
     .order('retail_value', { ascending: false })
 
   if (error) {

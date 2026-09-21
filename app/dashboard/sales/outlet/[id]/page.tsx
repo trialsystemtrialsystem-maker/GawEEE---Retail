@@ -35,8 +35,8 @@ export default async function OutletDetailPage({ params }: { params: Promise<{ i
   return (
     <div className="space-y-8">
       <div>
-        <Link href="/dashboard/admin/outlets" className="text-sm font-medium text-[var(--brand-600)] hover:underline">
-          ← Kembali ke Daftar Outlet
+        <Link href="/dashboard/sales/outlet" className="text-sm font-medium text-[var(--brand-600)] hover:underline">
+          ← Kembali ke Identifikasi Outlet
         </Link>
         <h1 className="mt-1 text-2xl font-bold text-gray-900">{outlet.name}</h1>
         <p className="text-gray-500">

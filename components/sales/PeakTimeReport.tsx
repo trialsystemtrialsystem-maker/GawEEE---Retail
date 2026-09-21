@@ -2,6 +2,9 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import { Card } from '@/components/ui/Card'
+import { DateRangePicker, defaultDateRange, type DateRange } from '@/components/ui/DateRangePicker'
+import { ExportCsvButton } from '@/components/ui/ExportCsvButton'
+import { OutletSelector } from '@/components/ui/OutletSelector'
 
 interface HourRow {
   hour: number
@@ -15,28 +18,29 @@ interface DayRow {
   count: number
 }
 
-export function PeakTimeReport({ outletId, type, unit }: { outletId: string; type: 'sales' | 'product'; unit: string }) {
+export function PeakTimeReport({ outletId, type, unit }: { outletId?: string; type: 'sales' | 'product'; unit: string }) {
   const [hourly, setHourly] = useState<HourRow[]>([])
   const [daily, setDaily] = useState<DayRow[]>([])
+  const [range, setRange] = useState<DateRange>(() => defaultDateRange(30))
+  const [selectedOutlet, setSelectedOutlet] = useState('all')
   const [isLoading, setIsLoading] = useState(true)
+  const effectiveOutlet = outletId ?? selectedOutlet
 
   const load = useCallback(async () => {
     setIsLoading(true)
-    const res = await fetch(`/api/reports/peak-time?outlet_id=${outletId}&type=${type}`)
+    const res = await fetch(`/api/reports/peak-time?outlet_id=${effectiveOutlet}&type=${type}&start=${range.start}&end=${range.end}`)
     const data = await res.json()
     if (res.ok) {
       setHourly(data.hourly ?? [])
       setDaily(data.daily ?? [])
     }
     setIsLoading(false)
-  }, [outletId, type])
+  }, [effectiveOutlet, type, range])
 
   useEffect(() => {
     const timeout = setTimeout(load, 0)
     return () => clearTimeout(timeout)
   }, [load])
-
-  if (isLoading) return <p className="text-sm text-gray-400">Memuat…</p>
 
   const maxHourly = Math.max(1, ...hourly.map((h) => h.total))
   const maxDaily = Math.max(1, ...daily.map((d) => d.total))
@@ -45,6 +49,21 @@ export function PeakTimeReport({ outletId, type, unit }: { outletId: string; typ
 
   return (
     <div className="space-y-4">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          {!outletId && <OutletSelector value={selectedOutlet} onChange={setSelectedOutlet} />}
+          <DateRangePicker value={range} onChange={setRange} />
+        </div>
+        <div className="flex gap-2">
+          <ExportCsvButton filename={`${type}-per-jam`} rows={hourly} />
+          <ExportCsvButton filename={`${type}-per-hari`} rows={daily} />
+        </div>
+      </div>
+
+      {isLoading ? (
+        <p className="text-sm text-gray-400">Memuat…</p>
+      ) : (
+        <>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <Card>
           <p className="text-sm text-gray-500">Jam Tersibuk</p>
@@ -97,6 +116,8 @@ export function PeakTimeReport({ outletId, type, unit }: { outletId: string; typ
           ))}
         </div>
       </Card>
+        </>
+      )}
     </div>
   )
 }

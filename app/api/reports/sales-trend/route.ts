@@ -1,35 +1,47 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getAuthContext, canAccessOutlet } from '@/lib/utils/auth-context'
+import { getAuthContext } from '@/lib/utils/auth-context'
+import { resolveDateRange } from '@/lib/utils/dateRange'
+import { resolveOutletScope } from '@/lib/utils/outletScope'
 
-// GET /api/reports/sales-trend?days=90&outlet_id= — daily revenue/profit
-// series for charting, plus a current-vs-previous-period comparison and a
-// revenue-by-category breakdown. Not in the original prd.md spec — added to
-// back the dashboard's trend chart and comparison cards. outlet_id is
-// optional (defaults to the caller's own outlet) — only needed for a
-// master_admin inspecting one specific outlet (Phase 26 drill-down).
+// GET /api/reports/sales-trend?days=90&start=&end=&outlet_id= — daily
+// revenue/profit series for charting, plus a current-vs-previous-period
+// comparison and a revenue-by-category breakdown. Not in the original
+// prd.md spec — added to back the dashboard's trend chart and comparison
+// cards. outlet_id is optional (defaults to the caller's own outlet),
+// "all" aggregates every outlet in the company (master_admin only —
+// resolveOutletScope collapses to the same single outlet for anyone else).
+// start/end (YYYY-MM-DD) override `days` when both are given.
+//
+// Every boundary here is built via resolveDateRange()'s UTC-safe string
+// arithmetic, never local-timezone Date construction — see todo.md Phase
+// 27/28 for the real bug that caused (local Date boundaries silently
+// shifted by up to a day against invoices.created_at's UTC storage,
+// leaking hours of the wrong period into "current" and mislabeling chart
+// dates).
 export async function GET(request: NextRequest) {
   const auth = await getAuthContext()
   if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const outletId = request.nextUrl.searchParams.get('outlet_id') ?? auth.outlet_id
-  if (!outletId) return NextResponse.json({ error: 'Pilih outlet terlebih dahulu' }, { status: 400 })
-  if (!canAccessOutlet(auth, outletId)) return NextResponse.json({ error: 'Tidak memiliki izin' }, { status: 403 })
+  const scopeResult = await resolveOutletScope(auth, request.nextUrl.searchParams.get('outlet_id'))
+  if (!scopeResult.scope) return NextResponse.json({ error: scopeResult.error }, { status: scopeResult.status })
+  const { outletIds } = scopeResult.scope
 
-  const days = Math.min(Number(request.nextUrl.searchParams.get('days') ?? '90'), 180)
   const granularity = request.nextUrl.searchParams.get('granularity') ?? 'daily'
-  const now = new Date()
-  const startCurrent = new Date(now)
-  startCurrent.setDate(startCurrent.getDate() - days + 1)
-  startCurrent.setHours(0, 0, 0, 0)
-  const startPrevious = new Date(startCurrent)
-  startPrevious.setDate(startPrevious.getDate() - days)
+  const { startDate, endDate, startIso, endIso } = resolveDateRange(request.nextUrl.searchParams, 90, 180)
+  const daySpan = Math.round((Date.parse(endIso) - Date.parse(startIso)) / 86_400_000) + 1
+
+  // Previous period: same length, immediately before the current range.
+  const prevEndDate = addUtcDays(startDate, -1)
+  const prevStartDate = addUtcDays(prevEndDate, -(daySpan - 1))
+  const prevStartIso = `${prevStartDate}T00:00:00.000Z`
 
   const { data: invoices, error } = await auth.supabase
     .from('invoices')
     .select('id, created_at, total, order_status, invoice_items(quantity, cost_of_goods_sold, products(category_id, product_categories(name)))')
-    .eq('outlet_id', outletId)
+    .in('outlet_id', outletIds)
     .neq('order_status', 'voided')
-    .gte('created_at', startPrevious.toISOString())
+    .gte('created_at', prevStartIso)
+    .lte('created_at', endIso)
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
@@ -42,10 +54,7 @@ export async function GET(request: NextRequest) {
   const rows = (invoices ?? []) as unknown as Row[]
 
   const dailyMap = new Map<string, { date: string; total_sales: number; transaction_count: number; gross_profit: number }>()
-  for (let i = 0; i < days; i++) {
-    const d = new Date(startCurrent)
-    d.setDate(d.getDate() + i)
-    const key = d.toISOString().slice(0, 10)
+  for (let key = startDate; key <= endDate; key = addUtcDays(key, 1)) {
     dailyMap.set(key, { date: key, total_sales: 0, transaction_count: 0, gross_profit: 0 })
   }
 
@@ -61,7 +70,7 @@ export async function GET(request: NextRequest) {
     const dateKey = row.created_at.slice(0, 10)
     const cogs = row.invoice_items.reduce((s, it) => s + (it.cost_of_goods_sold ?? 0), 0)
     const profit = row.total - cogs
-    const isCurrentPeriod = new Date(row.created_at) >= startCurrent
+    const isCurrentPeriod = dateKey >= startDate
 
     if (isCurrentPeriod) {
       currentRevenue += row.total
@@ -111,6 +120,15 @@ export async function GET(request: NextRequest) {
       .map(([name, revenue]) => ({ name, revenue: Math.round(revenue) }))
       .sort((a, b) => b.revenue - a.revenue),
   })
+}
+
+/** Adds (or subtracts, for a negative n) whole days to a YYYY-MM-DD string,
+ * entirely in UTC — no local-timezone Date construction anywhere in this
+ * file (see the module comment above for why that matters here). */
+function addUtcDays(dateStr: string, n: number): string {
+  const d = new Date(`${dateStr}T00:00:00.000Z`)
+  d.setUTCDate(d.getUTCDate() + n)
+  return d.toISOString().slice(0, 10)
 }
 
 type DailyPoint = { date: string; total_sales: number; transaction_count: number; gross_profit: number }

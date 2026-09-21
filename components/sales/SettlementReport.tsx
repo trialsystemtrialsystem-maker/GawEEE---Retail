@@ -4,6 +4,9 @@ import { useEffect, useState, useCallback } from 'react'
 import { Alert } from '@/components/ui/Alert'
 import { Card } from '@/components/ui/Card'
 import { formatCurrency, formatDate } from '@/lib/utils/formatting'
+import { DateRangePicker, defaultDateRange, type DateRange } from '@/components/ui/DateRangePicker'
+import { OutletSelector } from '@/components/ui/OutletSelector'
+import { ExportCsvButton } from '@/components/ui/ExportCsvButton'
 
 interface SettlementRow {
   date: string
@@ -11,21 +14,24 @@ interface SettlementRow {
   pending: number
 }
 
-export function SettlementReport({ outletId }: { outletId: string }) {
+export function SettlementReport({ outletId }: { outletId?: string }) {
   const [rows, setRows] = useState<SettlementRow[]>([])
   const [unsettledTotal, setUnsettledTotal] = useState(0)
+  const [range, setRange] = useState<DateRange>(() => defaultDateRange(30))
+  const [selectedOutlet, setSelectedOutlet] = useState('all')
   const [isLoading, setIsLoading] = useState(true)
+  const effectiveOutlet = outletId ?? selectedOutlet
 
   const load = useCallback(async () => {
     setIsLoading(true)
-    const res = await fetch(`/api/reports/settlement-report?outlet_id=${outletId}`)
+    const res = await fetch(`/api/reports/settlement-report?outlet_id=${effectiveOutlet}&start=${range.start}&end=${range.end}`)
     const data = await res.json()
     if (res.ok) {
       setRows(data.rows ?? [])
       setUnsettledTotal(data.unsettledTotal ?? 0)
     }
     setIsLoading(false)
-  }, [outletId])
+  }, [effectiveOutlet, range])
 
   useEffect(() => {
     const timeout = setTimeout(load, 0)
@@ -34,11 +40,19 @@ export function SettlementReport({ outletId }: { outletId: string }) {
 
   return (
     <div className="space-y-4">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          {!outletId && <OutletSelector value={selectedOutlet} onChange={setSelectedOutlet} />}
+          <DateRangePicker value={range} onChange={setRange} />
+        </div>
+        <ExportCsvButton filename="settlement-report" rows={rows} />
+      </div>
+
       {unsettledTotal > 0 && (
         <Alert variant="warning">{formatCurrency(unsettledTotal)} pembayaran masih pending/belum settle.</Alert>
       )}
       <Card>
-        <p className="text-sm text-gray-500">Total Settle (30 hari terakhir)</p>
+        <p className="text-sm text-gray-500">Total Settle (Periode Terpilih)</p>
         <p className="mt-1 text-xl font-bold text-emerald-600">
           {formatCurrency(rows.reduce((s, r) => s + r.settled, 0))}
         </p>

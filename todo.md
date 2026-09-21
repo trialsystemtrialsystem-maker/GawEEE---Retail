@@ -1393,6 +1393,62 @@ system, so this closes it properly rather than just adding a report on top of de
       not yet confirmed which (if any) of those are actually affected or how serious each one is before
       deciding what, if anything, needs fixing there too.
 
+## Phase 28 — Date range, outlet scope, and Excel export across every report (part 1)
+User asked for three things on every "identification" report: a custom date-range picker (not just preset
+day-count buttons), a choice between all outlets combined or one specific outlet, and an Excel-compatible
+export button. Built three reusable pieces (`<DateRangePicker>`, `<OutletSelector>`, `resolveDateRange()`,
+`resolveOutletScope()` — the latter two server-side helpers so every route applies the exact same UTC-safe
+boundary logic and outlet-scoping rules) and rolled them out to the first batch of reports. Reusing the
+existing `ExportCsvButton`/`exportToCsv()` (CSV with a UTF-8 BOM — already documented as "opens directly in
+Excel") rather than adding a new `xlsx` library dependency for an equivalent practical result.
+- [x] New `GET /api/outlets` (lightweight list, backs `<OutletSelector>`) and `resolveOutletScope()` —
+      `outlet_id=all` aggregates every outlet in the caller's company (master_admin only; collapses to the
+      same single outlet for anyone else, so it's never gated as a special case), a specific id is checked
+      against the existing `canAccessOutlet()`, and no param falls back to the caller's own outlet for
+      backward compatibility with every report built before this existed.
+- [x] `resolveDateRange()` — explicit `start`/`end` (YYYY-MM-DD, from `<DateRangePicker>`) or a `days`
+      fallback, always resolved into UTC-safe `T00:00:00.000Z`/`T23:59:59.999Z` boundary strings. Since this
+      touches the exact same boundary-construction code the Phase 27 timezone-bug audit flagged across
+      several routes, using it fixes that bug as a side effect everywhere it's applied this batch:
+      `sales-trend` (dashboard chart + current-vs-previous comparison — the audit's most serious finding
+      besides the outlet leaderboard, since local Date boundaries were misattributing real invoices between
+      "current" and "previous" period, not just mislabeling chart dates), `peak-time` (also switched
+      hour/day-of-week bucketing to `getUTC*()`, since the whole chart was systematically reshuffled by the
+      server's UTC offset), `sales-breakdown`, `stock-turnover`, `customer-summary`, `settlement-report`,
+      `deposit`, and `GET /api/admin/outlets` (the outlet leaderboard's MTD revenue — found and fixed while
+      splitting this page, below).
+- [x] Rolled out to: Sales Trend/dashboard chart, Product & Sales Peak Time, Stock Turnover, Customer
+      Summary, Cashier Report, Employee Report, Inventory Report, Settlement Report, Deposit Report,
+      Promo & Loyalty Report (outlet scope only — coupons/promotions are current-state lists, not
+      date-filtered). Every page-level wrapper that used to gate rendering behind
+      `profile?.outlet_id` (breaking these pages for master_admin, whose own `outlet_id` is null) now
+      always renders and lets the component's own `<OutletSelector>` handle scope — a real, previously-
+      unnoticed gap this closed as a side effect: Product/Sales Peak Time (and by the same pattern, every
+      other report converted this batch) were completely unusable by a master_admin before this.
+- [x] **Split the combined Outlet page on request** — Master Admin > Outlets (`/dashboard/admin/outlets`)
+      was serving both master-data CRUD (add outlet, the same form) and sales identification (MTD
+      leaderboard, hourly/daily patterns, the Phase 26 per-outlet drill-down) from one component. Split
+      into `OutletMasterData` (pure CRUD: list/create/activate-toggle, backed by a new lightweight
+      `GET /api/admin/outlets/list`) staying at `/dashboard/admin/outlets`, and the identification view
+      (`OutletPerformance`, CRUD form removed) moved to `/dashboard/sales/outlet` under Sales — matching
+      where every other identification report already lives — with its drill-down moving to
+      `/dashboard/sales/outlet/:id`. `PATCH /api/outlets/:id` gained `status` so the new activate/deactivate
+      toggle has somewhere to write.
+- [x] Live-verified: outlet_id=all vs. one outlet on sales-trend showed the expected relationship (all 5
+      outlets combined ≥ any single one); Product/Sales Peak Time now render real data for master_admin
+      instead of the old "pilih outlet" dead end; the master-data and identification pages render
+      distinctly (checked each page does NOT show the other's defining content — no "Revenue MTD" on the
+      CRUD page, no "+ Tambah Outlet" on the identification page); the drill-down still works at its new
+      URL; the status activate/deactivate toggle round-tripped correctly through a real PATCH.
+- [ ] Remaining reports still need the same treatment: Promo & Loyalty already done above, but Service
+      Report, Facility Report, Customer Satisfaction, Tax Report, and every Report Analysis-section item
+      built in Phases 25-27 (RFM/Customer Segmentation, ABC Analysis, Market Basket, New vs Returning, Void
+      Analysis, Target vs Actual) plus AR/AP still need date range/outlet scope/export added — continuing
+      in the next batch. Two more timezone-bug routes the Phase 27 audit flagged are also still open:
+      `app/api/accounting/reports/route.ts` (P&L's default month boundary) and
+      `app/api/admin/outlets/hourly` / `.../daily` (same hour/day-of-week bucketing issue just fixed in
+      `peak-time`, not yet applied there).
+
 ## Notes on scope
 This todo tracks the **engineering deliverables** of the PRD (a working Next.js + Supabase codebase
 implementing Phase 1 features, with payment gateways behind a swappable mock interface). Items marked
