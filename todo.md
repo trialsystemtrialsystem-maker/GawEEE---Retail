@@ -1515,6 +1515,14 @@ coverage despite being one of the money-critical paths this codebase leans on mo
       volume (confirmed pre-existing — `signup-login-roundtrip.spec.ts` hit it too in the same full-suite
       run, not something these two files introduced) — a known characteristic of a real rate limiter meeting
       a fast local test run, not a defect to fix.
+- [x] **Follow-up**: added `tests/e2e/split-payment.spec.ts` — split payment (todo.md Phase 11, a sale paid
+      across up to 2 methods at once) had shipped with only a manual live regression pass and no permanent
+      test since. Splits a real sale across cash + e-wallet, settles the pending e-wallet portion via the
+      same `simulate-success` stand-in, and asserts the money actually reconciles: `payment_transactions`
+      sums to exactly the invoice total (2 rows) and `payment_status` lands on `'paid'` — not just that the
+      UI didn't error. Reads the cart total off the checkout button's own live label rather than
+      recomputing it, so the assertion is independent of any client-side total math. Typechecks, lints, and
+      passed on first run against the live dev server.
 
 ## Notes on scope
 This todo tracks the **engineering deliverables** of the PRD (a working Next.js + Supabase codebase
