@@ -1539,6 +1539,18 @@ coverage despite being one of the money-critical paths this codebase leans on mo
 - [x] Moved `createCashSale` (used identically by three of the four specs above) into `tests/e2e/helpers.ts`
       alongside the other shared checkout/login helpers, removing the duplicate from `void-invoice.spec.ts`.
       Re-ran every affected spec after the refactor to confirm nothing broke.
+- [x] **Follow-up**: added `tests/e2e/customer-refund.spec.ts` — the customer refund/return flow
+      (`app/api/customer-refunds`, draft-then-submit) is another real money-and-stock-movement path that had
+      no e2e coverage. Refunds the single item from a freshly created paid sale through the real UI form and
+      checks its stock actually comes back — the same before/after `quantity_on_hand` delta assertion used
+      by the void tests. Passed on first run.
+- [x] With this, the money-critical/security-critical paths this phase set out to close are now all covered:
+      void's fraud gate, the void-vs-pending-settlement race, split payment reconciliation, multi-tenant RLS
+      isolation, and customer refunds — 5 new e2e spec files (`void-invoice`, `settlement-void-race`,
+      `split-payment`, `multi-tenant-isolation`, `customer-refund`) plus a shared `helpers.ts`, growing the
+      e2e suite from 4 files to 9. Every file typechecks, lints, and passed on a live run against the demo
+      account; `npm test` (jest) re-run clean (59/59) after each addition as a sanity check that nothing
+      app-side regressed.
 
 ## Notes on scope
 This todo tracks the **engineering deliverables** of the PRD (a working Next.js + Supabase codebase
