@@ -1523,6 +1523,22 @@ coverage despite being one of the money-critical paths this codebase leans on mo
       UI didn't error. Reads the cart total off the checkout button's own live label rather than
       recomputing it, so the assertion is independent of any client-side total math. Typechecks, lints, and
       passed on first run against the live dev server.
+- [x] **Follow-up**: added `tests/e2e/multi-tenant-isolation.spec.ts` — the single most fundamental
+      guarantee of a multi-tenant SaaS (prd.md §2.3) had zero test coverage: nothing verified that one
+      company can never read another company's data. Provisions a completely fresh, disposable company +
+      owner directly via the same SECURITY DEFINER RPC (`provision_company_and_owner`)
+      `app/api/auth/register` itself calls — bypassing that HTTP route (and its 5/hour IP rate limit,
+      already shared by `auth.spec.ts`/`signup-login-roundtrip.spec.ts`) entirely — then, logged in as that
+      fresh company's owner, confirms `GET /api/invoices/:id` and `GET /api/products/:id` for a real invoice
+      and product belonging to the demo company both come back 404 (not found, not "forbidden" — RLS makes
+      the row simply not exist for this session), and that `GET /api/outlets` lists only the isolated
+      company's own outlet. Passed on first run — RLS is working as designed; this makes that guarantee
+      permanently checked instead of merely assumed. Cleans up its disposable company/user/auth account
+      unconditionally (`finally` block) so repeated runs don't accumulate fixture companies; verified with a
+      direct DB query afterward that none were left behind.
+- [x] Moved `createCashSale` (used identically by three of the four specs above) into `tests/e2e/helpers.ts`
+      alongside the other shared checkout/login helpers, removing the duplicate from `void-invoice.spec.ts`.
+      Re-ran every affected spec after the refactor to confirm nothing broke.
 
 ## Notes on scope
 This todo tracks the **engineering deliverables** of the PRD (a working Next.js + Supabase codebase

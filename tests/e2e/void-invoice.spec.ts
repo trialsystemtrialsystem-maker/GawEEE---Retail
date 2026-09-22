@@ -1,5 +1,5 @@
 import { test, expect, type Page, type Browser } from '@playwright/test'
-import { login, currentOutletId, pickInStockProduct, addProductToCart, voidNow } from './helpers'
+import { login, currentOutletId, createCashSale, voidNow } from './helpers'
 
 // Regression coverage for void_invoice()'s manager-only fraud-prevention gate
 // (see app/api/reports/void-analysis/route.ts's docstring on why voids are a
@@ -22,28 +22,6 @@ import { login, currentOutletId, pickInStockProduct, addProductToCart, voidNow }
 // A disposable same-company cashier sidesteps that drift entirely.
 const MANAGER_EMAIL = process.env.E2E_TEST_EMAIL || 'demo@gaweee.app'
 const MANAGER_PASSWORD = process.env.E2E_TEST_PASSWORD || 'DemoGawEEE2026!'
-
-// Creates a one-item cash sale and returns its invoice id.
-async function createCashSale(page: Page): Promise<string> {
-  await page.goto('/pos')
-  const outletId = await currentOutletId(page)
-  const product = await pickInStockProduct(page, outletId)
-  await addProductToCart(page, product.name)
-  await expect(page.locator('text=Keranjang (1 item)')).toBeVisible()
-
-  const [response] = await Promise.all([
-    page.waitForResponse((res) => res.url().includes('/api/invoices') && res.request().method() === 'POST'),
-    page.getByRole('button', { name: 'Proses Pembayaran' }).click(),
-  ])
-  const body = await response.json()
-
-  const cashInput = page.getByPlaceholder('Jumlah diterima')
-  await cashInput.fill('1000000')
-  await page.getByRole('button', { name: 'Konfirmasi Pembayaran' }).click()
-  await expect(page.locator('text=Pembayaran Berhasil')).toBeVisible()
-
-  return body.invoice_id as string
-}
 
 // Must be called while logged in as MANAGER_EMAIL (master_admin/manager).
 async function createDisposableCashier(page: Page, outletId: string) {

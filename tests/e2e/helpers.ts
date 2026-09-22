@@ -66,6 +66,29 @@ export async function addProductToCart(page: Page, productName: string) {
   }
 }
 
+// Creates a one-item cash sale from whatever real, in-stock product the
+// live catalog happens to have, and returns its invoice id.
+export async function createCashSale(page: Page): Promise<string> {
+  await page.goto('/pos')
+  const outletId = await currentOutletId(page)
+  const product = await pickInStockProduct(page, outletId)
+  await addProductToCart(page, product.name)
+  await expect(page.locator('text=Keranjang (1 item)')).toBeVisible()
+
+  const [response] = await Promise.all([
+    page.waitForResponse((res) => res.url().includes('/api/invoices') && res.request().method() === 'POST'),
+    page.getByRole('button', { name: 'Proses Pembayaran' }).click(),
+  ])
+  const body = await response.json()
+
+  const cashInput = page.getByPlaceholder('Jumlah diterima')
+  await cashInput.fill('1000000')
+  await page.getByRole('button', { name: 'Konfirmasi Pembayaran' }).click()
+  await expect(page.locator('text=Pembayaran Berhasil')).toBeVisible()
+
+  return body.invoice_id as string
+}
+
 // Must be called while logged in as a manager (master_admin/outlet_manager)
 // — call sites reuse the session, no relogin.
 export async function voidNow(page: Page, invoiceId: string, reason: string) {
