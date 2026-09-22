@@ -1468,6 +1468,40 @@ Excel") rather than adding a new `xlsx` library dependency for an equivalent pra
       with `outlet_id=all` — all returned 200 with sane aggregated numbers (e.g. target-vs-actual's MTD
       actual/target scaled correctly across all outlets combined) and zero browser console errors.
 
+## Phase 29 — E2E regression coverage for the void-invoice fraud-prevention gate
+With every tracked feature phase complete, went looking for real remaining gaps rather than inventing
+busywork: grepped for TODO/FIXME (none), checked CI (`.github/workflows/ci.yml` — lint + unit tests + build
+on every push, solid), and counted test coverage. Found a genuine one — only 4 e2e specs existed
+(auth, pos, signup-login-roundtrip, journal-accounting-integration), and `void_invoice()` — the exact
+manager-only fraud-prevention gate this session's own `void-analysis` report docstring calls out as a real
+"sweethearting" signal (ring a sale, void it after the customer leaves with the goods) — had zero e2e
+coverage despite being one of the money-critical paths this codebase leans on most.
+- [x] Added `tests/e2e/void-invoice.spec.ts`, two tests: (1) a cashier cannot void an invoice — the UI hides
+      the "Batalkan Transaksi" button, AND a direct bypass call straight to `POST /api/invoices/:id/void`
+      with the cashier's own session still gets rejected with 403 (defense in depth, both layers checked
+      independently); (2) a manager can void a sale with a reason, and the exact quantity sold is restored
+      to `inventory.quantity_on_hand` — not just a status-flip check, a real before/after stock delta
+      assertion against the API.
+- [x] Both the product to sell and the disposable cashier account are discovered/created dynamically rather
+      than hardcoded: found live that `lib/demo/catalog.ts`'s documented `DEMO_CASHIER_EMAIL` no longer
+      shares a company with `DEMO_EMAIL` in the actual shared dev/prod database (RLS would make them unable
+      to see each other's invoices at all after months of manual testing on top of the original seed) — so
+      the cashier test instead creates a same-company, same-outlet cashier fresh via `POST /api/admin/users`
+      and deletes it at the end, sidestepping that drift entirely. Likewise the product to sell is picked
+      from a live `GET /api/inventory/:outletId` call (first in-stock item) rather than a name that might no
+      longer exist in the current catalog.
+- [x] Uses two independent Playwright browser contexts (manager + cashier) rather than logging one page in
+      and out repeatedly — found live that `/auth/login` redirects straight back to `/dashboard` when a
+      session is already active, so a same-page relogin needs an explicit logout first, and doing that
+      3+ times per test pushes uncomfortably close to the login route's IP rate limit (10/5min). Two
+      contexts also model "two different concurrent users" more honestly.
+- [x] Every test cleans up after itself (voids its own test invoice, deletes its disposable cashier) so
+      repeated local runs don't accumulate junk invoices, drain real product stock, or pile up throwaway
+      users in the shared demo database.
+- [x] Verified: `npx tsc --noEmit` and `eslint` clean, `npm test` (jest, unrelated but re-run as a sanity
+      check) 59/59 passing, and the new spec itself green — `npx playwright test tests/e2e/void-invoice.spec.ts`
+      2 passed — against the live dev server on port 3001.
+
 ## Notes on scope
 This todo tracks the **engineering deliverables** of the PRD (a working Next.js + Supabase codebase
 implementing Phase 1 features, with payment gateways behind a swappable mock interface). Items marked
