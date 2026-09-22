@@ -1501,6 +1501,20 @@ coverage despite being one of the money-critical paths this codebase leans on mo
 - [x] Verified: `npx tsc --noEmit` and `eslint` clean, `npm test` (jest, unrelated but re-run as a sanity
       check) 59/59 passing, and the new spec itself green — `npx playwright test tests/e2e/void-invoice.spec.ts`
       2 passed — against the live dev server on port 3001.
+- [x] **Follow-up same phase**: extracted the shared login/outlet/product-discovery helpers into
+      `tests/e2e/helpers.ts` (not itself a test file) and refactored `void-invoice.spec.ts` to use it, then
+      added `tests/e2e/settlement-void-race.spec.ts` covering the *other* half of the same race: todo.md
+      Phase 24's guard against confirming a pending e-wallet/bank payment on an invoice that's since been
+      voided (`app/api/payments/[paymentId]/simulate-success/route.ts`'s `order_status === 'voided'` check)
+      — verified manually once, live, when Phase 24 shipped, now a permanent repeatable check. Walks a real
+      e-wallet checkout to the QR screen, voids the invoice before confirming payment, then asserts the late
+      "webhook" (`simulate-success`, today's demo stand-in for the real Doku/Bank VA one) is rejected with
+      409 `"Invoice ini sudah dibatalkan"` and that `payment_status` stays `'pending'` rather than flipping
+      to `'paid'`. Both new/refactored files typecheck, lint, and pass in isolation and run together; running
+      the *entire* e2e suite back-to-back can trip the login route's 10-req/5-min IP rate limit purely from
+      volume (confirmed pre-existing — `signup-login-roundtrip.spec.ts` hit it too in the same full-suite
+      run, not something these two files introduced) — a known characteristic of a real rate limiter meeting
+      a fast local test run, not a defect to fix.
 
 ## Notes on scope
 This todo tracks the **engineering deliverables** of the PRD (a working Next.js + Supabase codebase

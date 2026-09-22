@@ -1,4 +1,5 @@
 import { test, expect, type Page, type Browser } from '@playwright/test'
+import { login, currentOutletId, pickInStockProduct, addProductToCart, voidNow } from './helpers'
 
 // Regression coverage for void_invoice()'s manager-only fraud-prevention gate
 // (see app/api/reports/void-analysis/route.ts's docstring on why voids are a
@@ -22,65 +23,12 @@ import { test, expect, type Page, type Browser } from '@playwright/test'
 const MANAGER_EMAIL = process.env.E2E_TEST_EMAIL || 'demo@gaweee.app'
 const MANAGER_PASSWORD = process.env.E2E_TEST_PASSWORD || 'DemoGawEEE2026!'
 
-function escapeRegExp(s: string) {
-  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-}
-
-// Always logs out first — navigating to /auth/login with an existing
-// session still active redirects straight back to /dashboard instead of
-// showing the form (found live: a bare page.goto('/auth/login') to switch
-// users mid-test hung waiting for the email input that never appeared).
-async function login(page: Page, email: string, password: string) {
-  await page.evaluate(() => fetch('/api/auth/logout', { method: 'POST' }).catch(() => {})).catch(() => {})
-  await page.goto('/auth/login')
-  await page.fill('input[name="email"]', email)
-  await page.fill('input[name="password"]', password)
-  await page.click('button[type="submit"]')
-  await page.waitForURL('**/dashboard')
-}
-
-async function currentOutletId(page: Page): Promise<string> {
-  const outletId = await page.evaluate(async () => {
-    const res = await fetch('/api/outlets')
-    const data = await res.json()
-    return data.outlets?.[0]?.id as string | undefined
-  })
-  if (!outletId) throw new Error('E2E setup: logged-in account has no outlet')
-  return outletId
-}
-
-// Creates a one-item cash sale and returns its invoice id. Picks whatever
-// real, in-stock product the live catalog happens to have (via the API)
-// rather than hardcoding a product name — this account's actual catalog can
-// drift from lib/demo/catalog.ts's static list after months of manual
-// testing on top of it, across this whole session.
+// Creates a one-item cash sale and returns its invoice id.
 async function createCashSale(page: Page): Promise<string> {
   await page.goto('/pos')
-
   const outletId = await currentOutletId(page)
-  const product = await page.evaluate(async (oid) => {
-    const res = await fetch(`/api/inventory/${oid}`)
-    const data = await res.json()
-    type Item = { product_id: string; name: string; quantity_available: number }
-    return (data.inventory as Item[] | undefined)?.find((p) => p.quantity_available > 0)
-  }, outletId)
-  if (!product) throw new Error('E2E setup: no in-stock product found to sell')
-
-  const searchInput = page.getByPlaceholder('Scan barcode atau cari produk')
-  await searchInput.fill(product.name)
-  await page.getByRole('button', { name: new RegExp(escapeRegExp(product.name)) }).first().click()
-
-  // Some products open a unit- or modifier-picker modal instead of adding
-  // straight to the cart (Multi-UOM / Extra Product) — handle both so this
-  // works no matter which in-stock product got picked above.
-  const baseUnitButton = page.getByRole('button', { name: 'Satuan Dasar' })
-  const addToCartButton = page.getByRole('button', { name: 'Tambah ke Keranjang' })
-  if (await baseUnitButton.isVisible({ timeout: 1500 }).catch(() => false)) {
-    await baseUnitButton.click()
-  } else if (await addToCartButton.isVisible({ timeout: 1500 }).catch(() => false)) {
-    await addToCartButton.click()
-  }
-
+  const product = await pickInStockProduct(page, outletId)
+  await addProductToCart(page, product.name)
   await expect(page.locator('text=Keranjang (1 item)')).toBeVisible()
 
   const [response] = await Promise.all([
@@ -95,15 +43,6 @@ async function createCashSale(page: Page): Promise<string> {
   await expect(page.locator('text=Pembayaran Berhasil')).toBeVisible()
 
   return body.invoice_id as string
-}
-
-// Assumes `page` is already logged in as a manager — call sites reuse the
-// session, no relogin.
-async function voidNow(page: Page, invoiceId: string, reason: string) {
-  await page.goto(`/dashboard/sales/${invoiceId}`)
-  page.once('dialog', (dialog) => dialog.accept(reason))
-  await page.getByRole('button', { name: 'Batalkan Transaksi' }).click()
-  await expect(page.locator('text=Transaksi berhasil dibatalkan')).toBeVisible()
 }
 
 // Must be called while logged in as MANAGER_EMAIL (master_admin/manager).
@@ -210,11 +149,8 @@ test.describe('Void invoice — manager-only fraud-prevention gate', () => {
 
     const beforeQty = await quantityOnHand()
 
-    await page.goto(`/dashboard/sales/${invoiceId}`)
-    page.once('dialog', (dialog) => dialog.accept('Pelanggan membatalkan pesanan (uji regresi otomatis)'))
-    await page.getByRole('button', { name: 'Batalkan Transaksi' }).click()
+    await voidNow(page, invoiceId, 'Pelanggan membatalkan pesanan (uji regresi otomatis)')
 
-    await expect(page.locator('text=Transaksi berhasil dibatalkan')).toBeVisible()
     await expect(page.locator('text=Dibatalkan')).toBeVisible()
     await expect(page.locator('text=Alasan pembatalan:')).toBeVisible()
 
