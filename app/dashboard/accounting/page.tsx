@@ -7,8 +7,10 @@ const QUICK_LINKS = [
   { href: '/dashboard/accounting/accounts', icon: '📖', label: 'Chart of Accounts' },
   { href: '/dashboard/accounting/journal', icon: '🧾', label: 'Jurnal Umum' },
   { href: '/dashboard/accounting/ledger', icon: '📗', label: 'Buku Besar' },
+  { href: '/dashboard/accounting/trial-balance', icon: '🧮', label: 'Neraca Saldo' },
   { href: '/dashboard/accounting/balance-sheet', icon: '⚖️', label: 'Neraca' },
   { href: '/dashboard/accounting/profit-loss', icon: '📈', label: 'Laba Rugi' },
+  { href: '/dashboard/accounting/cash-flow', icon: '💵', label: 'Laporan Arus Kas' },
 ]
 
 export default async function AccountingDashboardPage() {
