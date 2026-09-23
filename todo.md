@@ -1588,6 +1588,26 @@ coverage despite being one of the money-critical paths this codebase leans on mo
       limiting from Phase 16; the day/month UTC-bucketing audit fully closed across Phase 28's two parts) —
       corrected to `[x]` with a note on what closed them and when, so the tracker reflects real state.
 
+## Phase 30 — "Hourly" granularity on the dashboard/outlet-detail Daily/Weekly/Monthly toggle
+User asked to add an "Hourly" option next to "Daily" on the Daily/Weekly/Monthly segmented control shown on
+the main dashboard and the per-outlet detail page (`components/charts/SalesAnalytics.tsx`, shared by
+`app/dashboard/page.tsx`, `app/dashboard/sales/outlet/[id]/page.tsx`, and `app/dashboard/financial/page.tsx`).
+- [x] `app/api/reports/sales-trend/route.ts` — a `granularity=hourly` request now builds an hour-of-day
+      (00-23) breakdown summed across every day in the selected date range, matching the same semantic as
+      `/api/reports/peak-time` and `/api/admin/outlets/hourly` (not a literal per-hour timeline across the
+      whole range, which would be thousands of bars for a multi-day window). Built directly from the raw
+      invoice rows in the same loop that populates the existing daily map, since day-level aggregation
+      already discards which hour a sale happened at — weekly/monthly re-bucket the daily series
+      afterward, hourly can't. UTC-safe (`getUTCHours()`), matching every other report this session.
+- [x] `components/charts/SalesAnalytics.tsx` — added `{ label: 'Hourly', value: 'hourly' }` first in
+      `GRANULARITY_OPTIONS`, right next to Daily as asked; `components/charts/SalesTrendChart.tsx` gained a
+      `granularity` prop so its x-axis/tooltip formatter switches from date formatting to `"HH:00"` labels
+      for hourly points (their `date` field carries a zero-padded hour string, not a real date —
+      `formatDate()` would have choked on it otherwise).
+- [x] Live-verified via Playwright against the demo account: the Hourly button appears and works on both
+      `/dashboard` and an actual outlet detail page (`/dashboard/sales/outlet/:id`), rendering real `HH:00`
+      hour labels with no errors on either. `tsc`/`eslint`/`npm run build` all clean.
+
 ## Notes on scope
 This todo tracks the **engineering deliverables** of the PRD (a working Next.js + Supabase codebase
 implementing Phase 1 features, with payment gateways behind a swappable mock interface). Items marked

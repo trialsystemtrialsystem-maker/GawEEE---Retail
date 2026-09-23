@@ -13,7 +13,12 @@ interface DailyPoint {
 // this is not a dual-axis chart), categorical slots 1 (blue) & 2 (orange) in
 // fixed order, thin 2px lines, legend always present for >=2 series, hover
 // tooltip ships by default on line charts.
-export function SalesTrendChart({ data }: { data: DailyPoint[] }) {
+export function SalesTrendChart({ data, granularity = 'daily' }: { data: DailyPoint[]; granularity?: string }) {
+  // Hourly points carry a zero-padded hour ("00".."23"), not a real date —
+  // formatDate() would choke on that, so it gets its own "HH:00" formatter.
+  const formatLabel = granularity === 'hourly' ? (v: string) => `${v}:00` : (v: string) => formatDate(v).slice(0, 5)
+  const formatTooltipLabel = granularity === 'hourly' ? (v: string) => `Jam ${v}:00` : (v: string) => formatDate(v)
+
   return (
     <div className="h-72 w-full">
       <ResponsiveContainer width="100%" height="100%">
@@ -21,7 +26,7 @@ export function SalesTrendChart({ data }: { data: DailyPoint[] }) {
           <CartesianGrid stroke="var(--chart-grid)" vertical={false} />
           <XAxis
             dataKey="date"
-            tickFormatter={(v: string) => formatDate(v).slice(0, 5)}
+            tickFormatter={formatLabel}
             tick={{ fill: 'var(--chart-muted)', fontSize: 12 }}
             axisLine={{ stroke: 'var(--chart-axis)' }}
             tickLine={false}
@@ -37,7 +42,7 @@ export function SalesTrendChart({ data }: { data: DailyPoint[] }) {
           <Tooltip
             contentStyle={{ background: 'var(--chart-surface)', border: '1px solid var(--chart-grid)', borderRadius: 8, fontSize: 13 }}
             formatter={(value, name) => [formatCurrency(Number(value)), String(name)]}
-            labelFormatter={(v) => formatDate(String(v))}
+            labelFormatter={(v) => formatTooltipLabel(String(v))}
           />
           <Legend wrapperStyle={{ fontSize: 12 }} />
           <Line type="monotone" dataKey="total_sales" name="Pendapatan" stroke="var(--chart-1)" strokeWidth={2} dot={false} activeDot={{ r: 5 }} />

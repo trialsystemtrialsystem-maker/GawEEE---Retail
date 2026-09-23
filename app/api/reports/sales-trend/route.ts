@@ -58,6 +58,21 @@ export async function GET(request: NextRequest) {
     dailyMap.set(key, { date: key, total_sales: 0, transaction_count: 0, gross_profit: 0 })
   }
 
+  // Hour-of-day breakdown (the "Hourly" granularity option) — summed across
+  // every day in the selected range, same semantic as /api/reports/peak-time
+  // and /api/admin/outlets/hourly, not a literal per-hour timeline across the
+  // whole range (which would be thousands of bars for a multi-day window).
+  // Built from the raw rows here (not re-bucketed from dailyMap afterward,
+  // like weekly/monthly below) since day-level aggregation already discards
+  // the hour a sale happened at.
+  const hourlyMap = new Map<string, { date: string; total_sales: number; transaction_count: number; gross_profit: number }>()
+  if (granularity === 'hourly') {
+    for (let h = 0; h < 24; h++) {
+      const key = String(h).padStart(2, '0')
+      hourlyMap.set(key, { date: key, total_sales: 0, transaction_count: 0, gross_profit: 0 })
+    }
+  }
+
   let currentRevenue = 0
   let currentTx = 0
   let currentProfit = 0
@@ -81,6 +96,15 @@ export async function GET(request: NextRequest) {
         bucket.total_sales += row.total
         bucket.transaction_count += 1
         bucket.gross_profit += profit
+      }
+      if (granularity === 'hourly') {
+        const hourKey = String(new Date(row.created_at).getUTCHours()).padStart(2, '0')
+        const hourBucket = hourlyMap.get(hourKey)
+        if (hourBucket) {
+          hourBucket.total_sales += row.total
+          hourBucket.transaction_count += 1
+          hourBucket.gross_profit += profit
+        }
       }
       // invoice_items doesn't carry a per-line revenue total (unit_price *
       // quantity isn't selected above), so category revenue is attributed by
@@ -106,7 +130,7 @@ export async function GET(request: NextRequest) {
   const daily = Array.from(dailyMap.values())
 
   return NextResponse.json({
-    daily: bucketByGranularity(daily, granularity),
+    daily: granularity === 'hourly' ? Array.from(hourlyMap.values()) : bucketByGranularity(daily, granularity),
     comparison: {
       current: { revenue: currentRevenue, transactions: currentTx, profit: currentProfit },
       previous: { revenue: previousRevenue, transactions: previousTx, profit: previousProfit },
@@ -134,8 +158,10 @@ function addUtcDays(dateStr: string, n: number): string {
 type DailyPoint = { date: string; total_sales: number; transaction_count: number; gross_profit: number }
 
 // Re-buckets the daily series into weekly (Monday-start) or monthly groups
-// for the dashboard's Daily/Weekly/Monthly toggle — the underlying
+// for the dashboard's Daily/Weekly/Monthly/Hourly toggle — the underlying
 // comparison totals above are unaffected, only chart granularity changes.
+// ("Hourly" bypasses this entirely — see the hourlyMap built above, since it
+// needs the raw per-invoice hour-of-day, which day-level aggregation loses.)
 function bucketByGranularity(daily: DailyPoint[], granularity: string): DailyPoint[] {
   if (granularity !== 'weekly' && granularity !== 'monthly') return daily
 

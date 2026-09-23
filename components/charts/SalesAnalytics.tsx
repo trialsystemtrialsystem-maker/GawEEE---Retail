@@ -21,6 +21,7 @@ interface TrendResponse {
 }
 
 const GRANULARITY_OPTIONS = [
+  { label: 'Hourly', value: 'hourly' },
   { label: 'Daily', value: 'daily' },
   { label: 'Weekly', value: 'weekly' },
   { label: 'Monthly', value: 'monthly' },
@@ -91,7 +92,7 @@ export function SalesAnalytics({ outletId }: { outletId?: string } = {}) {
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <Card className="lg:col-span-2">
           <h3 className="mb-2 text-base font-semibold text-gray-900">Tren Penjualan &amp; Laba</h3>
-          <SalesTrendChart data={data.daily} />
+          <SalesTrendChart data={data.daily} granularity={granularity} />
         </Card>
         <Card>
           <h3 className="mb-2 text-base font-semibold text-gray-900">Pendapatan per Kategori</h3>
