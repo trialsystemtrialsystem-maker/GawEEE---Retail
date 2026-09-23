@@ -4,6 +4,8 @@ import { useEffect, useState, useCallback } from 'react'
 import { Alert } from '@/components/ui/Alert'
 import { Card } from '@/components/ui/Card'
 import { OutletSelector } from '@/components/ui/OutletSelector'
+import { DateRangePicker, type DateRange } from '@/components/ui/DateRangePicker'
+import { ExportCsvButton } from '@/components/ui/ExportCsvButton'
 import { formatCurrency } from '@/lib/utils/formatting'
 import { useResolvedOutlet } from '@/lib/hooks/useResolvedOutlet'
 
@@ -28,19 +30,18 @@ function firstDayOfMonth() {
 
 export function ProfitLossView({ outletId: outletIdProp }: { outletId?: string }) {
   const { outletId, isResolving, selectedOutlet, setSelectedOutlet } = useResolvedOutlet(outletIdProp)
-  const [start, setStart] = useState(firstDayOfMonth)
-  const [end, setEnd] = useState(() => new Date().toISOString().slice(0, 10))
+  const [range, setRange] = useState<DateRange>(() => ({ start: firstDayOfMonth(), end: new Date().toISOString().slice(0, 10) }))
   const [data, setData] = useState<ProfitLossData | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
   const load = useCallback(async () => {
     if (!outletId) return
     setIsLoading(true)
-    const res = await fetch(`/api/accounting/reports?outlet_id=${outletId}&type=profit-loss&start=${start}&end=${end}`)
+    const res = await fetch(`/api/accounting/reports?outlet_id=${outletId}&type=profit-loss&start=${range.start}&end=${range.end}`)
     const json = await res.json()
     if (res.ok) setData(json)
     setIsLoading(false)
-  }, [outletId, start, end])
+  }, [outletId, range])
 
   useEffect(() => {
     const timeout = setTimeout(load, 0)
@@ -49,33 +50,26 @@ export function ProfitLossView({ outletId: outletIdProp }: { outletId?: string }
 
   if (isResolving) return <p className="text-sm text-gray-400">Memuat…</p>
 
+  const csvRows = data
+    ? [
+        ...data.income.map((a) => ({ tipe: 'Pendapatan', akun: a.account_name, saldo: a.balance })),
+        ...data.expense.map((a) => ({ tipe: 'Beban', akun: a.account_name, saldo: a.balance })),
+      ]
+    : []
+
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-end gap-3">
-        {!outletIdProp && (
-          <div className="space-y-1">
-            <label className="block text-sm font-medium text-gray-700">Outlet</label>
-            <OutletSelector includeAll={false} value={selectedOutlet} onChange={setSelectedOutlet} />
-          </div>
-        )}
-        <div className="space-y-1">
-          <label className="block text-sm font-medium text-gray-700">Dari</label>
-          <input
-            type="date"
-            value={start}
-            onChange={(e) => setStart(e.target.value)}
-            className="rounded-sm border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
-          />
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div className="flex flex-wrap items-end gap-3">
+          {!outletIdProp && (
+            <div className="space-y-1">
+              <label className="block text-sm font-medium text-gray-700">Outlet</label>
+              <OutletSelector includeAll={false} value={selectedOutlet} onChange={setSelectedOutlet} />
+            </div>
+          )}
+          <DateRangePicker value={range} onChange={setRange} />
         </div>
-        <div className="space-y-1">
-          <label className="block text-sm font-medium text-gray-700">Sampai</label>
-          <input
-            type="date"
-            value={end}
-            onChange={(e) => setEnd(e.target.value)}
-            className="rounded-sm border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
-          />
-        </div>
+        <ExportCsvButton filename="laba-rugi" rows={csvRows} />
       </div>
 
       {isLoading ? (

@@ -3,6 +3,8 @@
 import { useEffect, useState, useCallback } from 'react'
 import { formatCurrency, formatDate } from '@/lib/utils/formatting'
 import { OutletSelector } from '@/components/ui/OutletSelector'
+import { DateRangePicker, defaultDateRange, type DateRange } from '@/components/ui/DateRangePicker'
+import { ExportCsvButton } from '@/components/ui/ExportCsvButton'
 import { useResolvedOutlet } from '@/lib/hooks/useResolvedOutlet'
 
 interface Account {
@@ -24,7 +26,9 @@ export function LedgerView({ outletId: outletIdProp }: { outletId?: string }) {
   const { outletId, isResolving, selectedOutlet, setSelectedOutlet } = useResolvedOutlet(outletIdProp)
   const [accounts, setAccounts] = useState<Account[]>([])
   const [accountId, setAccountId] = useState('')
+  const [range, setRange] = useState<DateRange>(() => defaultDateRange(30))
   const [rows, setRows] = useState<LedgerRow[]>([])
+  const [openingBalance, setOpeningBalance] = useState(0)
   const [endingBalance, setEndingBalance] = useState(0)
   const [isLoading, setIsLoading] = useState(false)
 
@@ -46,14 +50,15 @@ export function LedgerView({ outletId: outletIdProp }: { outletId?: string }) {
   const loadLedger = useCallback(async () => {
     if (!accountId) return
     setIsLoading(true)
-    const res = await fetch(`/api/accounting/ledger?outlet_id=${outletId}&account_id=${accountId}`)
+    const res = await fetch(`/api/accounting/ledger?outlet_id=${outletId}&account_id=${accountId}&start=${range.start}&end=${range.end}`)
     const data = await res.json()
     if (res.ok) {
       setRows(data.rows ?? [])
+      setOpeningBalance(data.opening_balance ?? 0)
       setEndingBalance(data.ending_balance ?? 0)
     }
     setIsLoading(false)
-  }, [outletId, accountId])
+  }, [outletId, accountId, range])
 
   useEffect(() => {
     const timeout = setTimeout(loadLedger, 0)
@@ -62,30 +67,40 @@ export function LedgerView({ outletId: outletIdProp }: { outletId?: string }) {
 
   if (isResolving) return <p className="text-sm text-gray-400">Memuat…</p>
 
+  const csvRows = rows.map((r) => ({ tanggal: r.entry_date, deskripsi: r.description, debit: r.debit, kredit: r.credit, saldo: r.balance }))
+
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-end gap-3">
-        {!outletIdProp && (
-          <div className="space-y-1">
-            <label className="block text-sm font-medium text-gray-700">Outlet</label>
-            <OutletSelector includeAll={false} value={selectedOutlet} onChange={setSelectedOutlet} />
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div className="flex flex-wrap items-end gap-3">
+          {!outletIdProp && (
+            <div className="space-y-1">
+              <label className="block text-sm font-medium text-gray-700">Outlet</label>
+              <OutletSelector includeAll={false} value={selectedOutlet} onChange={setSelectedOutlet} />
+            </div>
+          )}
+          <div className="max-w-md flex-1 space-y-1">
+            <label className="block text-sm font-medium text-gray-700">Pilih Akun</label>
+            <select
+              value={accountId}
+              onChange={(e) => setAccountId(e.target.value)}
+              className="w-full rounded-sm border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+            >
+              {accounts.map((a) => (
+                <option key={a.id} value={a.id}>
+                  {a.account_code} - {a.account_name}
+                </option>
+              ))}
+            </select>
           </div>
-        )}
-        <div className="max-w-md flex-1 space-y-1">
-          <label className="block text-sm font-medium text-gray-700">Pilih Akun</label>
-          <select
-            value={accountId}
-            onChange={(e) => setAccountId(e.target.value)}
-            className="w-full rounded-sm border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
-          >
-            {accounts.map((a) => (
-              <option key={a.id} value={a.id}>
-                {a.account_code} - {a.account_name}
-              </option>
-            ))}
-          </select>
+          <DateRangePicker value={range} onChange={setRange} />
         </div>
+        <ExportCsvButton filename="buku-besar" rows={csvRows} />
       </div>
+
+      {!isLoading && rows.length > 0 && (
+        <p className="text-sm text-gray-500">Saldo Awal ({formatDate(range.start)}): <span className="font-medium text-gray-900">{formatCurrency(openingBalance)}</span></p>
+      )}
 
       <div className="overflow-x-auto rounded-lg border border-gray-200">
         <table className="min-w-full divide-y divide-gray-200 text-sm">

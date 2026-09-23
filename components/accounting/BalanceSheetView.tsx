@@ -2,7 +2,9 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import { Alert } from '@/components/ui/Alert'
+import { Input } from '@/components/ui/Input'
 import { OutletSelector } from '@/components/ui/OutletSelector'
+import { ExportCsvButton } from '@/components/ui/ExportCsvButton'
 import { formatCurrency } from '@/lib/utils/formatting'
 import { useResolvedOutlet } from '@/lib/hooks/useResolvedOutlet'
 
@@ -55,17 +57,18 @@ function Section({ title, rows, total }: { title: string; rows: AccountBalance[]
 
 export function BalanceSheetView({ outletId: outletIdProp }: { outletId?: string }) {
   const { outletId, isResolving, selectedOutlet, setSelectedOutlet } = useResolvedOutlet(outletIdProp)
+  const [asOf, setAsOf] = useState(() => new Date().toISOString().slice(0, 10))
   const [data, setData] = useState<BalanceSheetData | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
   const load = useCallback(async () => {
     if (!outletId) return
     setIsLoading(true)
-    const res = await fetch(`/api/accounting/reports?outlet_id=${outletId}&type=balance-sheet`)
+    const res = await fetch(`/api/accounting/reports?outlet_id=${outletId}&type=balance-sheet&as_of=${asOf}`)
     const json = await res.json()
     if (res.ok) setData(json)
     setIsLoading(false)
-  }, [outletId])
+  }, [outletId, asOf])
 
   useEffect(() => {
     const timeout = setTimeout(load, 0)
@@ -75,9 +78,26 @@ export function BalanceSheetView({ outletId: outletIdProp }: { outletId?: string
   if (isResolving || isLoading) return <p className="text-sm text-gray-400">Memuat…</p>
   if (!data) return <Alert variant="danger">Gagal memuat neraca</Alert>
 
+  const csvRows = [
+    ...data.asset.map((a) => ({ tipe: 'Aset', akun: a.account_name, saldo: a.balance })),
+    ...data.liability.map((a) => ({ tipe: 'Liabilitas', akun: a.account_name, saldo: a.balance })),
+    ...data.equity.map((a) => ({ tipe: 'Ekuitas', akun: a.account_name, saldo: a.balance })),
+  ]
+
   return (
     <div className="space-y-4">
-      {!outletIdProp && <OutletSelector includeAll={false} value={selectedOutlet} onChange={setSelectedOutlet} />}
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div className="flex flex-wrap items-end gap-3">
+          {!outletIdProp && (
+            <div className="space-y-1">
+              <label className="block text-sm font-medium text-gray-700">Outlet</label>
+              <OutletSelector includeAll={false} value={selectedOutlet} onChange={setSelectedOutlet} />
+            </div>
+          )}
+          <Input name="as_of" label="Per Tanggal" type="date" value={asOf} onChange={(e) => setAsOf(e.target.value)} />
+        </div>
+        <ExportCsvButton filename="neraca" rows={csvRows} />
+      </div>
       {!data.isBalanced && (
         <Alert variant="warning">
           Aset ({formatCurrency(data.totalAsset)}) belum sama dengan Liabilitas + Ekuitas (

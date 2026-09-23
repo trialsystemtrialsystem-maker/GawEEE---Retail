@@ -5,6 +5,8 @@ import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Alert } from '@/components/ui/Alert'
 import { OutletSelector } from '@/components/ui/OutletSelector'
+import { DateRangePicker, defaultDateRange, type DateRange } from '@/components/ui/DateRangePicker'
+import { ExportCsvButton } from '@/components/ui/ExportCsvButton'
 import { formatCurrency, formatDate } from '@/lib/utils/formatting'
 import { useNotificationStore } from '@/store/notificationStore'
 import { useResolvedOutlet } from '@/lib/hooks/useResolvedOutlet'
@@ -34,6 +36,7 @@ export function JournalEntryManager({ outletId: outletIdProp, canPost }: { outle
   const { outletId, isResolving, selectedOutlet, setSelectedOutlet } = useResolvedOutlet(outletIdProp)
   const [accounts, setAccounts] = useState<Account[]>([])
   const [entries, setEntries] = useState<JournalEntry[]>([])
+  const [range, setRange] = useState<DateRange>(() => defaultDateRange(30))
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [showForm, setShowForm] = useState(false)
@@ -49,14 +52,14 @@ export function JournalEntryManager({ outletId: outletIdProp, canPost }: { outle
     setIsLoading(true)
     const [accountsRes, entriesRes] = await Promise.all([
       fetch(`/api/accounting/accounts?outlet_id=${outletId}`),
-      fetch(`/api/accounting/journal-entries?outlet_id=${outletId}`),
+      fetch(`/api/accounting/journal-entries?outlet_id=${outletId}&start=${range.start}&end=${range.end}`),
     ])
     const accountsData = await accountsRes.json()
     const entriesData = await entriesRes.json()
     if (accountsRes.ok) setAccounts(accountsData.accounts ?? [])
     if (entriesRes.ok) setEntries(entriesData.entries ?? [])
     setIsLoading(false)
-  }, [outletId])
+  }, [outletId, range])
 
   useEffect(() => {
     const timeout = setTimeout(load, 0)
@@ -126,16 +129,22 @@ export function JournalEntryManager({ outletId: outletIdProp, canPost }: { outle
   if (isResolving) return <p className="text-sm text-gray-400">Memuat…</p>
   if (!outletId) return <Alert variant="warning">Belum ada outlet untuk ditampilkan.</Alert>
 
+  const csvRows = entries.map((e) => ({ tanggal: e.entry_date, deskripsi: e.description, status: e.status === 'posted' ? 'Posted' : 'Draft' }))
+
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           {!outletIdProp && <OutletSelector includeAll={false} value={selectedOutlet} onChange={setSelectedOutlet} />}
+          <DateRangePicker value={range} onChange={setRange} />
           <p className="text-sm text-gray-500">{entries.length} entri jurnal</p>
         </div>
-        <Button size="sm" onClick={() => setShowForm((v) => !v)} disabled={accounts.length === 0}>
-          {showForm ? 'Batal' : '+ Buat Jurnal'}
-        </Button>
+        <div className="flex items-center gap-2">
+          <ExportCsvButton filename="jurnal-umum" rows={csvRows} />
+          <Button size="sm" onClick={() => setShowForm((v) => !v)} disabled={accounts.length === 0}>
+            {showForm ? 'Batal' : '+ Buat Jurnal'}
+          </Button>
+        </div>
       </div>
 
       {accounts.length === 0 && !isLoading && (

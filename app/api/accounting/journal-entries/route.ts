@@ -3,7 +3,7 @@ import { getAuthContext, canAccessOutlet } from '@/lib/utils/auth-context'
 import { validate, createJournalEntrySchema } from '@/lib/utils/validation'
 import { handleDatabaseError } from '@/lib/utils/errors'
 
-// GET /api/accounting/journal-entries?outlet_id=&status=
+// GET /api/accounting/journal-entries?outlet_id=&status=&start=&end=
 export async function GET(request: NextRequest) {
   const auth = await getAuthContext()
   if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -11,6 +11,8 @@ export async function GET(request: NextRequest) {
   const { searchParams } = request.nextUrl
   const outletId = searchParams.get('outlet_id') ?? auth.outlet_id
   const status = searchParams.get('status')
+  const start = searchParams.get('start')
+  const end = searchParams.get('end')
   if (!outletId || !canAccessOutlet(auth, outletId)) {
     return NextResponse.json({ error: 'Tidak memiliki izin' }, { status: 403 })
   }
@@ -23,6 +25,10 @@ export async function GET(request: NextRequest) {
     .order('created_at', { ascending: false })
 
   if (status) query = query.eq('status', status as 'draft' | 'posted' | 'reversed')
+  // entry_date is a plain date column — direct YYYY-MM-DD string comparison,
+  // no UTC timestamp construction needed (unlike invoices.created_at elsewhere).
+  if (start) query = query.gte('entry_date', start)
+  if (end) query = query.lte('entry_date', end)
 
   const { data, error } = await query
   if (error) {

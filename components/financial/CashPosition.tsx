@@ -4,7 +4,10 @@ import { useEffect, useState } from 'react'
 import { KPICard } from '@/components/dashboard/KPICard'
 import { Card } from '@/components/ui/Card'
 import { Alert } from '@/components/ui/Alert'
+import { OutletSelector } from '@/components/ui/OutletSelector'
+import { ExportCsvButton } from '@/components/ui/ExportCsvButton'
 import { formatCurrency, formatDateTime } from '@/lib/utils/formatting'
+import { useResolvedOutlet } from '@/lib/hooks/useResolvedOutlet'
 
 interface CashPositionData {
   as_of: string
@@ -16,11 +19,13 @@ interface CashPositionData {
 }
 
 export function CashPosition() {
+  const { outletId, isResolving, selectedOutlet, setSelectedOutlet } = useResolvedOutlet()
   const [data, setData] = useState<CashPositionData | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    fetch('/api/reports/cash-position')
+    if (!outletId) return
+    fetch(`/api/reports/cash-position?outlet_id=${outletId}`)
       .then(async (res) => {
         const json = await res.json()
         if (!res.ok) {
@@ -30,13 +35,21 @@ export function CashPosition() {
         setData(json)
       })
       .catch(() => setError('Terjadi kesalahan jaringan'))
-  }, [])
+  }, [outletId])
 
+  if (isResolving) return <p className="text-gray-400">Memuat…</p>
   if (error) return <Alert variant="danger">{error}</Alert>
   if (!data) return <p className="text-gray-400">Memuat…</p>
 
+  const csvRows = data.recent_transactions.map((t) => ({ jenis: t.type, jumlah: t.amount, waktu: t.timestamp }))
+
   return (
     <div className="space-y-6">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <OutletSelector includeAll={false} value={selectedOutlet} onChange={setSelectedOutlet} />
+        <ExportCsvButton filename="posisi-kas" rows={csvRows} />
+      </div>
+
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <KPICard label="Kas di Tangan" value={formatCurrency(data.cash_on_hand)} />
         <KPICard label="E-Wallet Pending" value={formatCurrency(data.pending_e_wallet_settlement)} />
