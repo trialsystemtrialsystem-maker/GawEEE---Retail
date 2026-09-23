@@ -2,6 +2,13 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getAuthContext, canAccessOutlet } from '@/lib/utils/auth-context'
 
 // GET /api/reports/p-and-l?from_date&to_date&outlet_id= — see prd.md §4.6.
+// Backs "Ringkasan Penjualan" (Sales Summary), NOT the official Laba Rugi —
+// that's /api/accounting/reports?type=profit-loss, computed from the actual
+// general ledger (todo.md Phase 31). This route only ever sees revenue/COGS
+// straight from invoices, so it has no way to reflect journaled operating
+// expenses (rent, payroll, etc.) — deliberately scoped down to just
+// revenue/COGS/gross-profit rather than pretending at a net-profit figure
+// that would always read "gross profit" mislabeled as "net profit."
 // outlet_id is optional (defaults to the caller's own outlet) so a
 // master_admin — whose own outlet_id is null — can still pick one; this
 // mirrors every other accounting-family route's canAccessOutlet() pattern,
@@ -39,11 +46,6 @@ export async function GET(request: NextRequest) {
     0
   )
   const grossProfit = revenue - cogs
-  // Operating expenses aren't tracked yet (todo.md Phase 1 "Nice-to-Have":
-  // basic expense tracking) — reported as 0 until that module exists.
-  const operatingExpenses = { salaries: 0, rent: 0, utilities: 0, other: 0, total: 0 }
-  const operatingProfit = grossProfit - operatingExpenses.total
-  const netProfit = operatingProfit
 
   return NextResponse.json({
     period: { from_date: fromDate, to_date: toDate },
@@ -51,10 +53,5 @@ export async function GET(request: NextRequest) {
     cost_of_goods_sold: cogs,
     gross_profit: grossProfit,
     gross_profit_margin: revenue ? Math.round((grossProfit / revenue) * 10000) / 100 : 0,
-    operating_expenses: operatingExpenses,
-    operating_profit: operatingProfit,
-    other_income_expenses: 0,
-    net_profit: netProfit,
-    net_profit_margin: revenue ? Math.round((netProfit / revenue) * 10000) / 100 : 0,
   })
 }

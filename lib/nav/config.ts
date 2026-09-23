@@ -263,7 +263,7 @@ export const SECONDARY_NAV: NavItem[] = [
     icon: '📈',
     children: [
       { label: 'Laporan Harian', href: '/dashboard/financial' },
-      { label: 'P&L Statement', href: '/dashboard/financial/reports' },
+      { label: 'Ringkasan Penjualan', href: '/dashboard/financial/reports' },
       { label: 'Cash Position', href: '/dashboard/financial/cash-position' },
       { label: 'Tax Report', href: '/dashboard/financial/tax-report' },
     ],

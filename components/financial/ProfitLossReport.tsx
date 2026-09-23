@@ -14,10 +14,6 @@ interface PnLData {
   cost_of_goods_sold: number
   gross_profit: number
   gross_profit_margin: number
-  operating_expenses: { total: number }
-  operating_profit: number
-  net_profit: number
-  net_profit_margin: number
 }
 
 function today() {
@@ -73,6 +69,12 @@ export function ProfitLossReport() {
         <Input name="to_date" label="Sampai Tanggal" type="date" value={toDate} onChange={(e) => setToDate(e.target.value)} />
       </div>
 
+      <Alert variant="info">
+        Dihitung langsung dari transaksi penjualan (pendapatan dikurangi HPP) — bukan dari pembukuan/jurnal,
+        sehingga tidak memasukkan beban operasional seperti gaji atau sewa. Untuk Laba Rugi resmi yang
+        mencerminkan seluruh pembukuan, lihat menu Laba Rugi.
+      </Alert>
+
       {error && <Alert variant="danger">{error}</Alert>}
 
       {isLoading || !data ? (
@@ -81,13 +83,9 @@ export function ProfitLossReport() {
         <Card className="max-w-lg space-y-2 text-sm">
           <Row label="Pendapatan" value={formatCurrency(data.revenue)} />
           <Row label="HPP (COGS)" value={formatCurrency(data.cost_of_goods_sold)} />
-          <Row label="Laba Kotor" value={formatCurrency(data.gross_profit)} bold />
-          <Row label="Margin Kotor" value={formatPercent(data.gross_profit_margin / 100)} />
-          <Row label="Biaya Operasional" value={formatCurrency(data.operating_expenses.total)} />
-          <Row label="Laba Operasional" value={formatCurrency(data.operating_profit)} />
           <div className="border-t border-gray-200 pt-2">
-            <Row label="Laba Bersih" value={formatCurrency(data.net_profit)} bold />
-            <Row label="Margin Bersih" value={formatPercent(data.net_profit_margin / 100)} />
+            <Row label="Laba Kotor" value={formatCurrency(data.gross_profit)} bold />
+            <Row label="Margin Kotor" value={formatPercent(data.gross_profit_margin / 100)} />
           </div>
         </Card>
       )}
