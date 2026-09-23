@@ -1,6 +1,15 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '@/lib/types/database.types'
 
+/** Pure points calculation, split out from earnLoyaltyPoints() below purely
+ * so it's unit-testable without a Supabase client — same reasoning as
+ * evaluateRateLimit() in lib/utils/rateLimit.ts. Whole-thousands-of-rupiah
+ * earn only: a Rp 999 sale earns 0 points at any rate, matching the
+ * Math.floor(total / 1000) the SQL side of this feature was designed around. */
+export function calculateLoyaltyPoints(total: number, pointsPer1000: number): number {
+  return Math.floor(total / 1000) * pointsPer1000
+}
+
 /** Auto-earns loyalty points for a just-settled sale — called once an
  * invoice is confirmed paid (immediately for cash in POST /api/invoices,
  * or from the settlement routes for e-wallet/bank once the payment clears).
@@ -29,7 +38,7 @@ export async function earnLoyaltyPoints(supabase: SupabaseClient<Database>, invo
       .maybeSingle()
     if (!customer) return
 
-    const points = Math.floor(invoice.total / 1000) * outlet.loyalty_points_per_1000
+    const points = calculateLoyaltyPoints(invoice.total, outlet.loyalty_points_per_1000)
     if (points <= 0) return
 
     // customer_id + invoice_id together keep this idempotent if a settlement

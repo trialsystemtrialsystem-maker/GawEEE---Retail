@@ -1551,6 +1551,18 @@ coverage despite being one of the money-critical paths this codebase leans on mo
       e2e suite from 4 files to 9. Every file typechecks, lints, and passed on a live run against the demo
       account; `npm test` (jest) re-run clean (59/59) after each addition as a sanity check that nothing
       app-side regressed.
+- [x] **Follow-up unit-test sweep**: Phase 16 left "add meaningful coverage for previously-untested pure
+      logic" as an open-ended, ongoing goal (39 tests at the time). Checked which `lib/utils/*.ts` files
+      still had zero corresponding test — only `constants.ts` (pure static data, correctly untested),
+      `loyalty.ts`, and this phase's own `outletScope.ts` (an oversight — built and used everywhere this
+      phase without ever getting a test of its own). Added `tests/unit/lib/outletScope.test.ts` — all 6
+      branches of `resolveOutletScope()` (master_admin/non-master_admin × "all"/specific-id/no-param, plus
+      an empty-company-outlets edge case and a simulated DB error), mocking only the one Supabase call the
+      master_admin+"all" branch makes. Also extracted `calculateLoyaltyPoints()` out of `earnLoyaltyPoints()`
+      in `lib/utils/loyalty.ts` (same "split out the pure decision logic so it's unit-testable without a
+      Supabase client" pattern as `evaluateRateLimit()`) and added `tests/unit/lib/loyalty.test.ts` (whole-
+      thousands-only rounding, a configured-rate-of-0 outlet, a zero-total sale). 75 unit tests passing now,
+      up from 59. `tsc`/`eslint`/`npm run build` all clean after the `loyalty.ts` refactor.
 
 ## Notes on scope
 This todo tracks the **engineering deliverables** of the PRD (a working Next.js + Supabase codebase
