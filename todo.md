@@ -1569,6 +1569,24 @@ coverage despite being one of the money-critical paths this codebase leans on mo
       Supabase client" pattern as `evaluateRateLimit()`) and added `tests/unit/lib/loyalty.test.ts` (whole-
       thousands-only rounding, a configured-rate-of-0 outlet, a zero-total sale). 75 unit tests passing now,
       up from 59. `tsc`/`eslint`/`npm run build` all clean after the `loyalty.ts` refactor.
+- [x] Checked `npx jest --coverage` per-file to see what was left uncovered in files that already have a
+      test: `exportCsv.ts`'s gap turned out to be only the browser-only DOM/download glue in `exportToCsv()`
+      (`rowsToCsv()`, the actual escaping logic, is already fully covered) — correctly untested, no action.
+      Added `tests/unit/lib/rateLimit.test.ts` coverage for `clientIp()` (multi-hop `x-forwarded-for`
+      parsing/trimming, `x-real-ip` fallback, which header wins when both are present, and the
+      `'unknown'` degrade-don't-throw case when neither is present) — a small pure function with real
+      security-relevant edge cases that had none. 80 unit tests passing now.
+- [x] Also ran `npm audit` (0 vulnerabilities, prod and dev deps both) and grepped for stray
+      `console.log`/`debugger`/`@ts-ignore` across `app`/`components`/`lib` (none, beyond 3 narrowly-scoped
+      `eslint-disable-next-line react-hooks/exhaustive-deps` comments) — codebase already clean on both
+      counts, nothing to fix. `npm outdated` shows only minor-version and a couple of speculative-looking
+      major-version bumps (no CVEs behind any of them) — left alone rather than bumping without a concrete
+      reason, since an unprompted major-version dependency bump is exactly the kind of risky, hard-to-
+      justify change these sessions avoid making unasked.
+- [x] While reviewing every remaining `[!]`-flagged item for staleness, found and fixed two that had
+      actually already been resolved by later phases but never got their tracking updated (demo-seed rate
+      limiting from Phase 16; the day/month UTC-bucketing audit fully closed across Phase 28's two parts) —
+      corrected to `[x]` with a note on what closed them and when, so the tracker reflects real state.
 
 ## Notes on scope
 This todo tracks the **engineering deliverables** of the PRD (a working Next.js + Supabase codebase
