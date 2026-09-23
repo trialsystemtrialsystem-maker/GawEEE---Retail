@@ -347,10 +347,11 @@ Legend: `[ ]` pending · `[x]` done · `[!]` needs user input/credentials before
       deployment (Vercel, still blocked per below) the background task isn't guaranteed to keep running
       after the response is sent — would need `waitUntil()` or a scheduled job instead. Fine on the
       current self-hosted/Node dev setup.
-- [!] The demo seed endpoint is public and unauthenticated by design (so it's reachable from the
-      landing page without login) but has no rate-limiting — repeated calls just re-seed the same
-      fixed tenant (bounded blast radius), but could still be hammered to load the DB. Acceptable for
-      a portfolio/demo deployment; would need real rate-limiting before a production launch.
+- [x] The demo seed endpoint is public and unauthenticated by design (so it's reachable from the
+      landing page without login); repeated calls just re-seed the same fixed tenant (bounded blast
+      radius) but could still be hammered to load the DB. **Resolved in Phase 16**: rate-limited to
+      20/min per IP (`checkRateLimit('demo-seed:<ip>', 20, 60)` in `app/api/demo/seed/route.ts`) — this
+      entry predated that phase and was never updated to reflect it.
 
 ## Phase 7 — Business Suite Modules (Sales Dashboard, Order Online, Booking, Employee, Accounting, WhatsApp)
 User pasted 14 reference screenshots from a laundry-service SaaS ("majoo") asking for 6 new dashboard
@@ -1387,11 +1388,16 @@ system, so this closes it properly rather than just adding a report on top of de
       re-verified against the same raw query afterward, exact match (MTD total and a spot-checked day both
       matched precisely; today's actual correctly read 0, matching an independent count of 0 real invoices
       today rather than the bug coincidentally also producing 0).
-- [!] Given how easily this bug class slipped in, worth auditing the *other* report routes doing day/month
+- [x] Given how easily this bug class slipped in, audited the *other* report routes doing day/month
       bucketing (`sales-trend`, `peak-time`, `daily-summary`, `new-vs-returning`, `void-analysis`, the
-      admin outlet hourly/daily routes) for the same local-vs-UTC mismatch — investigation in progress,
-      not yet confirmed which (if any) of those are actually affected or how serious each one is before
-      deciding what, if anything, needs fixing there too.
+      admin outlet hourly/daily routes) for the same local-vs-UTC mismatch. **Resolved across Phase 28's
+      two parts**, not left open as this entry originally implied: `sales-trend` and `peak-time` were fixed
+      in Phase 28 part 1 (the audit's two most serious findings — `sales-trend` was misattributing real
+      invoices between current/previous period, not just mislabeling dates); `daily-summary` and
+      `new-vs-returning` (plus a separate month-window construction bug in the latter) and `void-analysis`
+      were converted to `resolveDateRange()` in Phase 28 part 2; the admin outlet hourly/daily routes got
+      the same `resolveDateRange()` + `getUTCHours()` treatment in Phase 28 part 2's final follow-up,
+      alongside the P&L default-month-boundary fix. Every flagged route now UTC-safe.
 
 ## Phase 28 — Date range, outlet scope, and Excel export across every report (part 1)
 User asked for three things on every "identification" report: a custom date-range picker (not just preset
