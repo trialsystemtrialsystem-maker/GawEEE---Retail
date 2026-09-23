@@ -299,6 +299,7 @@ export function ProductSearch({ outletId }: { outletId: string }) {
             const accent = colorForCategory(item.category_name)
             const window = activeTimePrice(item.product_id)
             const hasSpecialPrice = !!window && window.price < item.unit_price
+            const cartQty = cartQtyByProduct.get(item.product_id) ?? 0
             return (
               <button
                 key={item.product_id}
@@ -316,12 +317,19 @@ export function ProductSearch({ outletId }: { outletId: string }) {
                 {hasSpecialPrice && (
                   <span className="absolute left-1.5 top-1.5 rounded-full bg-rose-500 px-1.5 py-0.5 text-[10px] font-bold text-white">⏰ Promo</span>
                 )}
-                <span
-                  aria-hidden
-                  style={{ backgroundColor: `color-mix(in srgb, ${accent} 18%, white)` }}
-                  className="flex h-12 w-12 items-center justify-center rounded-full text-2xl"
-                >
-                  {getProductIcon({ name: item.name, categoryName: item.category_name })}
+                <span className="relative">
+                  <span
+                    aria-hidden
+                    style={{ backgroundColor: `color-mix(in srgb, ${accent} 18%, white)` }}
+                    className="flex h-12 w-12 items-center justify-center rounded-full text-2xl"
+                  >
+                    {getProductIcon({ name: item.name, categoryName: item.category_name })}
+                  </span>
+                  {cartQty > 0 && (
+                    <span className="absolute -bottom-1 -right-1 flex h-5 min-w-5 items-center justify-center rounded-full border-2 border-white bg-[var(--brand-600)] px-1 text-[11px] font-bold text-white">
+                      {cartQty}
+                    </span>
+                  )}
                 </span>
                 <div className="w-full">
                   <p className="line-clamp-2 text-sm font-semibold text-gray-900">{item.name}</p>
