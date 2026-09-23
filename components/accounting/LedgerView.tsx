@@ -2,6 +2,8 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import { formatCurrency, formatDate } from '@/lib/utils/formatting'
+import { OutletSelector } from '@/components/ui/OutletSelector'
+import { useResolvedOutlet } from '@/lib/hooks/useResolvedOutlet'
 
 interface Account {
   id: string
@@ -18,7 +20,8 @@ interface LedgerRow {
   balance: number
 }
 
-export function LedgerView({ outletId }: { outletId: string }) {
+export function LedgerView({ outletId: outletIdProp }: { outletId?: string }) {
+  const { outletId, isResolving, selectedOutlet, setSelectedOutlet } = useResolvedOutlet(outletIdProp)
   const [accounts, setAccounts] = useState<Account[]>([])
   const [accountId, setAccountId] = useState('')
   const [rows, setRows] = useState<LedgerRow[]>([])
@@ -26,6 +29,7 @@ export function LedgerView({ outletId }: { outletId: string }) {
   const [isLoading, setIsLoading] = useState(false)
 
   const loadAccounts = useCallback(async () => {
+    if (!outletId) return
     const res = await fetch(`/api/accounting/accounts?outlet_id=${outletId}`)
     const data = await res.json()
     if (res.ok) {
@@ -56,21 +60,31 @@ export function LedgerView({ outletId }: { outletId: string }) {
     return () => clearTimeout(timeout)
   }, [loadLedger])
 
+  if (isResolving) return <p className="text-sm text-gray-400">Memuat…</p>
+
   return (
     <div className="space-y-4">
-      <div className="max-w-md space-y-1">
-        <label className="block text-sm font-medium text-gray-700">Pilih Akun</label>
-        <select
-          value={accountId}
-          onChange={(e) => setAccountId(e.target.value)}
-          className="w-full rounded-sm border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
-        >
-          {accounts.map((a) => (
-            <option key={a.id} value={a.id}>
-              {a.account_code} - {a.account_name}
-            </option>
-          ))}
-        </select>
+      <div className="flex flex-wrap items-end gap-3">
+        {!outletIdProp && (
+          <div className="space-y-1">
+            <label className="block text-sm font-medium text-gray-700">Outlet</label>
+            <OutletSelector includeAll={false} value={selectedOutlet} onChange={setSelectedOutlet} />
+          </div>
+        )}
+        <div className="max-w-md flex-1 space-y-1">
+          <label className="block text-sm font-medium text-gray-700">Pilih Akun</label>
+          <select
+            value={accountId}
+            onChange={(e) => setAccountId(e.target.value)}
+            className="w-full rounded-sm border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+          >
+            {accounts.map((a) => (
+              <option key={a.id} value={a.id}>
+                {a.account_code} - {a.account_name}
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
 
       <div className="overflow-x-auto rounded-lg border border-gray-200">

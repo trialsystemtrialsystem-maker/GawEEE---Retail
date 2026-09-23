@@ -2,7 +2,9 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import { Alert } from '@/components/ui/Alert'
+import { OutletSelector } from '@/components/ui/OutletSelector'
 import { formatCurrency } from '@/lib/utils/formatting'
+import { useResolvedOutlet } from '@/lib/hooks/useResolvedOutlet'
 
 interface AccountBalance {
   id: string
@@ -51,11 +53,13 @@ function Section({ title, rows, total }: { title: string; rows: AccountBalance[]
   )
 }
 
-export function BalanceSheetView({ outletId }: { outletId: string }) {
+export function BalanceSheetView({ outletId: outletIdProp }: { outletId?: string }) {
+  const { outletId, isResolving, selectedOutlet, setSelectedOutlet } = useResolvedOutlet(outletIdProp)
   const [data, setData] = useState<BalanceSheetData | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
   const load = useCallback(async () => {
+    if (!outletId) return
     setIsLoading(true)
     const res = await fetch(`/api/accounting/reports?outlet_id=${outletId}&type=balance-sheet`)
     const json = await res.json()
@@ -68,11 +72,12 @@ export function BalanceSheetView({ outletId }: { outletId: string }) {
     return () => clearTimeout(timeout)
   }, [load])
 
-  if (isLoading) return <p className="text-sm text-gray-400">Memuat…</p>
+  if (isResolving || isLoading) return <p className="text-sm text-gray-400">Memuat…</p>
   if (!data) return <Alert variant="danger">Gagal memuat neraca</Alert>
 
   return (
     <div className="space-y-4">
+      {!outletIdProp && <OutletSelector includeAll={false} value={selectedOutlet} onChange={setSelectedOutlet} />}
       {!data.isBalanced && (
         <Alert variant="warning">
           Aset ({formatCurrency(data.totalAsset)}) belum sama dengan Liabilitas + Ekuitas (

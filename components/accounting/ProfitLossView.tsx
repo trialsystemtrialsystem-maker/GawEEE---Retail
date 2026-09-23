@@ -3,7 +3,9 @@
 import { useEffect, useState, useCallback } from 'react'
 import { Alert } from '@/components/ui/Alert'
 import { Card } from '@/components/ui/Card'
+import { OutletSelector } from '@/components/ui/OutletSelector'
 import { formatCurrency } from '@/lib/utils/formatting'
+import { useResolvedOutlet } from '@/lib/hooks/useResolvedOutlet'
 
 interface AccountBalance {
   id: string
@@ -20,17 +22,19 @@ interface ProfitLossData {
 }
 
 function firstDayOfMonth() {
-  const d = new Date()
-  return new Date(d.getFullYear(), d.getMonth(), 1).toISOString().slice(0, 10)
+  const now = new Date()
+  return `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, '0')}-01`
 }
 
-export function ProfitLossView({ outletId }: { outletId: string }) {
+export function ProfitLossView({ outletId: outletIdProp }: { outletId?: string }) {
+  const { outletId, isResolving, selectedOutlet, setSelectedOutlet } = useResolvedOutlet(outletIdProp)
   const [start, setStart] = useState(firstDayOfMonth)
   const [end, setEnd] = useState(() => new Date().toISOString().slice(0, 10))
   const [data, setData] = useState<ProfitLossData | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
   const load = useCallback(async () => {
+    if (!outletId) return
     setIsLoading(true)
     const res = await fetch(`/api/accounting/reports?outlet_id=${outletId}&type=profit-loss&start=${start}&end=${end}`)
     const json = await res.json()
@@ -43,9 +47,17 @@ export function ProfitLossView({ outletId }: { outletId: string }) {
     return () => clearTimeout(timeout)
   }, [load])
 
+  if (isResolving) return <p className="text-sm text-gray-400">Memuat…</p>
+
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-end gap-3">
+        {!outletIdProp && (
+          <div className="space-y-1">
+            <label className="block text-sm font-medium text-gray-700">Outlet</label>
+            <OutletSelector includeAll={false} value={selectedOutlet} onChange={setSelectedOutlet} />
+          </div>
+        )}
         <div className="space-y-1">
           <label className="block text-sm font-medium text-gray-700">Dari</label>
           <input

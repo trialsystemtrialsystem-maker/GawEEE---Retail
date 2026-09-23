@@ -1,20 +1,28 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getAuthContext } from '@/lib/utils/auth-context'
+import { getAuthContext, canAccessOutlet } from '@/lib/utils/auth-context'
 
-// GET /api/reports/p-and-l?from_date&to_date — see prd.md §4.6
+// GET /api/reports/p-and-l?from_date&to_date&outlet_id= — see prd.md §4.6.
+// outlet_id is optional (defaults to the caller's own outlet) so a
+// master_admin — whose own outlet_id is null — can still pick one; this
+// mirrors every other accounting-family route's canAccessOutlet() pattern,
+// not resolveOutletScope()'s 'all' aggregation.
 export async function GET(request: NextRequest) {
   const auth = await getAuthContext()
   if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  if (!auth.outlet_id) return NextResponse.json({ error: 'Pilih outlet terlebih dahulu' }, { status: 400 })
 
   const { searchParams } = request.nextUrl
+  const outletId = searchParams.get('outlet_id') ?? auth.outlet_id
+  if (!outletId || !canAccessOutlet(auth, outletId)) {
+    return NextResponse.json({ error: 'Tidak memiliki izin' }, { status: 403 })
+  }
+
   const fromDate = searchParams.get('from_date') ?? new Date().toISOString().slice(0, 10)
   const toDate = searchParams.get('to_date') ?? new Date().toISOString().slice(0, 10)
 
   const { data: invoices } = await auth.supabase
     .from('invoices')
     .select('total, invoice_items(cost_of_goods_sold)')
-    .eq('outlet_id', auth.outlet_id)
+    .eq('outlet_id', outletId)
     .neq('order_status', 'voided')
     .gte('created_at', `${fromDate}T00:00:00`)
     .lte('created_at', `${toDate}T23:59:59`)

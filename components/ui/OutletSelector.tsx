@@ -14,7 +14,20 @@ interface OutletOption {
 // this renders the same either way, it just won't offer anything to choose
 // beyond "Semua Outlet" for a non-master_admin (harmless, and one fewer
 // special case to carry through every report that uses it).
-export function OutletSelector({ value, onChange }: { value: string; onChange: (outletId: string) => void }) {
+export function OutletSelector({
+  value,
+  onChange,
+  includeAll = true,
+}: {
+  value: string
+  onChange: (outletId: string) => void
+  /** Set false for callers whose backing route doesn't understand
+   * outlet_id=all (e.g. the accounting family, which uses canAccessOutlet()
+   * against a single real outlet id rather than resolveOutletScope()) — the
+   * caller is responsible for seeding `value` with a real outlet id instead
+   * of the 'all' sentinel in that case. */
+  includeAll?: boolean
+}) {
   const [outlets, setOutlets] = useState<OutletOption[]>([])
 
   useEffect(() => {
@@ -34,7 +47,7 @@ export function OutletSelector({ value, onChange }: { value: string; onChange: (
       onChange={(e) => onChange(e.target.value)}
       className="rounded-sm border border-gray-200 px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--brand-500)]"
     >
-      <option value="all">Semua Outlet</option>
+      {includeAll && <option value="all">Semua Outlet</option>}
       {outlets.map((o) => (
         <option key={o.id} value={o.id}>
           {o.name}

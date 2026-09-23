@@ -4,7 +4,9 @@ import { useEffect, useState, useCallback } from 'react'
 import { Card } from '@/components/ui/Card'
 import { Input } from '@/components/ui/Input'
 import { Alert } from '@/components/ui/Alert'
+import { OutletSelector } from '@/components/ui/OutletSelector'
 import { formatCurrency, formatPercent } from '@/lib/utils/formatting'
+import { useResolvedOutlet } from '@/lib/hooks/useResolvedOutlet'
 
 interface PnLData {
   period: { from_date: string; to_date: string }
@@ -22,12 +24,12 @@ function today() {
   return new Date().toISOString().slice(0, 10)
 }
 function firstOfMonth() {
-  const d = new Date()
-  d.setDate(1)
-  return d.toISOString().slice(0, 10)
+  const now = new Date()
+  return `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, '0')}-01`
 }
 
 export function ProfitLossReport() {
+  const { outletId, isResolving, selectedOutlet, setSelectedOutlet } = useResolvedOutlet()
   const [fromDate, setFromDate] = useState(firstOfMonth())
   const [toDate, setToDate] = useState(today())
   const [data, setData] = useState<PnLData | null>(null)
@@ -35,10 +37,11 @@ export function ProfitLossReport() {
   const [isLoading, setIsLoading] = useState(true)
 
   const load = useCallback(async () => {
+    if (!outletId) return
     setIsLoading(true)
     setError(null)
     try {
-      const res = await fetch(`/api/reports/p-and-l?from_date=${fromDate}&to_date=${toDate}`)
+      const res = await fetch(`/api/reports/p-and-l?from_date=${fromDate}&to_date=${toDate}&outlet_id=${outletId}`)
       const json = await res.json()
       if (!res.ok) {
         setError(json.error ?? 'Gagal memuat laporan')
@@ -50,16 +53,22 @@ export function ProfitLossReport() {
     } finally {
       setIsLoading(false)
     }
-  }, [fromDate, toDate])
+  }, [fromDate, toDate, outletId])
 
   useEffect(() => {
     const timeout = setTimeout(load, 0)
     return () => clearTimeout(timeout)
   }, [load])
 
+  if (isResolving) return <p className="text-gray-400">Memuat…</p>
+
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-end gap-3">
+        <div className="space-y-1">
+          <label className="block text-sm font-medium text-gray-700">Outlet</label>
+          <OutletSelector includeAll={false} value={selectedOutlet} onChange={setSelectedOutlet} />
+        </div>
         <Input name="from_date" label="Dari Tanggal" type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)} />
         <Input name="to_date" label="Sampai Tanggal" type="date" value={toDate} onChange={(e) => setToDate(e.target.value)} />
       </div>

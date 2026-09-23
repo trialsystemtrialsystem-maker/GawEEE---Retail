@@ -1,7 +1,6 @@
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { Card } from '@/components/ui/Card'
-import { Alert } from '@/components/ui/Alert'
 import { formatCurrency } from '@/lib/utils/formatting'
 
 const QUICK_LINKS = [
@@ -19,22 +18,25 @@ export default async function AccountingDashboardPage() {
   } = await supabase.auth.getSession()
   const user = session?.user
 
-  const { data: profile } = await supabase.from('users').select('outlet_id').eq('id', user!.id).single()
+  const { data: profile } = await supabase.from('users').select('outlet_id, company_id').eq('id', user!.id).single()
 
-  if (!profile?.outlet_id) {
-    return <Alert variant="warning">Pilih outlet terlebih dahulu.</Alert>
+  // master_admin's own outlet_id is null — fall back to the first outlet in
+  // their company rather than blocking them from this page entirely (the
+  // exact bug class fixed across ~19 report pages in Phase 28, just never
+  // applied to the accounting section).
+  let outletId = profile?.outlet_id ?? null
+  if (!outletId && profile?.company_id) {
+    const { data: firstOutlet } = await supabase.from('outlets').select('id').eq('company_id', profile.company_id).order('name').limit(1).maybeSingle()
+    outletId = firstOutlet?.id ?? null
   }
 
-  const start = new Date()
-  start.setDate(1)
-  const startStr = start.toISOString().slice(0, 10)
-  const endStr = new Date().toISOString().slice(0, 10)
+  const now = new Date()
+  const startStr = `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, '0')}-01`
+  const endStr = now.toISOString().slice(0, 10)
 
-  const { data: accounts } = await supabase
-    .from('chart_of_accounts')
-    .select('id, account_type')
-    .eq('outlet_id', profile.outlet_id)
-    .in('account_type', ['income', 'expense'])
+  const { data: accounts } = outletId
+    ? await supabase.from('chart_of_accounts').select('id, account_type').eq('outlet_id', outletId).in('account_type', ['income', 'expense'])
+    : { data: null }
 
   const accountIds = (accounts ?? []).map((a) => a.id)
   let totalIncome = 0
@@ -45,7 +47,7 @@ export default async function AccountingDashboardPage() {
       .from('journal_entry_details')
       .select('account_id, debit, credit, journal_entries!inner(entry_date, status, outlet_id)')
       .in('account_id', accountIds)
-      .eq('journal_entries.outlet_id', profile.outlet_id)
+      .eq('journal_entries.outlet_id', outletId!)
       .eq('journal_entries.status', 'posted')
       .gte('journal_entries.entry_date', startStr)
       .lte('journal_entries.entry_date', endStr)

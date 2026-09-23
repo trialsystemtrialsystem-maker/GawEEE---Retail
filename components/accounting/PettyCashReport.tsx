@@ -3,6 +3,8 @@
 import { useEffect, useState, useCallback } from 'react'
 import { formatCurrency, formatDateTime } from '@/lib/utils/formatting'
 import { ExportCsvButton } from '@/components/ui/ExportCsvButton'
+import { OutletSelector } from '@/components/ui/OutletSelector'
+import { useResolvedOutlet } from '@/lib/hooks/useResolvedOutlet'
 
 interface ExpenseRequest {
   id: string
@@ -16,11 +18,13 @@ interface ExpenseRequest {
 // Reads the same expense_requests entries FinanceApprovals.tsx manages,
 // filtered to ones actually marked paid — a running ledger of petty cash
 // disbursed, rather than a separate system. See Phase 11 plan item 12.
-export function PettyCashReport({ outletId }: { outletId: string }) {
+export function PettyCashReport({ outletId: outletIdProp }: { outletId?: string }) {
+  const { outletId, isResolving, selectedOutlet, setSelectedOutlet } = useResolvedOutlet(outletIdProp)
   const [requests, setRequests] = useState<ExpenseRequest[]>([])
   const [isLoading, setIsLoading] = useState(true)
 
   const load = useCallback(async () => {
+    if (!outletId) return
     setIsLoading(true)
     const res = await fetch(`/api/expense-requests?outlet_id=${outletId}`)
     const data = await res.json()
@@ -42,12 +46,17 @@ export function PettyCashReport({ outletId }: { outletId: string }) {
     nominal: r.amount,
   }))
 
+  if (isResolving) return <p className="text-sm text-gray-400">Memuat…</p>
+
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <p className="text-sm text-gray-600">
-          Total Kas Keluar: <span className="text-lg font-bold text-gray-900">{formatCurrency(total)}</span>
-        </p>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+          {!outletIdProp && <OutletSelector includeAll={false} value={selectedOutlet} onChange={setSelectedOutlet} />}
+          <p className="text-sm text-gray-600">
+            Total Kas Keluar: <span className="text-lg font-bold text-gray-900">{formatCurrency(total)}</span>
+          </p>
+        </div>
         <ExportCsvButton filename="kas-kecil" rows={csvRows} />
       </div>
 

@@ -4,8 +4,10 @@ import { useEffect, useState, useCallback } from 'react'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Alert } from '@/components/ui/Alert'
+import { OutletSelector } from '@/components/ui/OutletSelector'
 import { formatCurrency, formatDate } from '@/lib/utils/formatting'
 import { useNotificationStore } from '@/store/notificationStore'
+import { useResolvedOutlet } from '@/lib/hooks/useResolvedOutlet'
 
 interface Account {
   id: string
@@ -28,7 +30,8 @@ interface Line {
 
 const emptyLine = (): Line => ({ account_id: '', debit: '', credit: '' })
 
-export function JournalEntryManager({ outletId, canPost }: { outletId: string; canPost: boolean }) {
+export function JournalEntryManager({ outletId: outletIdProp, canPost }: { outletId?: string; canPost: boolean }) {
+  const { outletId, isResolving, selectedOutlet, setSelectedOutlet } = useResolvedOutlet(outletIdProp)
   const [accounts, setAccounts] = useState<Account[]>([])
   const [entries, setEntries] = useState<JournalEntry[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -42,6 +45,7 @@ export function JournalEntryManager({ outletId, canPost }: { outletId: string; c
   const showToast = useNotificationStore((s) => s.show)
 
   const load = useCallback(async () => {
+    if (!outletId) return
     setIsLoading(true)
     const [accountsRes, entriesRes] = await Promise.all([
       fetch(`/api/accounting/accounts?outlet_id=${outletId}`),
@@ -119,10 +123,16 @@ export function JournalEntryManager({ outletId, canPost }: { outletId: string; c
     }
   }
 
+  if (isResolving) return <p className="text-sm text-gray-400">Memuat…</p>
+  if (!outletId) return <Alert variant="warning">Belum ada outlet untuk ditampilkan.</Alert>
+
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <p className="text-sm text-gray-500">{entries.length} entri jurnal</p>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+          {!outletIdProp && <OutletSelector includeAll={false} value={selectedOutlet} onChange={setSelectedOutlet} />}
+          <p className="text-sm text-gray-500">{entries.length} entri jurnal</p>
+        </div>
         <Button size="sm" onClick={() => setShowForm((v) => !v)} disabled={accounts.length === 0}>
           {showForm ? 'Batal' : '+ Buat Jurnal'}
         </Button>

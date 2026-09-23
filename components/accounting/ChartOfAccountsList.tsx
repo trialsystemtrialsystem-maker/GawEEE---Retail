@@ -4,7 +4,9 @@ import { useEffect, useState, useCallback } from 'react'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Alert } from '@/components/ui/Alert'
+import { OutletSelector } from '@/components/ui/OutletSelector'
 import { useNotificationStore } from '@/store/notificationStore'
+import { useResolvedOutlet } from '@/lib/hooks/useResolvedOutlet'
 
 interface Account {
   id: string
@@ -29,7 +31,8 @@ const TYPE_COLOR: Record<string, string> = {
   expense: 'bg-red-50 text-red-700',
 }
 
-export function ChartOfAccountsList({ outletId }: { outletId: string }) {
+export function ChartOfAccountsList({ outletId: outletIdProp }: { outletId?: string }) {
+  const { outletId, isResolving, selectedOutlet, setSelectedOutlet } = useResolvedOutlet(outletIdProp)
   const [accounts, setAccounts] = useState<Account[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -39,6 +42,7 @@ export function ChartOfAccountsList({ outletId }: { outletId: string }) {
   const showToast = useNotificationStore((s) => s.show)
 
   const load = useCallback(async () => {
+    if (!outletId) return
     setIsLoading(true)
     const res = await fetch(`/api/accounting/accounts?outlet_id=${outletId}`)
     const data = await res.json()
@@ -75,10 +79,15 @@ export function ChartOfAccountsList({ outletId }: { outletId: string }) {
     }
   }
 
+  if (isResolving) return <p className="text-sm text-gray-400">Memuat…</p>
+
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <p className="text-sm text-gray-500">{accounts.length} akun aktif</p>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+          {!outletIdProp && <OutletSelector includeAll={false} value={selectedOutlet} onChange={setSelectedOutlet} />}
+          <p className="text-sm text-gray-500">{accounts.length} akun aktif</p>
+        </div>
         <Button size="sm" onClick={() => setShowForm((v) => !v)}>
           {showForm ? 'Batal' : '+ Tambah Akun'}
         </Button>
