@@ -27,12 +27,22 @@ interface Row {
   net_pay_paid: number
 }
 
+interface ExpiringDoc {
+  id: string
+  staff_id: string
+  staff_name: string
+  title: string
+  expires_on: string
+  expired: boolean
+}
+
 export function EmployeeReports() {
   const { outletId, isResolving, selectedOutlet, setSelectedOutlet } = useResolvedOutlet()
   const [range, setRange] = useState<DateRange>(() => defaultDateRange(30))
   const [rows, setRows] = useState<Row[]>([])
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [expiring, setExpiring] = useState<ExpiringDoc[]>([])
 
   const load = useCallback(async () => {
     if (!outletId) return
@@ -46,6 +56,11 @@ export function EmployeeReports() {
         return
       }
       setRows(data.rows ?? [])
+      // Best-effort: the table above must never wait on or fail because of this.
+      fetch(`/api/staff/documents/expiring?outlet_id=${outletId}&days=60`)
+        .then((r) => (r.ok ? r.json() : { documents: [] }))
+        .then((d) => setExpiring(d.documents ?? []))
+        .catch(() => setExpiring([]))
     } catch {
       setError('Terjadi kesalahan jaringan')
     } finally {
@@ -86,6 +101,19 @@ export function EmployeeReports() {
         <ExportCsvButton filename={`riwayat-karyawan-${range.start}_${range.end}`} rows={csvRows} />
       </div>
       {error && <Alert variant="danger">{error}</Alert>}
+      {expiring.length > 0 && (
+        <Alert variant="warning">
+          <p className="font-medium">{expiring.length} dokumen karyawan sudah/akan kedaluwarsa (60 hari ke depan):</p>
+          <ul className="mt-1 list-disc pl-5">
+            {expiring.slice(0, 8).map((d) => (
+              <li key={d.id}>
+                <Link href={`/dashboard/staff/${d.staff_id}`} className="underline">{d.staff_name}</Link> — {d.title}: {d.expires_on}
+                {d.expired ? ' (sudah lewat)' : ''}
+              </li>
+            ))}
+          </ul>
+        </Alert>
+      )}
       <div className="overflow-x-auto rounded-lg border border-gray-200">
         <table className="min-w-full divide-y divide-gray-200 text-sm">
           <thead className="bg-gray-50">

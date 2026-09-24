@@ -4,7 +4,7 @@ import { resolveDateRange } from '@/lib/utils/dateRange'
 import { handleDatabaseError } from '@/lib/utils/errors'
 import { leaveDaysWithin, lateMinutes, workedMinutes } from '@/lib/utils/employeeHistory'
 
-const TYPES = ['overview', 'attendance', 'late', 'checklist', 'leave', 'payroll', 'sales', 'cashshift', 'incentive', 'timeline'] as const
+const TYPES = ['overview', 'attendance', 'late', 'checklist', 'leave', 'payroll', 'sales', 'cashshift', 'incentive', 'timeline', 'documents', 'reviews'] as const
 type HistoryType = (typeof TYPES)[number]
 
 // GET /api/staff/:id/history?type=&start=&end= — Employee 360 (todo.md
@@ -218,8 +218,35 @@ export async function GET(request: NextRequest, ctx: RouteContext<'/api/staff/[i
     return items.sort((a, b) => b.date.localeCompare(a.date))
   }
 
+  const documentRows = async () => {
+    const { data, error } = await auth.supabase
+      .from('employee_documents')
+      .select('id, doc_type, title, doc_number, issued_on, expires_on, file_url, notes')
+      .eq('staff_id', id)
+      .order('expires_on', { ascending: true, nullsFirst: false })
+    if (error) throw error
+    return data ?? []
+  }
+
+  const reviewRows = async () => {
+    const { data, error } = await auth.supabase
+      .from('performance_reviews')
+      .select('id, review_date, period_label, overall_score, ratings, strengths, improvements')
+      .eq('staff_id', id)
+      .order('review_date', { ascending: false })
+    if (error) throw error
+    return data ?? []
+  }
+
   try {
     switch (type) {
+      case 'documents':
+        return NextResponse.json({ staff, rows: await documentRows() })
+      case 'reviews': {
+        const rows = await reviewRows()
+        const avg = rows.length ? rows.reduce((s, r) => s + r.overall_score, 0) / rows.length : 0
+        return NextResponse.json({ staff, rows, average_score: Math.round(avg * 10) / 10 })
+      }
       case 'timeline':
         return NextResponse.json({ staff, rows: await timelineRows() })
       case 'attendance':

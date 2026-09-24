@@ -12,10 +12,15 @@ import { formatDuration, tenureLabel } from '@/lib/utils/employeeHistory'
 import { KasbonPanel } from '@/components/staff/employee/KasbonPanel'
 
 type Row = Record<string, unknown>
+interface RowContext {
+  canManage: boolean
+  staffId: string
+  reload: () => void
+}
 
 interface Column {
   label: string
-  render: (r: Row) => React.ReactNode
+  render: (r: Row, ctx: RowContext) => React.ReactNode
   csv: (r: Row) => string | number
   align?: 'right'
 }
@@ -33,6 +38,7 @@ const ATTENDANCE_STATUS: Record<string, string> = {
 }
 const LEAVE_TYPE: Record<string, string> = { izin: 'Izin', sakit: 'Sakit', libur: 'Libur', cuti: 'Cuti' }
 const LEAVE_STATUS: Record<string, string> = { pending: 'Menunggu', approved: 'Disetujui', rejected: 'Ditolak' }
+const DOC_TYPE: Record<string, string> = { ktp: 'KTP', npwp: 'NPWP', bpjs: 'BPJS', kontrak: 'Kontrak', ijazah: 'Ijazah', sertifikat: 'Sertifikat', surat_peringatan: 'Surat Peringatan', lainnya: 'Lainnya' }
 const CATEGORY: Record<string, string> = { opening: 'Buka Toko', closing: 'Tutup Toko' }
 
 const TABS: { key: string; label: string; columns?: Column[]; empty: string }[] = [
@@ -112,6 +118,65 @@ const TABS: { key: string; label: string; columns?: Column[]; empty: string }[] 
       { label: 'Tanggal', render: (r) => formatDate(s(r.date)), csv: (r) => s(r.date) },
       { label: 'Jenis', render: (r) => <span className={s(r.kind) === 'warning' ? 'font-semibold text-red-600' : 'font-medium text-gray-900'}>{s(r.title)}</span>, csv: (r) => s(r.title) },
       { label: 'Keterangan', render: (r) => s(r.detail), csv: (r) => s(r.detail) },
+    ],
+  },
+  {
+    key: 'documents',
+    label: 'Dokumen',
+    empty: 'Belum ada dokumen',
+    columns: [
+      { label: 'Jenis', render: (r) => DOC_TYPE[s(r.doc_type)] ?? s(r.doc_type), csv: (r) => DOC_TYPE[s(r.doc_type)] ?? s(r.doc_type) },
+      {
+        label: 'Judul',
+        render: (r) => (s(r.file_url) ? <a href={s(r.file_url)} target="_blank" rel="noopener noreferrer" className="text-brand-600 hover:underline">{s(r.title)}</a> : s(r.title)),
+        csv: (r) => s(r.title),
+      },
+      { label: 'Nomor', render: (r) => s(r.doc_number) || '-', csv: (r) => s(r.doc_number) },
+      { label: 'Terbit', render: (r) => (s(r.issued_on) ? formatDate(s(r.issued_on)) : '-'), csv: (r) => s(r.issued_on) },
+      {
+        label: 'Kedaluwarsa',
+        render: (r) => {
+          const d = s(r.expires_on)
+          if (!d) return '-'
+          const expired = d < new Date().toISOString().slice(0, 10)
+          return <span className={expired ? 'font-semibold text-red-600' : ''}>{formatDate(d)}{expired ? ' (lewat)' : ''}</span>
+        },
+        csv: (r) => s(r.expires_on),
+      },
+      {
+        label: '',
+        render: (r, ctx) =>
+          ctx.canManage ? (
+            <button
+              className="text-red-600 hover:underline"
+              onClick={async () => {
+                if (!window.confirm('Hapus dokumen ini?')) return
+                await fetch(`/api/staff/${ctx.staffId}/documents?document_id=${s(r.id)}`, { method: 'DELETE' })
+                ctx.reload()
+              }}
+            >
+              Hapus
+            </button>
+          ) : null,
+        csv: () => '',
+      },
+    ],
+  },
+  {
+    key: 'reviews',
+    label: 'Penilaian',
+    empty: 'Belum ada penilaian kinerja',
+    columns: [
+      { label: 'Tanggal', render: (r) => formatDate(s(r.review_date)), csv: (r) => s(r.review_date) },
+      { label: 'Periode', render: (r) => s(r.period_label), csv: (r) => s(r.period_label) },
+      { label: 'Skor', render: (r) => <strong>{'★'.repeat(n(r.overall_score))}{'☆'.repeat(5 - n(r.overall_score))} ({n(r.overall_score)}/5)</strong>, csv: (r) => n(r.overall_score) },
+      {
+        label: 'Aspek',
+        render: (r) => Object.entries((r.ratings ?? {}) as Record<string, number>).map(([k, v]) => `${k.replace(/_/g, ' ')}: ${v}`).join(', ') || '-',
+        csv: (r) => Object.entries((r.ratings ?? {}) as Record<string, number>).map(([k, v]) => `${k}: ${v}`).join('; '),
+      },
+      { label: 'Kekuatan', render: (r) => s(r.strengths) || '-', csv: (r) => s(r.strengths) },
+      { label: 'Perlu Ditingkatkan', render: (r) => s(r.improvements) || '-', csv: (r) => s(r.improvements) },
     ],
   },
   {
@@ -259,6 +324,84 @@ function TimelineNoteForm({ staffId, onSaved }: { staffId: string; onSaved: () =
   )
 }
 
+const REVIEW_ASPECTS = ['kedisiplinan', 'kualitas_kerja', 'kerja_sama', 'inisiatif']
+
+function RecordForm({ staffId, kind, onSaved }: { staffId: string; kind: 'documents' | 'reviews'; onSaved: () => void }) {
+  const [f, setF] = useState<Record<string, string>>({ doc_type: 'ktp', overall_score: '4' })
+  const [err, setErr] = useState<string | null>(null)
+  const [saving, setSaving] = useState(false)
+  const set = (k: string, v: string) => setF((x) => ({ ...x, [k]: v }))
+  const input = 'rounded-sm border border-gray-200 px-3 py-2 text-sm'
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault()
+    setErr(null)
+    setSaving(true)
+    try {
+      const body =
+        kind === 'documents'
+          ? { doc_type: f.doc_type, title: f.title, doc_number: f.doc_number || undefined, issued_on: f.issued_on || undefined, expires_on: f.expires_on || undefined, file_url: f.file_url || undefined }
+          : {
+              period_label: f.period_label,
+              overall_score: Number(f.overall_score),
+              ratings: Object.fromEntries(REVIEW_ASPECTS.filter((a) => f[a]).map((a) => [a, Number(f[a])])),
+              strengths: f.strengths || undefined,
+              improvements: f.improvements || undefined,
+            }
+      const res = await fetch(`/api/staff/${staffId}/${kind}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+      const data = await res.json()
+      if (!res.ok) {
+        setErr(typeof data.error === 'string' ? data.error : 'Periksa kembali isian Anda')
+        return
+      }
+      setF({ doc_type: 'ktp', overall_score: '4' })
+      onSaved()
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <form onSubmit={submit} className="flex flex-wrap items-end gap-2 rounded-lg border border-gray-200 p-3">
+      {kind === 'documents' ? (
+        <>
+          <select aria-label="Jenis dokumen" value={f.doc_type} onChange={(e) => set('doc_type', e.target.value)} className={input}>
+            {Object.entries(DOC_TYPE).map(([k, l]) => (
+              <option key={k} value={k}>{l}</option>
+            ))}
+          </select>
+          <input aria-label="Judul dokumen" placeholder="Judul" required value={f.title ?? ''} onChange={(e) => set('title', e.target.value)} className={input} />
+          <input aria-label="Nomor dokumen" placeholder="Nomor" value={f.doc_number ?? ''} onChange={(e) => set('doc_number', e.target.value)} className={input} />
+          <label className="text-xs text-gray-500">Terbit<input type="date" value={f.issued_on ?? ''} onChange={(e) => set('issued_on', e.target.value)} className={`${input} ml-1`} /></label>
+          <label className="text-xs text-gray-500">Kedaluwarsa<input type="date" value={f.expires_on ?? ''} onChange={(e) => set('expires_on', e.target.value)} className={`${input} ml-1`} /></label>
+          <input aria-label="Tautan berkas" placeholder="Tautan berkas (https://…)" value={f.file_url ?? ''} onChange={(e) => set('file_url', e.target.value)} className={`${input} min-w-[14rem]`} />
+        </>
+      ) : (
+        <>
+          <input aria-label="Periode penilaian" placeholder="Periode, mis. Semester 1 2026" required value={f.period_label ?? ''} onChange={(e) => set('period_label', e.target.value)} className={`${input} min-w-[14rem]`} />
+          <label className="text-xs text-gray-500">Skor
+            <select value={f.overall_score} onChange={(e) => set('overall_score', e.target.value)} className={`${input} ml-1`}>
+              {[1, 2, 3, 4, 5].map((v) => <option key={v} value={v}>{v}</option>)}
+            </select>
+          </label>
+          {REVIEW_ASPECTS.map((a) => (
+            <label key={a} className="text-xs text-gray-500">{a.replace(/_/g, ' ')}
+              <select value={f[a] ?? ''} onChange={(e) => set(a, e.target.value)} className={`${input} ml-1`}>
+                <option value="">-</option>
+                {[1, 2, 3, 4, 5].map((v) => <option key={v} value={v}>{v}</option>)}
+              </select>
+            </label>
+          ))}
+          <input aria-label="Kekuatan" placeholder="Kekuatan" value={f.strengths ?? ''} onChange={(e) => set('strengths', e.target.value)} className={`${input} min-w-[12rem]`} />
+          <input aria-label="Perlu ditingkatkan" placeholder="Perlu ditingkatkan" value={f.improvements ?? ''} onChange={(e) => set('improvements', e.target.value)} className={`${input} min-w-[12rem]`} />
+        </>
+      )}
+      <Button type="submit" size="sm" isLoading={saving}>Tambah</Button>
+      {err && <p className="w-full text-sm text-red-600">{err}</p>}
+    </form>
+  )
+}
+
 export function EmployeeProfile({ staffId, canManage = false }: { staffId: string; canManage?: boolean }) {
   const [tab, setTab] = useState('overview')
   const [range, setRange] = useState<DateRange>(() => defaultDateRange(30))
@@ -334,7 +477,7 @@ export function EmployeeProfile({ staffId, canManage = false }: { staffId: strin
           ))}
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          {tab !== 'kasbon' && tab !== 'timeline' && <DateRangePicker value={range} onChange={setRange} />}
+          {tab !== 'kasbon' && tab !== 'timeline' && tab !== 'documents' && tab !== 'reviews' && <DateRangePicker value={range} onChange={setRange} />}
           {active.columns && <ExportCsvButton filename={`karyawan-${active.key}`} rows={csvRows} />}
         </div>
       </div>
@@ -382,6 +525,7 @@ export function EmployeeProfile({ staffId, canManage = false }: { staffId: strin
       ) : (
         <div className="space-y-3">
           {tab === 'timeline' && canManage && <TimelineNoteForm staffId={staffId} onSaved={load} />}
+          {(tab === 'documents' || tab === 'reviews') && canManage && <RecordForm key={tab} staffId={staffId} kind={tab} onSaved={load} />}
           {tab === 'late' && !isLoading && rows.length > 0 && (
             <p className="text-sm text-gray-600">
               Total keterlambatan: <span className="font-bold text-gray-900">{formatDuration(totalLate)}</span> dalam {rows.length} hari
@@ -416,7 +560,7 @@ export function EmployeeProfile({ staffId, canManage = false }: { staffId: strin
                     <tr key={String(r.id ?? r.date ?? i)} className="hover:bg-gray-50">
                       {active.columns!.map((c) => (
                         <td key={c.label} className={`px-4 py-2 text-gray-700 ${c.align === 'right' ? 'text-right' : ''}`}>
-                          {c.render(r)}
+                          {c.render(r, { canManage, staffId, reload: load })}
                         </td>
                       ))}
                     </tr>
