@@ -4,9 +4,14 @@ import { useState, useRef, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { PRIMARY_NAV, SECONDARY_NAV, findActiveNavItem } from '@/lib/nav/config'
+import { applyFeatureFlags } from '@/lib/nav/features'
+import { useFeatureFlags } from '@/lib/hooks/useFeatureFlags'
 
 export function TopNav() {
   const pathname = usePathname()
+  const { flags, isMaster } = useFeatureFlags()
+  const primary = applyFeatureFlags(PRIMARY_NAV, flags, isMaster)
+  const secondary = applyFeatureFlags(SECONDARY_NAV, flags, isMaster)
   const [moreOpen, setMoreOpen] = useState(false)
   const moreRef = useRef<HTMLDivElement>(null)
   const activeItem = findActiveNavItem(pathname)
@@ -22,7 +27,7 @@ export function TopNav() {
 
   return (
     <nav aria-label="Navigasi modul" className="flex items-center gap-1 overflow-x-auto">
-      {PRIMARY_NAV.map((item) => {
+      {primary.map((item) => {
         const isActive = activeItem?.key === item.key
         return (
           <Link
@@ -34,6 +39,7 @@ export function TopNav() {
             }`}
           >
             {item.label}
+            {'disabled' in item && item.disabled && <span className="ml-1 text-xs opacity-60">(nonaktif)</span>}
           </Link>
         )
       })}
@@ -51,7 +57,7 @@ export function TopNav() {
         </button>
         {moreOpen && (
           <div className="absolute left-0 top-full z-50 mt-2 w-56 rounded-lg border border-gray-200 bg-white py-1 shadow-lg">
-            {SECONDARY_NAV.map((item) => (
+            {secondary.map((item) => (
               <Link
                 key={item.key}
                 href={item.href}
@@ -62,6 +68,7 @@ export function TopNav() {
               >
                 <span aria-hidden>{item.icon}</span>
                 {item.label}
+                {'disabled' in item && item.disabled && <span className="ml-1 text-xs opacity-60">(nonaktif)</span>}
               </Link>
             ))}
           </div>

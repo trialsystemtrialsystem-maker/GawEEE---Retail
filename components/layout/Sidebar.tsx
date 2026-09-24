@@ -4,6 +4,8 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { PRIMARY_NAV, SECONDARY_NAV, findActiveNavItem, type NavChild, type NavGroup } from '@/lib/nav/config'
+import { applyFeatureFlags } from '@/lib/nav/features'
+import { useFeatureFlags } from '@/lib/hooks/useFeatureFlags'
 
 function FlatLinks({ items, pathname, onNavigate }: { items: NavChild[]; pathname: string; onNavigate?: () => void }) {
   return (
@@ -92,6 +94,7 @@ function SidebarAccordion({ groups, pathname, onNavigate }: { groups: NavGroup[]
 export function Sidebar({ outletName, onNavigate }: { outletName?: string; onNavigate?: () => void }) {
   const pathname = usePathname()
   const activeItem = findActiveNavItem(pathname)
+  const { flags, isMaster } = useFeatureFlags()
 
   return (
     <nav
@@ -123,7 +126,7 @@ export function Sidebar({ outletName, onNavigate }: { outletName?: string; onNav
             instead — this block only appears in the mobile drawer, since the
             TopNav row itself is desktop-only (md:block). */}
         <div className="space-y-1 border-t border-white/10 pt-3 md:hidden">
-          {[...PRIMARY_NAV, ...SECONDARY_NAV].map((item) => {
+          {applyFeatureFlags([...PRIMARY_NAV, ...SECONDARY_NAV], flags, isMaster).map((item) => {
             const isActive = activeItem?.key === item.key
             return (
               <Link
@@ -137,6 +140,7 @@ export function Sidebar({ outletName, onNavigate }: { outletName?: string; onNav
               >
                 <span aria-hidden>{item.icon}</span>
                 {item.label}
+                {'disabled' in item && item.disabled && <span className="ml-1 text-xs opacity-60">(nonaktif)</span>}
               </Link>
             )
           })}
