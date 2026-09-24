@@ -3,6 +3,7 @@ import { getAuthContext, canAccessOutlet } from '@/lib/utils/auth-context'
 import { can } from '@/lib/utils/permissions'
 import { validate, inventoryAdjustSchema } from '@/lib/utils/validation'
 import { handleDatabaseError } from '@/lib/utils/errors'
+import { postStockValueJournal } from '@/lib/utils/journalPosting'
 
 // POST /api/inventory/adjust — manual adjustment, manager+ only. See prd.md §4.2.
 export async function POST(request: NextRequest) {
@@ -38,6 +39,18 @@ export async function POST(request: NextRequest) {
   }
 
   const newQuantity = Array.isArray(data) ? data[0]?.new_quantity_on_hand : undefined
+
+  // Book the write-down/write-up at cost (best-effort; never blocks the adjustment).
+  const { data: priced } = await auth.supabase.from('products').select('purchase_price').eq('id', product_id).single()
+  await postStockValueJournal(auth.supabase, {
+    outletId: outlet_id,
+    createdBy: auth.id,
+    date: new Date().toISOString().slice(0, 10),
+    description: `Penyesuaian stok: ${reason}`,
+    sourceType: 'stock_adjustment',
+    sourceId: crypto.randomUUID(),
+    value: quantity_change * (priced?.purchase_price ?? 0),
+  })
 
   const { data: auditEntry } = await auth.supabase
     .from('audit_log')

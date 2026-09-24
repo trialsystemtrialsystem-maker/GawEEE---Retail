@@ -81,3 +81,46 @@ export function runningBalances<T extends LedgerRow>(rowsNewestFirst: T[], curre
     return out
   })
 }
+
+export interface OutletStock {
+  outlet_id: string
+  outlet_name: string
+  quantity: number
+  reorder_level: number
+}
+
+export interface TransferSuggestion {
+  from_outlet_id: string
+  from_outlet_name: string
+  to_outlet_id: string
+  to_outlet_name: string
+  quantity: number
+}
+
+/** Suggests moving surplus stock to outlets that are at/below their reorder
+ * level. A donor keeps at least 2x its own reorder level (never strips itself);
+ * a receiver is topped up to 2x its reorder level (min 1 unit when level is 0). */
+export function suggestTransfers(stocks: OutletStock[]): TransferSuggestion[] {
+  const donors = stocks
+    .map((s) => ({ ...s, spare: s.quantity - Math.max(s.reorder_level * 2, 1) }))
+    .filter((s) => s.spare > 0)
+    .sort((a, b) => b.spare - a.spare)
+  const needy = stocks
+    .filter((s) => s.quantity <= s.reorder_level)
+    .map((s) => ({ ...s, need: Math.max(s.reorder_level * 2, 1) - s.quantity }))
+    .sort((a, b) => b.need - a.need)
+
+  const out: TransferSuggestion[] = []
+  for (const n of needy) {
+    let need = n.need
+    for (const d of donors) {
+      if (need <= 0) break
+      if (d.spare <= 0 || d.outlet_id === n.outlet_id) continue
+      const qty = Math.min(d.spare, need)
+      d.spare -= qty
+      need -= qty
+      out.push({ from_outlet_id: d.outlet_id, from_outlet_name: d.outlet_name, to_outlet_id: n.outlet_id, to_outlet_name: n.outlet_name, quantity: qty })
+    }
+  }
+  return out
+}

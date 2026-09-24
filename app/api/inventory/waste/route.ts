@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getAuthContext, canAccessOutlet } from '@/lib/utils/auth-context'
 import { validate, stockWasteSchema } from '@/lib/utils/validation'
 import { handleDatabaseError } from '@/lib/utils/errors'
+import { postStockValueJournal } from '@/lib/utils/journalPosting'
 
 // GET /api/inventory/waste?outlet_id= — recent waste write-offs, from
 // inventory_ledger (movement_type='waste').
@@ -64,6 +65,16 @@ export async function POST(request: NextRequest) {
     const { status, message } = handleDatabaseError(error)
     return NextResponse.json({ error: message }, { status })
   }
+
+  await postStockValueJournal(auth.supabase, {
+    outletId: result.data.outlet_id,
+    createdBy: auth.id,
+    date: new Date().toISOString().slice(0, 10),
+    description: `Waste/barang rusak: ${result.data.reason}`,
+    sourceType: 'stock_waste',
+    sourceId: crypto.randomUUID(),
+    value: -Math.abs(result.data.quantity) * (product?.purchase_price ?? 0),
+  })
 
   return NextResponse.json({ new_quantity: data?.[0]?.new_quantity_on_hand }, { status: 201 })
 }

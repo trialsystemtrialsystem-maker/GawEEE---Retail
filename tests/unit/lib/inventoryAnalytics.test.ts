@@ -1,4 +1,4 @@
-import { abcClassify, daysOfCover, runningBalances, stockHealth, suggestedReorderQty } from '@/lib/utils/inventoryAnalytics'
+import { abcClassify, daysOfCover, runningBalances, stockHealth, suggestedReorderQty, suggestTransfers } from '@/lib/utils/inventoryAnalytics'
 
 describe('daysOfCover', () => {
   it('divides stock by daily pace and is null when nothing sells', () => {
@@ -57,8 +57,31 @@ describe('stockHealth', () => {
 
 describe('runningBalances', () => {
   it('derives each historical balance from the current stock', () => {
-    // newest first: +5 (now 15), -3, +8  => before: 10 (after -3 was 10... check)
+    // newest first: +5 (now 15), -3, +8. Before the +5 there were 10; before the -3, 13.
     const r = runningBalances([{ quantity_change: 5 }, { quantity_change: -3 }, { quantity_change: 8 }], 15)
     expect(r.map((x) => x.balance)).toEqual([15, 10, 13])
+  })
+})
+
+describe('suggestTransfers', () => {
+  const stocks = [
+    { outlet_id: 'a', outlet_name: 'A', quantity: 100, reorder_level: 10 },
+    { outlet_id: 'b', outlet_name: 'B', quantity: 2, reorder_level: 10 },
+    { outlet_id: 'c', outlet_name: 'C', quantity: 25, reorder_level: 10 },
+  ]
+  it('moves surplus from a well-stocked outlet to one below its reorder level', () => {
+    const r = suggestTransfers(stocks)
+    expect(r).toHaveLength(1)
+    expect(r[0]).toMatchObject({ from_outlet_id: 'a', to_outlet_id: 'b', quantity: 18 })
+  })
+  it('never strips a donor below twice its reorder level', () => {
+    const r = suggestTransfers([
+      { outlet_id: 'a', outlet_name: 'A', quantity: 22, reorder_level: 10 },
+      { outlet_id: 'b', outlet_name: 'B', quantity: 0, reorder_level: 10 },
+    ])
+    expect(r[0].quantity).toBe(2)
+  })
+  it('suggests nothing when nobody is short', () => {
+    expect(suggestTransfers([{ outlet_id: 'a', outlet_name: 'A', quantity: 50, reorder_level: 5 }])).toEqual([])
   })
 })

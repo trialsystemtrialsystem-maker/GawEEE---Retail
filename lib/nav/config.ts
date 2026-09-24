@@ -177,6 +177,7 @@ export const PRIMARY_NAV: NavItem[] = [
           { label: 'Kartu Stok', href: '/dashboard/inventory/stock-card' },
           { label: 'Rekomendasi Pemesanan', href: '/dashboard/inventory/reorder' },
           { label: 'Nilai Persediaan', href: '/dashboard/inventory/valuation' },
+          { label: 'Stok Semua Outlet', href: '/dashboard/inventory/overview' },
           { label: 'Stock Opname', href: '/dashboard/inventory/stocktake' },
           { label: 'Stock Waste', href: '/dashboard/inventory/stock/waste' },
           { label: 'Laporan Kadaluarsa', href: '/dashboard/inventory/expiry' },

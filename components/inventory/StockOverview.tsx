@@ -75,6 +75,8 @@ export function StockOverview({ canAdjust }: { canAdjust: boolean }) {
   const [adjusting, setAdjusting] = useState<Item | null>(null)
   const [adj, setAdj] = useState({ count: '', reason: '' })
   const [saving, setSaving] = useState(false)
+  const [levelFor, setLevelFor] = useState<Item | null>(null)
+  const [level, setLevel] = useState('')
   const showToast = useNotificationStore((s) => s.show)
 
   const load = useCallback(
@@ -181,6 +183,30 @@ export function StockOverview({ canAdjust }: { canAdjust: boolean }) {
     }
   }
 
+  async function saveLevel(e: React.FormEvent) {
+    e.preventDefault()
+    if (!levelFor) return
+    setSaving(true)
+    setError(null)
+    try {
+      const res = await fetch('/api/inventory/reorder-level', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ outlet_id: outletId, product_id: levelFor.product_id, reorder_level: Number(level) }),
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        setError(typeof data.error === 'string' ? data.error : 'Periksa kembali isian Anda')
+        return
+      }
+      showToast(`Titik pesan ${levelFor.name} diubah menjadi ${data.reorder_level}`, 'success')
+      setLevelFor(null)
+      load({ silent: true })
+    } finally {
+      setSaving(false)
+    }
+  }
+
   if (isResolving) return <p className="text-sm text-gray-400">Memuat…</p>
 
   const sortBtn = (key: SortKey, label: string, align: 'left' | 'right' = 'right') => (
@@ -262,6 +288,20 @@ export function StockOverview({ canAdjust }: { canAdjust: boolean }) {
         </Card>
       )}
 
+      {levelFor && (
+        <Card>
+          <form onSubmit={saveLevel} className="flex flex-wrap items-end gap-3">
+            <div>
+              <p className="font-medium text-gray-900">Titik pesan: {levelFor.name}</p>
+              <p className="text-sm text-gray-500">Stok di bawah angka ini ditandai &quot;Stok Rendah&quot; dan masuk rekomendasi pemesanan (khusus outlet ini).</p>
+            </div>
+            <Input name="level" label="Titik pesan" type="number" min="0" required value={level} onChange={(e) => setLevel(e.target.value)} />
+            <Button type="submit" isLoading={saving}>Simpan</Button>
+            <Button type="button" variant="secondary" onClick={() => setLevelFor(null)}>Batal</Button>
+          </form>
+        </Card>
+      )}
+
       <div className="overflow-x-auto rounded-lg border border-gray-200">
         <table className="min-w-full divide-y divide-gray-200 text-sm">
           <thead className="bg-gray-50">
@@ -303,7 +343,15 @@ export function StockOverview({ canAdjust }: { canAdjust: boolean }) {
                       {row.quantity_on_hand} <span className="text-xs text-gray-400">{row.unit_type}</span>
                       {row.quantity_reserved > 0 && <span className="block text-xs text-gray-400">{row.quantity_reserved} tertahan</span>}
                     </td>
-                    <td className="px-3 py-2 text-right text-gray-500">{row.reorder_level}</td>
+                    <td className="px-3 py-2 text-right text-gray-500">
+                      {canAdjust ? (
+                        <button className="hover:text-brand-600 hover:underline" title="Ubah titik pesan" onClick={() => { setLevelFor(row); setLevel(String(row.reorder_level)) }}>
+                          {row.reorder_level}
+                        </button>
+                      ) : (
+                        row.reorder_level
+                      )}
+                    </td>
                     <td className="px-3 py-2 text-right text-gray-700">{row.sold_30d}</td>
                     <td className="px-3 py-2 text-right text-gray-700">{row.days_of_cover === null ? '-' : `${row.days_of_cover} hr`}</td>
                     <td className="px-3 py-2 text-right text-gray-700">{formatCurrency(row.cost_value)}</td>

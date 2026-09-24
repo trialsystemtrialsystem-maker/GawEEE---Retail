@@ -1725,6 +1725,18 @@ live-verified/committed/pushed.
 - [x] Employee records (migration 065): Dokumen karyawan (nomor, kedaluwarsa, tautan berkas; peringatan 60 hari di
       Riwayat Karyawan) and Penilaian kinerja (skor 1–5 + aspek). Not built: THR, rekonsiliasi bank, pelepasan/disposal aset.
 
+## Phase 35 — Inventory depth
+- [x] Stok Barang rebuilt (`StockOverview`): outlet selector (fixed master_admin block), KPI cards, filters (status/
+      kategori/pergerakan/ABC), sortable columns (stok, terjual 30h, sisa hari, nilai, margin), export CSV, inline
+      "Sesuaikan" (set counted stock) and per-outlet titik pesan editing. `GET /api/inventory/:outlet?analytics=1`
+      adds selling pace, days of cover, dead/slow, ABC, suggested reorder (opt-in so POS loads stay fast); paged past 1000 rows.
+- [x] Kartu Stok (`/dashboard/inventory/stock-card`): per-product ledger with running balance, or outlet-wide movement log; date range, type, CSV.
+- [x] Rekomendasi Pemesanan: grouped per supplier, editable qty, one click → PO draft.
+- [x] Nilai Persediaan & Analisis: value per kategori, ABC, dead/slow stock with tied-up capital.
+- [x] Stok Semua Outlet + saran transfer antar outlet.
+- [x] Adjustments, waste and stock-opname variances now post to the ledger (Dr/Cr Beban Selisih & Kerusakan 5210 / Persediaan 1200).
+- [ ] Not built: moving-average costing (valuation uses the master purchase price), serial numbers, bin/rak locations, stock-in CSV import.
+
 ## Notes on scope
 This todo tracks the **engineering deliverables** of the PRD (a working Next.js + Supabase codebase
 implementing Phase 1 features, with payment gateways behind a swappable mock interface). Items marked

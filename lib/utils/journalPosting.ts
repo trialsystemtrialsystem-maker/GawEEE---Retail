@@ -21,6 +21,7 @@ const EXTRA_ACCOUNTS: Record<string, { name: string; type: string }> = {
   '1590': { name: 'Akumulasi Penyusutan', type: 'asset' },
   '5400': { name: 'Beban Penyusutan', type: 'expense' },
   '5110': { name: 'Beban Lembur & Insentif', type: 'expense' },
+  '5210': { name: 'Beban Selisih & Kerusakan Stok', type: 'expense' },
 }
 
 async function accountId(supabase: SupabaseClient, outletId: string, code: string): Promise<string | null> {
@@ -34,6 +35,27 @@ async function accountId(supabase: SupabaseClient, outletId: string, code: strin
     .select('id')
     .single()
   return created?.id ?? null
+}
+
+/** Books a stock write-down or write-up at cost. `value` is signed by its
+ * effect on inventory: negative = loss (Dr Beban Selisih & Kerusakan 5210 /
+ * Cr Persediaan 1200), positive = gain (Dr Persediaan / Cr 5210). */
+export async function postStockValueJournal(
+  supabase: SupabaseClient,
+  params: { outletId: string; createdBy: string; date: string; description: string; sourceType: string; sourceId: string; value: number }
+): Promise<string | null> {
+  const amount = Math.round(Math.abs(params.value) * 100) / 100
+  if (amount === 0) return null
+  const loss = params.value < 0
+  return postJournal(supabase, {
+    outletId: params.outletId,
+    createdBy: params.createdBy,
+    date: params.date,
+    description: params.description,
+    sourceType: params.sourceType,
+    sourceId: params.sourceId,
+    lines: loss ? [{ code: '5210', debit: amount }, { code: '1200', credit: amount }] : [{ code: '1200', debit: amount }, { code: '5210', credit: amount }],
+  })
 }
 
 export async function postJournal(
