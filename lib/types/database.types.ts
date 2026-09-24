@@ -1253,6 +1253,82 @@ export type StaffEvent = {
   created_at: string
 }
 
+export type FiscalPeriod = {
+  id: string
+  outlet_id: string
+  period_start: string
+  period_end: string
+  status: 'open' | 'closed'
+  closing_entry_id: string | null
+  closed_by: string | null
+  closed_at: string | null
+  created_at: string
+}
+
+export type FixedAsset = {
+  id: string
+  outlet_id: string
+  name: string
+  category: string | null
+  acquisition_date: string
+  cost: number
+  salvage_value: number
+  useful_life_months: number
+  status: 'active' | 'disposed'
+  disposed_on: string | null
+  notes: string | null
+  created_by: string | null
+  created_at: string
+}
+
+export type AssetDepreciation = {
+  id: string
+  asset_id: string
+  period_month: string
+  amount: number
+  journal_entry_id: string | null
+  created_at: string
+}
+
+export type Budget = {
+  id: string
+  outlet_id: string
+  account_id: string
+  period_month: string
+  amount: number
+  created_at: string
+}
+
+export type EmployeeDocument = {
+  id: string
+  outlet_id: string
+  staff_id: string
+  doc_type: 'ktp' | 'npwp' | 'bpjs' | 'kontrak' | 'ijazah' | 'sertifikat' | 'surat_peringatan' | 'lainnya'
+  title: string
+  doc_number: string | null
+  issued_on: string | null
+  expires_on: string | null
+  file_url: string | null
+  notes: string | null
+  created_by: string | null
+  created_at: string
+}
+
+export type PerformanceReview = {
+  id: string
+  outlet_id: string
+  staff_id: string
+  review_date: string
+  period_label: string
+  overall_score: number
+  ratings: Record<string, number>
+  strengths: string | null
+  improvements: string | null
+  reviewer_id: string | null
+  created_at: string
+}
+
+
 type Table<Row> = { Row: Row; Insert: Partial<Row>; Update: Partial<Row>; Relationships: [] }
 type View<Row> = { Row: Row; Relationships: [] }
 
@@ -1325,6 +1401,12 @@ export type Database = {
       daily_incentives: Table<DailyIncentive>
       payslip_items: Table<PayslipItem>
       staff_events: Table<StaffEvent>
+      fiscal_periods: Table<FiscalPeriod>
+      fixed_assets: Table<FixedAsset>
+      asset_depreciations: Table<AssetDepreciation>
+      budgets: Table<Budget>
+      employee_documents: Table<EmployeeDocument>
+      performance_reviews: Table<PerformanceReview>
       checklist_items: Table<ChecklistItem>
       checklist_completions: Table<ChecklistCompletion>
       stocktakes: Table<Stocktake>
