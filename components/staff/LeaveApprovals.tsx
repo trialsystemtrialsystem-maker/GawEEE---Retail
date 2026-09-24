@@ -6,7 +6,7 @@ import { formatDate } from '@/lib/utils/formatting'
 
 interface LeaveRequest {
   id: string
-  leave_type: 'izin' | 'sakit' | 'libur'
+  leave_type: 'izin' | 'sakit' | 'libur' | 'cuti'
   start_date: string
   end_date: string
   reason: string
@@ -15,7 +15,7 @@ interface LeaveRequest {
   created_at: string
 }
 
-const TYPE_LABEL: Record<string, string> = { izin: 'Izin', sakit: 'Sakit', libur: 'Libur/Cuti' }
+const TYPE_LABEL: Record<string, string> = { izin: 'Izin', sakit: 'Sakit', libur: 'Libur', cuti: 'Cuti' }
 const STATUS_COLOR: Record<string, string> = {
   pending: 'bg-amber-50 text-amber-700',
   approved: 'bg-emerald-50 text-emerald-700',

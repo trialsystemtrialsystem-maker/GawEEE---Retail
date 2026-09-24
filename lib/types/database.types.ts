@@ -738,7 +738,7 @@ export type ProductUnit = {
 export type LeaveRequest = {
   id: string
   outlet_id: string
-  leave_type: 'izin' | 'sakit' | 'libur'
+  leave_type: 'izin' | 'sakit' | 'libur' | 'cuti'
   start_date: string
   end_date: string
   reason: string
@@ -1175,6 +1175,84 @@ export type InventoryValuationView = {
 
 // Helper so every table entry gets a consistent shape without repeating
 // `Insert`/`Update`/`Relationships` boilerplate.
+export type CashAdvance = {
+  id: string
+  outlet_id: string
+  staff_id: string
+  amount: number
+  advance_date: string
+  reason: string
+  repay_per_period: number
+  status: 'pending' | 'approved' | 'rejected' | 'paid_out' | 'repaid'
+  requested_by: string | null
+  decided_by: string | null
+  decided_at: string | null
+  paid_out_at: string | null
+  created_at: string
+}
+
+export type CashAdvanceRepayment = {
+  id: string
+  advance_id: string
+  payslip_id: string | null
+  amount: number
+  repayment_date: string
+  method: 'payroll' | 'manual'
+  note: string | null
+  created_by: string | null
+  created_at: string
+}
+
+export type IncentiveRule = {
+  id: string
+  outlet_id: string
+  name: string
+  metric: 'sales_target' | 'transactions' | 'attendance_bonus'
+  threshold: number
+  amount: number
+  is_active: boolean
+  created_by: string | null
+  created_at: string
+}
+
+export type DailyIncentive = {
+  id: string
+  outlet_id: string
+  staff_id: string
+  incentive_date: string
+  rule_id: string | null
+  rule_name: string
+  amount: number
+  basis: Record<string, unknown>
+  source: 'auto' | 'manual'
+  note: string | null
+  created_by: string | null
+  created_at: string
+}
+
+export type PayslipItem = {
+  id: string
+  payslip_id: string
+  kind: 'base' | 'commission' | 'incentive' | 'bonus' | 'late_penalty' | 'absence' | 'kasbon' | 'other_deduction'
+  label: string
+  amount: number
+  basis: Record<string, unknown>
+  created_at: string
+}
+
+export type StaffEvent = {
+  id: string
+  outlet_id: string
+  staff_id: string
+  event_type: 'hired' | 'position_change' | 'salary_change' | 'contract_renewal' | 'status_change' | 'warning' | 'note'
+  from_value: unknown
+  to_value: unknown
+  occurred_on: string
+  note: string | null
+  created_by: string | null
+  created_at: string
+}
+
 type Table<Row> = { Row: Row; Insert: Partial<Row>; Update: Partial<Row>; Relationships: [] }
 type View<Row> = { Row: Row; Relationships: [] }
 
@@ -1241,6 +1319,12 @@ export type Database = {
       customer_refund_items: Table<CustomerRefundItem>
       product_units: Table<ProductUnit>
       leave_requests: Table<LeaveRequest>
+      cash_advances: Table<CashAdvance>
+      cash_advance_repayments: Table<CashAdvanceRepayment>
+      incentive_rules: Table<IncentiveRule>
+      daily_incentives: Table<DailyIncentive>
+      payslip_items: Table<PayslipItem>
+      staff_events: Table<StaffEvent>
       checklist_items: Table<ChecklistItem>
       checklist_completions: Table<ChecklistCompletion>
       stocktakes: Table<Stocktake>

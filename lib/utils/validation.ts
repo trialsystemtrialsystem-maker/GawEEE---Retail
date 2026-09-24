@@ -521,7 +521,7 @@ export const expenseRequestSchema = z.object({
 export const leaveRequestSchema = z
   .object({
     outlet_id: z.string().uuid(),
-    leave_type: z.enum(['izin', 'sakit', 'libur']),
+    leave_type: z.enum(['izin', 'sakit', 'libur', 'cuti']),
     start_date: z.string().min(1),
     end_date: z.string().min(1),
     reason: z.string().min(3, 'Alasan wajib diisi'),
@@ -685,3 +685,18 @@ export function validate<T>(schema: z.ZodType<T>, input: unknown) {
   }
   return { valid: false as const, errors: result.error.flatten() }
 }
+
+export const createCashAdvanceSchema = z.object({
+  staff_id: z.string().uuid().optional(),
+  amount: z.number().positive('Nominal harus lebih dari 0'),
+  advance_date: z.string().optional(),
+  reason: z.string().trim().min(3, 'Alasan wajib diisi'),
+  repay_per_period: z.number().min(0).optional(),
+})
+
+export const cashAdvanceActionSchema = z.discriminatedUnion('action', [
+  z.object({ action: z.literal('approve') }),
+  z.object({ action: z.literal('reject') }),
+  z.object({ action: z.literal('payout') }),
+  z.object({ action: z.literal('repay'), amount: z.number().positive('Nominal harus lebih dari 0'), note: z.string().optional() }),
+])

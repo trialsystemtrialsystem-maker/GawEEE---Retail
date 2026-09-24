@@ -8,15 +8,15 @@ import { useNotificationStore } from '@/store/notificationStore'
 
 interface MyRequest {
   id: string
-  leave_type: 'izin' | 'sakit' | 'libur'
+  leave_type: 'izin' | 'sakit' | 'libur' | 'cuti'
   start_date: string
   end_date: string
   reason: string
   status: string
 }
 
-const TYPE_LABEL: Record<string, string> = { izin: 'Izin', sakit: 'Sakit', libur: 'Libur/Cuti' }
-const TYPE_ICON: Record<string, string> = { izin: '📄', sakit: '🤒', libur: '🏖️' }
+const TYPE_LABEL: Record<string, string> = { izin: 'Izin', sakit: 'Sakit', libur: 'Libur', cuti: 'Cuti' }
+const TYPE_ICON: Record<string, string> = { izin: '📄', sakit: '🤒', libur: '🏖️', cuti: '🌴' }
 const STATUS_COLOR: Record<string, string> = {
   pending: 'bg-[var(--status-warning)]/10 text-[var(--status-warning)]',
   approved: 'bg-[var(--status-good)]/10 text-[var(--status-good)]',
@@ -26,7 +26,7 @@ const STATUS_COLOR: Record<string, string> = {
 export function LeaveRequestForm({ outletId }: { outletId: string }) {
   const [myRequests, setMyRequests] = useState<MyRequest[]>([])
   const [isLoading, setIsLoading] = useState(true)
-  const [leaveType, setLeaveType] = useState<'izin' | 'sakit' | 'libur'>('izin')
+  const [leaveType, setLeaveType] = useState<'izin' | 'sakit' | 'libur' | 'cuti'>('izin')
   const [startDate, setStartDate] = useState('')
   const [endDate, setEndDate] = useState('')
   const [reason, setReason] = useState('')
@@ -74,7 +74,7 @@ export function LeaveRequestForm({ outletId }: { outletId: string }) {
     <div className="space-y-4">
       <form onSubmit={handleSubmit} className="space-y-3 rounded-2xl border border-[var(--brand-100)] bg-white p-4 shadow-sm">
         <div className="grid grid-cols-3 gap-2">
-          {(['izin', 'sakit', 'libur'] as const).map((t) => (
+          {(['izin', 'sakit', 'libur', 'cuti'] as const).map((t) => (
             <button
               key={t}
               type="button"

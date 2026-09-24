@@ -1738,7 +1738,7 @@ async function seedStaffAndOpsData(
     }
   }
 
-  const leaveTypes = ['izin', 'sakit', 'libur']
+  const leaveTypes = ['izin', 'sakit', 'libur', 'cuti']
   const leaveStatuses = ['pending', 'approved', 'approved', 'rejected']
   const leaveRequestRows = Array.from({ length: 6 }, (_, i) => {
     const start = dateFor(randomInt(1, 40))

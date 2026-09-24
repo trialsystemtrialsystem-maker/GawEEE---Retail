@@ -8,6 +8,7 @@ import { DateRangePicker, defaultDateRange, type DateRange } from '@/components/
 import { ExportCsvButton } from '@/components/ui/ExportCsvButton'
 import { formatCurrency, formatDate, formatDateTime } from '@/lib/utils/formatting'
 import { formatDuration, tenureLabel } from '@/lib/utils/employeeHistory'
+import { KasbonPanel } from '@/components/staff/employee/KasbonPanel'
 
 type Row = Record<string, unknown>
 
@@ -35,6 +36,7 @@ const CATEGORY: Record<string, string> = { opening: 'Buka Toko', closing: 'Tutup
 
 const TABS: { key: string; label: string; columns?: Column[]; empty: string }[] = [
   { key: 'overview', label: 'Ringkasan', empty: '' },
+  { key: 'kasbon', label: 'Kasbon', empty: '' },
   {
     key: 'attendance',
     label: 'Absensi',
@@ -134,6 +136,7 @@ const TABS: { key: string; label: string; columns?: Column[]; empty: string }[] 
 ]
 
 interface Staff {
+  outlet_id: string
   first_name: string
   last_name: string | null
   position: string
@@ -173,7 +176,7 @@ function Kpi({ label, value, hint }: { label: string; value: string; hint?: stri
   )
 }
 
-export function EmployeeProfile({ staffId }: { staffId: string }) {
+export function EmployeeProfile({ staffId, canManage = false }: { staffId: string; canManage?: boolean }) {
   const [tab, setTab] = useState('overview')
   const [range, setRange] = useState<DateRange>(() => defaultDateRange(30))
   const [staff, setStaff] = useState<Staff | null>(null)
@@ -188,14 +191,14 @@ export function EmployeeProfile({ staffId }: { staffId: string }) {
     setIsLoading(true)
     setError(null)
     try {
-      const res = await fetch(`/api/staff/${staffId}/history?type=${tab}&start=${range.start}&end=${range.end}`)
+      const res = await fetch(`/api/staff/${staffId}/history?type=${tab === 'kasbon' ? 'overview' : tab}&start=${range.start}&end=${range.end}`)
       const data = await res.json()
       if (!res.ok) {
         setError(typeof data.error === 'string' ? data.error : 'Gagal memuat riwayat')
         return
       }
       setStaff(data.staff)
-      if (tab === 'overview') {
+      if (tab === 'overview' || tab === 'kasbon') {
         setSummary(data.summary)
         setLinked(data.linked_user)
       } else {
@@ -248,14 +251,16 @@ export function EmployeeProfile({ staffId }: { staffId: string }) {
           ))}
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <DateRangePicker value={range} onChange={setRange} />
+          {tab !== 'kasbon' && <DateRangePicker value={range} onChange={setRange} />}
           {active.columns && <ExportCsvButton filename={`karyawan-${active.key}`} rows={csvRows} />}
         </div>
       </div>
 
       {error && <Alert variant="danger">{error}</Alert>}
 
-      {tab === 'overview' ? (
+      {tab === 'kasbon' ? (
+        staff ? <KasbonPanel staffId={staffId} outletId={staff.outlet_id} canManage={canManage} /> : <p className="text-gray-400">Memuat…</p>
+      ) : tab === 'overview' ? (
         isLoading || !summary || !staff ? (
           <p className="text-gray-400">Memuat…</p>
         ) : (

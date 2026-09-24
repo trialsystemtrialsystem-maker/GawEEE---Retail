@@ -14,6 +14,9 @@ export function handleDatabaseError(error: unknown): { status: number; message: 
       return { status: 400, message: 'Referensi data tidak valid.' }
     case '23514': // check_violation
       return { status: 400, message: 'Data tidak memenuhi aturan validasi.' }
+    case '42P01': // undefined_table — a migration hasn't been run yet
+    case 'PGRST205': // PostgREST: table not found in schema cache
+      return { status: 503, message: 'Fitur ini memerlukan migrasi database terbaru (lihat database/migrations). Jalankan di Supabase SQL Editor.' }
     case 'PGRST116': // no rows found (PostgREST single())
       return { status: 404, message: 'Data tidak ditemukan.' }
     default:
