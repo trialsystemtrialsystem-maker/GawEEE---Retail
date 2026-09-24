@@ -220,25 +220,6 @@ export const PRIMARY_NAV: NavItem[] = [
     ],
   },
   {
-    key: 'accounting',
-    label: 'Accounting',
-    href: '/dashboard/accounting',
-    icon: '📒',
-    children: [
-      { label: 'Dashboard Akuntansi', href: '/dashboard/accounting' },
-      { label: 'Chart of Accounts', href: '/dashboard/accounting/accounts' },
-      { label: 'Jurnal Umum', href: '/dashboard/accounting/journal' },
-      { label: 'Buku Besar', href: '/dashboard/accounting/ledger' },
-      { label: 'Neraca Saldo', href: '/dashboard/accounting/trial-balance' },
-      { label: 'Neraca', href: '/dashboard/accounting/balance-sheet' },
-      { label: 'Laba Rugi', href: '/dashboard/accounting/profit-loss' },
-      { label: 'Laporan Arus Kas', href: '/dashboard/accounting/cash-flow' },
-      { label: 'Kas Kecil (Petty Cash)', href: '/dashboard/accounting/petty-cash' },
-      { label: 'Piutang Usaha (AR)', href: '/dashboard/accounting/accounts-receivable' },
-      { label: 'Hutang Usaha (AP)', href: '/dashboard/accounting/accounts-payable' },
-    ],
-  },
-  {
     key: 'whatsapp',
     label: 'WhatsApp',
     href: '/dashboard/whatsapp',
@@ -265,8 +246,19 @@ export const SECONDARY_NAV: NavItem[] = [
     icon: '📈',
     children: [
       { label: 'Laporan Harian', href: '/dashboard/financial' },
-      { label: 'Ringkasan Penjualan', href: '/dashboard/financial/reports' },
+      { label: 'Dashboard Akuntansi', href: '/dashboard/accounting' },
+      { label: 'Jurnal Umum', href: '/dashboard/accounting/journal' },
+      { label: 'Chart of Accounts', href: '/dashboard/accounting/accounts' },
+      { label: 'Buku Besar', href: '/dashboard/accounting/ledger' },
+      { label: 'Neraca Saldo', href: '/dashboard/accounting/trial-balance' },
+      { label: 'Neraca', href: '/dashboard/accounting/balance-sheet' },
+      { label: 'Laba Rugi', href: '/dashboard/accounting/profit-loss' },
+      { label: 'Laporan Arus Kas', href: '/dashboard/accounting/cash-flow' },
+      { label: 'Piutang Usaha (AR)', href: '/dashboard/accounting/accounts-receivable' },
+      { label: 'Hutang Usaha (AP)', href: '/dashboard/accounting/accounts-payable' },
+      { label: 'Kas Kecil (Petty Cash)', href: '/dashboard/accounting/petty-cash' },
       { label: 'Cash Position', href: '/dashboard/financial/cash-position' },
+      { label: 'Ringkasan Penjualan', href: '/dashboard/financial/reports' },
       { label: 'Tax Report', href: '/dashboard/financial/tax-report' },
     ],
   },
@@ -309,11 +301,49 @@ export const SECONDARY_NAV: NavItem[] = [
 
 export const ALL_NAV: NavItem[] = [...PRIMARY_NAV, ...SECONDARY_NAV]
 
+function childHrefsForItem(item: NavItem): string[] {
+  const hrefs: string[] = []
+  if (item.children) hrefs.push(...item.children.map((c) => c.href))
+  if (item.groups) for (const g of item.groups) hrefs.push(...g.items.map((c) => c.href))
+  if (item.trailingChildren) hrefs.push(...item.trailingChildren.map((c) => c.href))
+  return hrefs
+}
+
 /** The nav item whose section the current pathname falls under, longest
  * `href` match first so e.g. `/dashboard/sales/invoices` doesn't get
- * shadowed by the `/dashboard` (Sales) item matching every dashboard route. */
+ * shadowed by the `/dashboard` (Sales) item matching every dashboard route.
+ *
+ * First pass matches each item's own top-level `href` only (the original,
+ * unchanged behavior — every existing page keeps resolving exactly as
+ * before, e.g. Tax Report still resolves to "Keuangan" via its longer,
+ * more specific top-level href beating Sales' bare `/dashboard`). Only when
+ * the *best* top-level match is Sales' own bare `/dashboard` root — which
+ * matches literally every `/dashboard/*` route and so isn't a real, specific
+ * claim on this page — does a second pass check each item's
+ * children/groups/trailingChildren hrefs instead, and prefer that if it
+ * finds one. Needed for a page whose actual URL doesn't share its listing
+ * menu's top-level href prefix (e.g. the accounting pages living at
+ * /dashboard/accounting/* while listed under "Keuangan", whose own href is
+ * /dashboard/financial — see todo.md Phase 31). Without this fallback,
+ * Sidebar.tsx would render no submenu at all on those pages (it's driven
+ * entirely by the matched item's children), not just a cosmetic
+ * mis-highlight. */
 export function findActiveNavItem(pathname: string): NavItem | undefined {
-  const matches = ALL_NAV.filter((item) => pathname === item.href || pathname.startsWith(item.href + '/'))
-  if (matches.length === 0) return undefined
-  return matches.reduce((longest, item) => (item.href.length > longest.href.length ? item : longest))
+  const topMatches = ALL_NAV.filter((item) => pathname === item.href || pathname.startsWith(item.href + '/'))
+  const bestTop =
+    topMatches.length > 0 ? topMatches.reduce((longest, item) => (item.href.length > longest.href.length ? item : longest)) : undefined
+
+  if (!bestTop || bestTop.href === '/dashboard') {
+    let best: { item: NavItem; matchLength: number } | undefined
+    for (const item of ALL_NAV) {
+      for (const href of childHrefsForItem(item)) {
+        if (pathname === href || pathname.startsWith(href + '/')) {
+          if (!best || href.length > best.matchLength) best = { item, matchLength: href.length }
+        }
+      }
+    }
+    if (best) return best.item
+  }
+
+  return bestTop
 }
