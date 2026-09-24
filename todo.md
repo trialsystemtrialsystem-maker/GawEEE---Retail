@@ -1608,6 +1608,74 @@ the main dashboard and the per-outlet detail page (`components/charts/SalesAnaly
       `/dashboard` and an actual outlet detail page (`/dashboard/sales/outlet/:id`), rendering real `HH:00`
       hour labels with no errors on either. `tsc`/`eslint`/`npm run build` all clean.
 
+## Phase 30b — Cart quantity badge on POS product tiles
+User asked: when a product already has some quantity in the cart, show that number on its tile in the
+product grid, not just in the cart panel.
+- [x] `components/pos/ProductSearch.tsx` — a small badge now overlaps the bottom-right corner of a
+      product's icon showing its cart quantity (reusing the tile's existing `cartQtyByProduct` map, already
+      computed for the "available stock" derivation), hidden entirely when the quantity is 0. Live-verified:
+      badge reads "1" after one add, "2" after a second.
+
+## Phase 31 — Make "Keuangan" a genuinely complete financial system
+User feedback: financial reports felt incomplete — specifically "no room to journal," even though
+journaling is the foundational first step of building financial statements. Asked for the financial section
+to be completed into a system thorough enough to actually support ownership/stakeholder decision-making,
+both in feature completeness and output quality. Investigated first rather than assuming: a full manual
+journal-entry UI (`JournalEntryManager.tsx`, balanced multi-line debit/credit, draft->post) already existed
+and worked — it was just filed under a separate top-level "Accounting" nav module the user never looked in
+while browsing "Keuangan". That investigation also surfaced several other real gaps in the same area. Asked
+the user two clarifying questions (via AskUserQuestion) before planning; both times they picked the
+recommended option: merge Accounting into one unified Keuangan section, and make the general-ledger-based
+P&L the one official "Laba Rugi". Executed as 6 batches, each independently typechecked/linted/built/
+live-verified/committed/pushed.
+- [x] **Batch 1 — unblock master_admin.** Every page under `app/dashboard/accounting/` gated behind
+      `profile?.outlet_id` server-side, but master_admin's own `outlet_id` is null — the exact bug class
+      fixed across ~19 report pages in Phase 28, never applied here (also hit `/dashboard/financial/reports`
+      via `/api/reports/p-and-l`'s identical `!auth.outlet_id` block). Fixed by extending `OutletSelector`
+      with an `includeAll` prop (accounting-family routes check `canAccessOutlet()` against a single real
+      outlet, not `resolveOutletScope()`'s `'all'`) and a new `lib/hooks/useResolvedOutlet.ts` that defaults
+      to the company's first outlet when no `outletId` prop is passed. Folded in 3 local-timezone `Date`
+      bugs found in the same files (same class as Phase 27/28).
+- [x] **Batch 2 — post AP settlement to the ledger.** PO receiving already posted Dr Persediaan / Cr Utang
+      Usaha (Phase 16); paying off that supplier invoice posted nothing, so Utang Usaha only ever went up in
+      the books, never back down. Additive best-effort post in
+      `app/api/purchase-invoices/[id]/payments/route.ts` (Dr Utang Usaha / Cr Kas-or-Bank), mirroring the
+      exact PO-receive precedent. Live-verified via direct DB inspection: a real Rp 50,000 payment produced
+      exactly the right posted journal lines.
+- [x] **Batch 3 — one official Laba Rugi.** Two P&L reports existed with different data sources that could
+      disagree (`ProfitLossReport`, invoice-derived, vs `ProfitLossView`, general-ledger-derived). Per the
+      user's confirmed choice, the GL-based one stays the only "Laba Rugi"; the other is relabeled "Ringkasan
+      Penjualan" with its fake always-zero operating-expense/net-profit fields removed and a disclosure note
+      added.
+- [x] **Batch 4 — add Trial Balance + Cash Flow Statement**, the two of the classic five/six financial
+      statements this app was missing entirely. New `type=trial-balance` branch on
+      `/api/accounting/reports` places each account's balance in whichever column matches the *sign* of its
+      computed value (not mechanically by account type), so the two-column total is guaranteed to match by
+      construction — verified live (28,212,800 both sides on real demo data). New `type=cash-flow` branch,
+      explicitly scoped and disclosed as a **direct method** report (grouped by `journal_entries.source_type`
+      — no per-account cash-flow-activity classification exists in the schema to build a rigorous
+      Operating/Investing/Financing breakdown) — verified opening + net change correctly summed to closing
+      balance.
+- [x] **Batch 5 — date range + export consistency pass**, applying the shared `<DateRangePicker>`/
+      `<ExportCsvButton>` infrastructure (built in Phase 28) to Jurnal Umum (added date filtering to
+      `/api/accounting/journal-entries`, which had none), Buku Besar (added date filtering to
+      `/api/accounting/ledger` with a proper opening-balance carry-forward so a filtered window's running
+      balance doesn't restart at 0), Laba Rugi, Neraca (single as-of date), and Cash Position (also fixed its
+      own `!auth.outlet_id` block).
+- [x] **Batch 6 — navigation consolidation.** Removed the standalone "Accounting" `PRIMARY_NAV` tab; moved
+      all its children into `SECONDARY_NAV`'s "Keuangan" entry in a complete, ordered structure. URLs
+      unchanged, only which menu links to them. Found and fixed a real companion bug while verifying (not
+      just inspecting the config): `findActiveNavItem()` matched only each item's own top-level `href`, so
+      the moved pages (still at `/dashboard/accounting/*`) would fall through to Sales' generic `/dashboard`
+      catch-all instead of "Keuangan" — breaking both the "More" tab highlight and, more seriously,
+      `Sidebar.tsx`'s entire submenu render (driven solely by the matched item's children). Fixed with a
+      fallback children-href search that only kicks in when the best top-level match is that generic
+      `/dashboard` root, verified to leave every other page (including Tax Report, deliberately listed under
+      both Sales and Keuangan) resolving exactly as before.
+- [x] Every batch live-verified against the demo account via Playwright with zero console errors at each
+      step; `tsc`/`eslint`/`npm run build`/`npm test` all clean throughout. Deployed to production after all
+      6 batches landed.
+
 ## Notes on scope
 This todo tracks the **engineering deliverables** of the PRD (a working Next.js + Supabase codebase
 implementing Phase 1 features, with payment gateways behind a swappable mock interface). Items marked
