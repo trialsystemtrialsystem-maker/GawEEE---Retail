@@ -27,7 +27,12 @@ export function useResolvedOutlet(outletIdProp?: string) {
       const res = await fetch('/api/outlets')
       const data = await res.json()
       if (cancelled) return
-      if (res.ok && data.outlets?.length) setSelectedOutlet(data.outlets[0].id)
+      if (res.ok && data.outlets?.length) {
+        // Prefer the caller's own outlet (a master_admin who is also assigned
+        // to one) over the alphabetically-first outlet in the company.
+        const own = data.outlets.find((o: { id: string }) => o.id === data.own_outlet_id)
+        setSelectedOutlet((own ?? data.outlets[0]).id)
+      }
       setIsResolving(false)
     }, 0)
     return () => {

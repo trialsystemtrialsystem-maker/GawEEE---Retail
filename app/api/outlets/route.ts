@@ -23,5 +23,5 @@ export async function GET() {
     return NextResponse.json({ error: message }, { status })
   }
 
-  return NextResponse.json({ outlets: data ?? [] })
+  return NextResponse.json({ outlets: data ?? [], own_outlet_id: auth.outlet_id })
 }

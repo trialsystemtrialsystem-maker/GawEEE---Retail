@@ -5,6 +5,9 @@ import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Alert } from '@/components/ui/Alert'
 import { formatCurrency } from '@/lib/utils/formatting'
+import Link from 'next/link'
+import { OutletSelector } from '@/components/ui/OutletSelector'
+import { useResolvedOutlet } from '@/lib/hooks/useResolvedOutlet'
 import { useNotificationStore } from '@/store/notificationStore'
 
 interface Staff {
@@ -34,7 +37,8 @@ const emptyForm = {
   pin_code: '',
 }
 
-export function StaffManager({ outletId, canManage }: { outletId: string; canManage: boolean }) {
+export function StaffManager({ outletId: outletIdProp, canManage }: { outletId?: string; canManage: boolean }) {
+  const { outletId, isResolving, selectedOutlet, setSelectedOutlet } = useResolvedOutlet(outletIdProp)
   const [staff, setStaff] = useState<Staff[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
@@ -44,6 +48,7 @@ export function StaffManager({ outletId, canManage }: { outletId: string; canMan
   const showToast = useNotificationStore((s) => s.show)
 
   const load = useCallback(async () => {
+    if (!outletId) return
     setIsLoading(true)
     const res = await fetch(`/api/staff?outlet_id=${outletId}`)
     const data = await res.json()
@@ -95,10 +100,15 @@ export function StaffManager({ outletId, canManage }: { outletId: string; canMan
     if (res.ok) load()
   }
 
+  if (isResolving) return <p className="text-sm text-gray-400">Memuat…</p>
+
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <p className="text-sm text-gray-500">{staff.length} karyawan</p>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+          {!outletIdProp && <OutletSelector includeAll={false} value={selectedOutlet} onChange={setSelectedOutlet} />}
+          <p className="text-sm text-gray-500">{staff.length} karyawan</p>
+        </div>
         {canManage && (
           <Button size="sm" onClick={() => setShowForm((v) => !v)}>
             {showForm ? 'Batal' : '+ Tambah Karyawan'}
@@ -209,7 +219,9 @@ export function StaffManager({ outletId, canManage }: { outletId: string; canMan
               staff.map((s) => (
                 <tr key={s.id} className="hover:bg-gray-50">
                   <td className="px-4 py-2 text-gray-900">
-                    {s.first_name} {s.last_name ?? ''}
+                    <Link href={`/dashboard/staff/${s.id}`} className="font-medium text-brand-600 hover:underline">
+                      {s.first_name} {s.last_name ?? ''}
+                    </Link>
                   </td>
                   <td className="px-4 py-2 text-gray-600">{s.position}</td>
                   <td className="px-4 py-2 text-gray-600">{s.salary_amount ? formatCurrency(s.salary_amount) : '-'}</td>
