@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
   }
 
   const accountTypes: Array<'asset' | 'liability' | 'equity' | 'income' | 'expense'> =
-    type === 'profit-loss' ? ['income', 'expense'] : type === 'balance-sheet' ? ['asset', 'liability', 'equity'] : ['asset', 'liability', 'equity', 'income', 'expense']
+    type === 'profit-loss' ? ['income', 'expense'] : type === 'balance-sheet' ? ['asset', 'liability', 'equity', 'income', 'expense'] : ['asset', 'liability', 'equity', 'income', 'expense']
 
   const { data: accounts, error: accountsError } = await auth.supabase
     .from('chart_of_accounts')
@@ -129,7 +129,16 @@ export async function GET(request: NextRequest) {
 
   const asset = withBalances.filter((a) => a.account_type === 'asset')
   const liability = withBalances.filter((a) => a.account_type === 'liability')
-  const equity = withBalances.filter((a) => a.account_type === 'equity')
+  // Income/expense accounts that have not been closed to Laba Ditahan yet are
+  // still part of owners' equity: show them as a computed 'Laba (Rugi) Berjalan'
+  // line so the balance sheet balances without a manual closing entry. Once a
+  // period is closed the income/expense balances are zero and this drops to 0,
+  // so nothing is counted twice.
+  const currentEarnings = withBalances.filter((a) => a.account_type === 'income').reduce((s, a) => s + a.balance, 0) - withBalances.filter((a) => a.account_type === 'expense').reduce((s, a) => s + a.balance, 0)
+  const equity: typeof withBalances = [
+    ...withBalances.filter((a) => a.account_type === 'equity'),
+    ...(Math.abs(currentEarnings) >= 0.005 ? [{ id: 'current-earnings', account_code: '-', account_name: 'Laba (Rugi) Berjalan', account_type: 'equity', balance: currentEarnings } as (typeof withBalances)[number]] : []),
+  ]
   const totalAsset = asset.reduce((s, a) => s + a.balance, 0)
   const totalLiability = liability.reduce((s, a) => s + a.balance, 0)
   const totalEquity = equity.reduce((s, a) => s + a.balance, 0)
@@ -140,7 +149,7 @@ export async function GET(request: NextRequest) {
     totalAsset,
     totalLiability,
     totalEquity,
-    isBalanced: totalAsset === totalLiability + totalEquity,
+    isBalanced: Math.abs(totalAsset - (totalLiability + totalEquity)) < 0.01,
   })
 }
 

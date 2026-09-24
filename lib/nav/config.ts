@@ -235,6 +235,7 @@ export const PRIMARY_NAV: NavItem[] = [
       { label: 'Neraca', href: '/dashboard/accounting/balance-sheet' },
       { label: 'Laba Rugi', href: '/dashboard/accounting/profit-loss' },
       { label: 'Laporan Arus Kas', href: '/dashboard/accounting/cash-flow' },
+      { label: 'Rasio Keuangan', href: '/dashboard/accounting/ratios' },
       { label: 'Piutang Usaha (AR)', href: '/dashboard/accounting/accounts-receivable' },
       { label: 'Hutang Usaha (AP)', href: '/dashboard/accounting/accounts-payable' },
       { label: 'Kas Kecil (Petty Cash)', href: '/dashboard/accounting/petty-cash' },

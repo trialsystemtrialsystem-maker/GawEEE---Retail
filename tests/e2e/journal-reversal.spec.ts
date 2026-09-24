@@ -26,6 +26,9 @@ test('reversing a posted journal nets the books back and marks the original', as
     const r = await api(page, 'GET', `/api/accounting/reports?type=trial-balance&outlet_id=${outletId}`)
     return JSON.stringify(r.json)
   }
+  // Neraca balances by construction (unclosed income/expense shown as Laba Berjalan).
+  const bs = await api(page, 'GET', `/api/accounting/reports?type=balance-sheet&outlet_id=${outletId}`)
+  expect(bs.json.isBalanced).toBe(true)
   const before = await tb()
 
   const created = await api(page, 'POST', '/api/accounting/journal-entries', {
