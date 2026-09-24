@@ -104,6 +104,28 @@ const TABS: { key: string; label: string; columns?: Column[]; empty: string }[] 
     ],
   },
   {
+    key: 'incentive',
+    label: 'Insentif Harian',
+    empty: 'Belum ada insentif pada periode ini',
+    columns: [
+      { label: 'Tanggal', render: (r) => formatDate(s(r.incentive_date)), csv: (r) => s(r.incentive_date) },
+      { label: 'Aturan', render: (r) => s(r.rule_name), csv: (r) => s(r.rule_name) },
+      { label: 'Sumber', render: (r) => (s(r.source) === 'auto' ? 'Otomatis' : 'Manual'), csv: (r) => (s(r.source) === 'auto' ? 'Otomatis' : 'Manual') },
+      {
+        label: 'Dasar Perhitungan',
+        render: (r) => {
+          const b = (r.basis ?? {}) as { threshold?: number; achieved?: number }
+          return s(r.source) === 'manual' ? s(r.note) || '-' : `tercapai ${b.achieved ?? '-'} dari target ${b.threshold ?? '-'}`
+        },
+        csv: (r) => {
+          const b = (r.basis ?? {}) as { threshold?: number; achieved?: number }
+          return s(r.source) === 'manual' ? s(r.note) : `tercapai ${b.achieved ?? '-'} dari target ${b.threshold ?? '-'}`
+        },
+      },
+      { label: 'Nominal', render: (r) => <strong>{formatCurrency(n(r.amount))}</strong>, csv: (r) => n(r.amount), align: 'right' },
+    ],
+  },
+  {
     key: 'sales',
     label: 'Penjualan',
     empty: 'Belum ada penjualan atas nama karyawan ini pada periode ini',

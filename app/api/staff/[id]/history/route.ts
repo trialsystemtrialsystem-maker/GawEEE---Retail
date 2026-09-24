@@ -4,7 +4,7 @@ import { resolveDateRange } from '@/lib/utils/dateRange'
 import { handleDatabaseError } from '@/lib/utils/errors'
 import { leaveDaysWithin, lateMinutes, workedMinutes } from '@/lib/utils/employeeHistory'
 
-const TYPES = ['overview', 'attendance', 'late', 'checklist', 'leave', 'payroll', 'sales', 'cashshift'] as const
+const TYPES = ['overview', 'attendance', 'late', 'checklist', 'leave', 'payroll', 'sales', 'cashshift', 'incentive'] as const
 type HistoryType = (typeof TYPES)[number]
 
 // GET /api/staff/:id/history?type=&start=&end= — Employee 360 (todo.md
@@ -158,6 +158,18 @@ export async function GET(request: NextRequest, ctx: RouteContext<'/api/staff/[i
     return data ?? []
   }
 
+  const incentiveRows = async () => {
+    const { data, error } = await auth.supabase
+      .from('daily_incentives')
+      .select('id, incentive_date, rule_name, amount, source, note, basis')
+      .eq('staff_id', id)
+      .gte('incentive_date', startDate)
+      .lte('incentive_date', endDate)
+      .order('incentive_date', { ascending: false })
+    if (error) throw error
+    return data ?? []
+  }
+
   try {
     switch (type) {
       case 'attendance':
@@ -174,6 +186,10 @@ export async function GET(request: NextRequest, ctx: RouteContext<'/api/staff/[i
         return NextResponse.json({ staff, rows: await checklistRows() })
       case 'sales':
         return NextResponse.json({ staff, rows: await salesRows() })
+      case 'incentive': {
+        const rows = await incentiveRows()
+        return NextResponse.json({ staff, rows, total_amount: rows.reduce((s, r) => s + r.amount, 0) })
+      }
       case 'cashshift':
         return NextResponse.json({ staff, rows: await cashShiftRows() })
       default: {
