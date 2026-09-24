@@ -240,6 +240,7 @@ export const PRIMARY_NAV: NavItem[] = [
       { label: 'Hutang Usaha (AP)', href: '/dashboard/accounting/accounts-payable' },
       { label: 'Kas Kecil (Petty Cash)', href: '/dashboard/accounting/petty-cash' },
       { label: 'Aset Tetap', href: '/dashboard/accounting/fixed-assets' },
+      { label: 'Anggaran', href: '/dashboard/accounting/budget' },
       { label: 'Tutup Buku', href: '/dashboard/accounting/periods' },
     ],
   },
