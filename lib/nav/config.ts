@@ -239,12 +239,6 @@ export const PRIMARY_NAV: NavItem[] = [
     ],
   },
   {
-    key: 'whatsapp',
-    label: 'WhatsApp',
-    href: '/dashboard/whatsapp',
-    icon: '💬',
-  },
-  {
     key: 'admin',
     label: 'Master Admin',
     href: '/dashboard/admin',
@@ -255,6 +249,12 @@ export const PRIMARY_NAV: NavItem[] = [
       { label: 'Bulk Operations', href: '/dashboard/admin/bulk-operations' },
       { label: 'Audit Log', href: '/dashboard/admin/audit-log' },
     ],
+  },
+  {
+    key: 'whatsapp',
+    label: 'WhatsApp',
+    href: '/dashboard/whatsapp',
+    icon: '💬',
   },
 ]
 
