@@ -1,6 +1,14 @@
 'use client'
 
+import { useEffect, useState } from 'react'
 import { formatCurrency, formatDateTime } from '@/lib/utils/formatting'
+
+interface ReceiptSettings {
+  name: string
+  tax_id: string | null
+  receipt_header: string
+  receipt_footer: string
+}
 
 // Deliberately more general than store/posStore's CartItem so this same
 // component can render a receipt from either live checkout state or a past
@@ -27,11 +35,29 @@ export function Receipt({
   items: ReceiptItem[]
   createdAt: string
 }) {
+  // Business name/header/footer come from Master Admin > Pengaturan Sistem;
+  // falls back to the previous hardcoded look if the fetch fails.
+  const [settings, setSettings] = useState<ReceiptSettings | null>(null)
+  useEffect(() => {
+    let cancelled = false
+    fetch('/api/receipt-settings')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (!cancelled && data) setSettings(data)
+      })
+      .catch(() => {})
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
   return (
     <div className="space-y-4 text-center">
       <div id="receipt-print-area" className="mx-auto">
         <div className="space-y-1 text-center text-sm text-gray-600 print:text-black">
-          <p className="font-bold print:text-base">GawEEE</p>
+          <p className="font-bold print:text-base">{settings?.name ?? 'GawEEE'}</p>
+          {settings?.receipt_header && <p>{settings.receipt_header}</p>}
+          {settings?.tax_id && <p>NPWP: {settings.tax_id}</p>}
           <p>Nomor Struk: {invoiceNumber}</p>
           <p>Waktu: {formatDateTime(createdAt)}</p>
         </div>
@@ -54,7 +80,7 @@ export function Receipt({
           </div>
         </div>
 
-        <p className="mt-3 hidden text-center text-xs print:block">Terima kasih atas kunjungan Anda!</p>
+        <p className="mt-3 hidden text-center text-xs print:block">{settings?.receipt_footer || 'Terima kasih atas kunjungan Anda!'}</p>
       </div>
 
       <div className="flex justify-center gap-3 print:hidden">

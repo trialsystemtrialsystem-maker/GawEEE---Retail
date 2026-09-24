@@ -244,6 +244,8 @@ export const PRIMARY_NAV: NavItem[] = [
     href: '/dashboard/admin',
     icon: '🏬',
     children: [
+      { label: 'Pusat Kendali', href: '/dashboard/admin' },
+      { label: 'Pengaturan Sistem', href: '/dashboard/admin/system' },
       { label: 'Outlets', href: '/dashboard/admin/outlets' },
       { label: 'Users', href: '/dashboard/admin/users' },
       { label: 'Bulk Operations', href: '/dashboard/admin/bulk-operations' },

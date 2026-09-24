@@ -670,6 +670,14 @@ export type WhatsappBroadcastInput = z.infer<typeof whatsappBroadcastSchema>
 /** Runs a Zod schema and returns a `{ valid, data?, errors? }` shape that
  * matches the `validateXInput` helpers referenced throughout prd.md's API
  * route examples. */
+export const companySettingsSchema = z.object({
+  name: z.string().trim().min(1, 'Nama bisnis wajib diisi').max(255),
+  tax_id: z.string().trim().max(50).nullable().optional(),
+  tax_rate: z.number().min(0).max(100),
+  receipt_header: z.string().trim().max(200).optional(),
+  receipt_footer: z.string().trim().max(200).optional(),
+})
+
 export function validate<T>(schema: z.ZodType<T>, input: unknown) {
   const result = schema.safeParse(input)
   if (result.success) {
