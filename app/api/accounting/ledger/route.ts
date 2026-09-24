@@ -48,7 +48,7 @@ export async function GET(request: NextRequest) {
       .select('debit, credit, journal_entries!inner(entry_date, status, outlet_id)')
       .eq('account_id', accountId)
       .eq('journal_entries.outlet_id', outletId)
-      .eq('journal_entries.status', 'posted')
+      .in('journal_entries.status', ['posted', 'reversed'])
       .lt('journal_entries.entry_date', start)
 
     if (priorError) {
@@ -63,7 +63,7 @@ export async function GET(request: NextRequest) {
     .select('debit, credit, description, journal_entries!inner(id, entry_date, description, status, outlet_id)')
     .eq('account_id', accountId)
     .eq('journal_entries.outlet_id', outletId)
-    .eq('journal_entries.status', 'posted')
+    .in('journal_entries.status', ['posted', 'reversed'])
     .order('entry_date', { referencedTable: 'journal_entries', ascending: true })
 
   if (start) query = query.gte('journal_entries.entry_date', start)

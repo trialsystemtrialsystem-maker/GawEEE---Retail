@@ -126,10 +126,27 @@ export function JournalEntryManager({ outletId: outletIdProp, canPost }: { outle
     }
   }
 
+  async function handleReverse(id: string) {
+    const reason = window.prompt('Alasan jurnal balik (wajib):')
+    if (!reason || reason.trim().length < 3) return
+    const res = await fetch(`/api/accounting/journal-entries/${id}/reverse`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ reason }),
+    })
+    const data = await res.json()
+    if (!res.ok) {
+      showToast(typeof data.error === 'string' ? data.error : 'Gagal membuat jurnal balik', 'danger')
+      return
+    }
+    showToast('Jurnal balik diposting', 'success')
+    load()
+  }
+
   if (isResolving) return <p className="text-sm text-gray-400">Memuat…</p>
   if (!outletId) return <Alert variant="warning">Belum ada outlet untuk ditampilkan.</Alert>
 
-  const csvRows = entries.map((e) => ({ tanggal: e.entry_date, deskripsi: e.description, status: e.status === 'posted' ? 'Posted' : 'Draft' }))
+  const csvRows = entries.map((e) => ({ tanggal: e.entry_date, deskripsi: e.description, status: e.status === 'posted' ? 'Posted' : e.status === 'reversed' ? 'Dibalik' : 'Draft' }))
 
   return (
     <div className="space-y-4">
@@ -266,10 +283,10 @@ export function JournalEntryManager({ outletId: outletIdProp, canPost }: { outle
                   <td className="px-4 py-2">
                     <span
                       className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                        e.status === 'posted' ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'
+                        e.status === 'posted' ? 'bg-emerald-50 text-emerald-700' : e.status === 'reversed' ? 'bg-gray-100 text-gray-500' : 'bg-amber-50 text-amber-700'
                       }`}
                     >
-                      {e.status === 'posted' ? 'Posted' : 'Draft'}
+                      {e.status === 'posted' ? 'Posted' : e.status === 'reversed' ? 'Dibalik' : 'Draft'}
                     </span>
                   </td>
                   <td className="px-4 py-2">
@@ -280,6 +297,11 @@ export function JournalEntryManager({ outletId: outletIdProp, canPost }: { outle
                         className="text-sm font-medium text-brand-600 hover:text-brand-700 disabled:opacity-50"
                       >
                         {postingId === e.id ? 'Memposting…' : 'Post'}
+                      </button>
+                    )}
+                    {e.status === 'posted' && canPost && (
+                      <button onClick={() => handleReverse(e.id)} className="text-sm font-medium text-red-600 hover:text-red-700">
+                        Balik
                       </button>
                     )}
                   </td>

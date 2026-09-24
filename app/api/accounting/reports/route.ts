@@ -61,7 +61,7 @@ export async function GET(request: NextRequest) {
     .select('account_id, debit, credit, journal_entries!inner(entry_date, status, outlet_id)')
     .in('account_id', accountIds)
     .eq('journal_entries.outlet_id', outletId)
-    .eq('journal_entries.status', 'posted')
+    .in('journal_entries.status', ['posted', 'reversed'])
 
   if (type === 'profit-loss') {
     const start = searchParams.get('start') ?? firstDayOfMonth()
@@ -206,14 +206,14 @@ async function getCashFlow(auth: AuthContext, outletId: string, searchParams: UR
       .select('debit, credit, journal_entries!inner(entry_date, status, outlet_id)')
       .in('account_id', cashAccountIds)
       .eq('journal_entries.outlet_id', outletId)
-      .eq('journal_entries.status', 'posted')
+      .in('journal_entries.status', ['posted', 'reversed'])
       .lt('journal_entries.entry_date', start),
     auth.supabase
       .from('journal_entry_details')
       .select('debit, credit, journal_entries!inner(entry_date, status, outlet_id, source_type)')
       .in('account_id', cashAccountIds)
       .eq('journal_entries.outlet_id', outletId)
-      .eq('journal_entries.status', 'posted')
+      .in('journal_entries.status', ['posted', 'reversed'])
       .gte('journal_entries.entry_date', start)
       .lte('journal_entries.entry_date', end),
   ])
