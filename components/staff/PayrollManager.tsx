@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
+import { Fragment, useEffect, useState, useCallback } from 'react'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Alert } from '@/components/ui/Alert'
@@ -21,7 +21,21 @@ interface Payslip {
   commission_amount: number
   deductions: number
   net_pay: number
+  payslip_items?: { id: string; kind: string; label: string; amount: number }[]
   staff_members: { first_name: string; last_name: string | null } | null
+}
+
+function printSlip(p: Payslip, period: string) {
+  const name = p.staff_members ? `${p.staff_members.first_name} ${p.staff_members.last_name ?? ''}` : '-'
+  const esc = (t: string) => t.replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[c] as string)
+  const rows = (p.payslip_items ?? [])
+    .map((i) => `<tr><td>${esc(i.label)}</td><td style="text-align:right">${i.kind === 'kasbon' ? '-' : ''}${formatCurrency(i.amount)}</td></tr>`)
+    .join('')
+  const w = window.open('', '_blank', 'width=480,height=640')
+  if (!w) return
+  w.document.write(`<html><head><title>Slip Gaji</title><style>body{font-family:sans-serif;padding:24px}table{width:100%;border-collapse:collapse}td{padding:4px 0;border-bottom:1px solid #eee}</style></head><body><h2>Slip Gaji</h2><p>${esc(name)}<br/>Periode ${esc(period)}</p><table>${rows}<tr><td><strong>Total diterima</strong></td><td style="text-align:right"><strong>${formatCurrency(p.net_pay)}</strong></td></tr></table></body></html>`)
+  w.document.close()
+  w.print()
 }
 
 function firstDayOfMonth() {
@@ -37,6 +51,7 @@ export function PayrollManager({ outletId, canManage }: { outletId: string; canM
   const [showForm, setShowForm] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [isGenerating, setIsGenerating] = useState(false)
+  const [expanded, setExpanded] = useState<string | null>(null)
   const [period, setPeriod] = useState({ period_start: firstDayOfMonth(), period_end: new Date().toISOString().slice(0, 10) })
   const showToast = useNotificationStore((s) => s.show)
 
@@ -198,15 +213,51 @@ export function PayrollManager({ outletId, canManage }: { outletId: string; canM
                   </thead>
                   <tbody className="divide-y divide-gray-100 bg-white">
                     {payslips.map((p) => (
-                      <tr key={p.id}>
+                      <Fragment key={p.id}>
+                      <tr>
                         <td className="px-4 py-2 text-gray-900">
-                          {p.staff_members ? `${p.staff_members.first_name} ${p.staff_members.last_name ?? ''}` : '-'}
+                          <button className="text-left hover:underline" onClick={() => setExpanded(expanded === p.id ? null : p.id)} aria-expanded={expanded === p.id}>
+                            {expanded === p.id ? '▾ ' : '▸ '}
+                            {p.staff_members ? `${p.staff_members.first_name} ${p.staff_members.last_name ?? ''}` : '-'}
+                          </button>
                         </td>
                         <td className="px-4 py-2 text-right text-gray-700">{formatCurrency(p.base_salary)}</td>
                         <td className="px-4 py-2 text-right text-gray-700">{formatCurrency(p.commission_amount)}</td>
                         <td className="px-4 py-2 text-right text-gray-700">{formatCurrency(p.deductions)}</td>
                         <td className="px-4 py-2 text-right font-semibold text-gray-900">{formatCurrency(p.net_pay)}</td>
                       </tr>
+                      {expanded === p.id && (
+                        <tr className="bg-gray-50">
+                          <td colSpan={5} className="px-6 py-3">
+                            {(p.payslip_items ?? []).length === 0 ? (
+                              <p className="text-xs text-gray-400">Rincian tidak tersedia untuk slip ini (dibuat sebelum fitur rincian).</p>
+                            ) : (
+                              <ul className="space-y-1 text-sm">
+                                {(p.payslip_items ?? []).map((i) => (
+                                  <li key={i.id} className="flex justify-between">
+                                    <span className="text-gray-700">{i.label}</span>
+                                    <span className={i.kind === 'kasbon' ? 'text-red-600' : 'text-gray-900'}>
+                                      {i.kind === 'kasbon' ? '-' : '+'}
+                                      {formatCurrency(i.amount)}
+                                    </span>
+                                  </li>
+                                ))}
+                                <li className="flex justify-between border-t border-gray-200 pt-1 font-semibold">
+                                  <span>Total diterima</span>
+                                  <span>{formatCurrency(p.net_pay)}</span>
+                                </li>
+                              </ul>
+                            )}
+                            <button
+                              className="mt-2 text-xs text-brand-600 hover:underline"
+                              onClick={() => currentRun && printSlip(p, `${formatDate(currentRun.period_start)} - ${formatDate(currentRun.period_end)}`)}
+                            >
+                              Cetak slip
+                            </button>
+                          </td>
+                        </tr>
+                      )}
+                      </Fragment>
                     ))}
                   </tbody>
                 </table>

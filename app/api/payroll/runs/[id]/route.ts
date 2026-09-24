@@ -17,7 +17,7 @@ export async function GET(_request: NextRequest, ctx: RouteContext<'/api/payroll
 
   const { data: payslips, error: payslipError } = await auth.supabase
     .from('payslips')
-    .select('*, staff_members(first_name, last_name)')
+    .select('*, staff_members(first_name, last_name), payslip_items(id, kind, label, amount, basis)')
     .eq('payroll_run_id', id)
 
   if (payslipError) {
