@@ -1,6 +1,8 @@
 'use client'
 
 import { useState } from 'react'
+import { usePathname } from 'next/navigation'
+import { AdminShell } from '@/components/layout/AdminShell'
 import { Sidebar } from '@/components/layout/Sidebar'
 import { Header } from '@/components/layout/Header'
 
@@ -16,6 +18,12 @@ export function DashboardShell({
   children: React.ReactNode
 }) {
   const [mobileNavOpen, setMobileNavOpen] = useState(false)
+  const pathname = usePathname()
+
+  // Master Admin is a separate configuration space with its own frame.
+  if (pathname === '/dashboard/admin' || pathname.startsWith('/dashboard/admin/')) {
+    return <AdminShell userName={userName}>{children}</AdminShell>
+  }
 
   return (
     <div className="flex h-screen overflow-hidden bg-gray-50">

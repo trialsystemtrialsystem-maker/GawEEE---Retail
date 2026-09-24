@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/Input'
 import { Alert } from '@/components/ui/Alert'
 import { formatCurrency, formatDate } from '@/lib/utils/formatting'
 import { useNotificationStore } from '@/store/notificationStore'
+import { isDeductionKind } from '@/lib/utils/payslipItems'
 
 interface Run {
   id: string
@@ -29,7 +30,7 @@ function printSlip(p: Payslip, period: string) {
   const name = p.staff_members ? `${p.staff_members.first_name} ${p.staff_members.last_name ?? ''}` : '-'
   const esc = (t: string) => t.replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[c] as string)
   const rows = (p.payslip_items ?? [])
-    .map((i) => `<tr><td>${esc(i.label)}</td><td style="text-align:right">${i.kind === 'kasbon' ? '-' : ''}${formatCurrency(i.amount)}</td></tr>`)
+    .map((i) => `<tr><td>${esc(i.label)}</td><td style="text-align:right">${isDeductionKind(i.kind) ? '-' : ''}${formatCurrency(i.amount)}</td></tr>`)
     .join('')
   const w = window.open('', '_blank', 'width=480,height=640')
   if (!w) return
@@ -236,8 +237,8 @@ export function PayrollManager({ outletId, canManage }: { outletId: string; canM
                                 {(p.payslip_items ?? []).map((i) => (
                                   <li key={i.id} className="flex justify-between">
                                     <span className="text-gray-700">{i.label}</span>
-                                    <span className={i.kind === 'kasbon' ? 'text-red-600' : 'text-gray-900'}>
-                                      {i.kind === 'kasbon' ? '-' : '+'}
+                                    <span className={isDeductionKind(i.kind) ? 'text-red-600' : 'text-gray-900'}>
+                                      {isDeductionKind(i.kind) ? '-' : '+'}
                                       {formatCurrency(i.amount)}
                                     </span>
                                   </li>

@@ -53,10 +53,19 @@ export async function POST(_request: NextRequest, ctx: RouteContext<'/api/payrol
   // Books the salary: Dr Beban Gaji (gross) / Cr Kas (net paid) / Cr Piutang
   // Karyawan (kasbon collected through payroll). Best-effort and idempotent per
   // run, so it can never block or double-count the real payment.
-  const { data: slips } = await auth.supabase.from('payslips').select('base_salary, commission_amount, deductions, net_pay').eq('payroll_run_id', id)
-  const gross = (slips ?? []).reduce((sum, p) => sum + p.base_salary + p.commission_amount, 0)
-  const net = (slips ?? []).reduce((sum, p) => sum + p.net_pay, 0)
-  const kasbon = (slips ?? []).reduce((sum, p) => sum + p.deductions, 0)
+  const { data: slips } = await auth.supabase
+    .from('payslips')
+    .select('base_salary, commission_amount, net_pay, payslip_items(kind, amount)')
+    .eq('payroll_run_id', id)
+  type SlipRow = { base_salary: number; commission_amount: number; net_pay: number; payslip_items: { kind: string; amount: number }[] | null }
+  const slipRows = (slips ?? []) as unknown as SlipRow[]
+  const sumKind = (kinds: string[]) =>
+    slipRows.reduce((sum, p) => sum + (p.payslip_items ?? []).filter((i) => kinds.includes(i.kind)).reduce((s2, i) => s2 + i.amount, 0), 0)
+  const penalties = sumKind(['late_penalty', 'absence']) // reduce the expense: pay simply not owed
+  const withheld = sumKind(['other_deduction']) // BPJS/PPh etc. owed onward to the state
+  const kasbon = sumKind(['kasbon'])
+  const gross = slipRows.reduce((sum, p) => sum + p.base_salary + p.commission_amount, 0) - penalties
+  const net = slipRows.reduce((sum, p) => sum + p.net_pay, 0)
   await postJournal(auth.supabase, {
     outletId: data.outlet_id,
     createdBy: auth.id,
@@ -68,6 +77,7 @@ export async function POST(_request: NextRequest, ctx: RouteContext<'/api/payrol
       { code: '5100', debit: gross, description: 'Gaji, komisi, dan insentif' },
       { code: '1000', credit: net, description: 'Gaji dibayar tunai' },
       { code: '1150', credit: kasbon, description: 'Potongan cicilan kasbon' },
+      { code: '2100', credit: withheld, description: 'Potongan BPJS/pajak yang harus disetor' },
     ],
   })
 

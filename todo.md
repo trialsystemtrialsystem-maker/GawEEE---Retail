@@ -1706,6 +1706,23 @@ live-verified/committed/pushed.
       date range, CSV export; nav child + Master Admin hub card.
 - [ ] Not built (disclosed): late-penalty deduction in payroll, UI to edit `leave.days_per_year`.
 
+## Phase 34 — Master Admin as a closed configuration space; payroll rules; payroll/kasbon → journal
+- [x] Master Admin now has its own frame (`components/layout/AdminShell.tsx`: dark sidebar, "Mode Konfigurasi",
+      no module tabs/POS/notifications, "← Kembali ke Aplikasi"). Every link stays under `/dashboard/admin/**`;
+      existing config screens (Hak Akses, Metode Pembayaran, Info Outlet, departemen/kategori/produk/resep/bundling/
+      extra/catatan, grup pelanggan/harga khusus/kolom kustom, supplier, Chart of Accounts) are re-exported at admin
+      paths so editing never throws the owner into Sales/Inventory/Accounting. Transaction-style items (Performa
+      Outlet leaderboard) removed from the hub. Known limit: links *inside* a re-exported screen (e.g. a row detail)
+      may still point to its original module.
+- [x] Aturan Penggajian (`/dashboard/admin/payroll-rules`, `companies.settings.payroll`): potongan terlambat/menit,
+      potongan absen/hari, upah lembur/jam (from clock-out past shift end), tunjangan tetap, potongan % gaji pokok
+      (BPJS/PPh), jatah cuti tahunan. Applied by `POST /api/payroll/runs` via `composePayslip`; deductions never push
+      net pay below zero.
+- [x] Payroll run paid → journal (Dr Beban Gaji / Cr Kas / Cr Piutang Karyawan 1150 / Cr Utang Pajak 2100); kasbon
+      payout and manual repayment also journal (`lib/utils/journalPosting.ts`, best-effort, idempotent per source).
+- [ ] Next (Employee/Accounting depth): tutup buku/periode akuntansi, jurnal balik, aset tetap + penyusutan,
+      anggaran vs realisasi, rekonsiliasi bank, rasio keuangan; kontrak/dokumen karyawan, penilaian kinerja, THR.
+
 ## Notes on scope
 This todo tracks the **engineering deliverables** of the PRD (a working Next.js + Supabase codebase
 implementing Phase 1 features, with payment gateways behind a swappable mock interface). Items marked

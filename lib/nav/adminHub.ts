@@ -1,5 +1,8 @@
-// Single source of truth for the Master Admin control-center landing page
-// (app/dashboard/admin/page.tsx). New admin pages get added here as they ship.
+// Single source of truth for the Master Admin area (todo.md Phase 32). Master
+// Admin is a configuration-only space: it never lists transactions, and every
+// link stays under /dashboard/admin so editing something never throws the
+// owner into the Sales / Inventory / Accounting modules. Screens that already
+// exist elsewhere are re-exported at an admin path (app/dashboard/admin/**).
 
 export interface AdminHubItem {
   href: string
@@ -15,23 +18,27 @@ export interface AdminHubSection {
 
 export const ADMIN_HUB_SECTIONS: AdminHubSection[] = [
   {
-    title: 'Organisasi',
+    title: 'Pengaturan Sistem',
     items: [
-      { href: '/dashboard/admin/outlets', icon: '🏬', label: 'Outlets', description: 'Tambah, aktifkan/nonaktifkan, dan kelola data outlet.' },
-      { href: '/dashboard/admin/users', icon: '👤', label: 'Users', description: 'Undang pengguna, atur peran, reset password.' },
-      { href: '/dashboard/sales/outlet', icon: '📊', label: 'Performa Outlet', description: 'Leaderboard dan analisis penjualan per outlet.' },
+      { href: '/dashboard/admin/system', icon: '🛠️', label: 'Identitas & Pajak', description: 'Nama bisnis, NPWP, tarif PPN, dan teks struk.' },
+      { href: '/dashboard/admin/features', icon: '🧩', label: 'Menu & Fitur', description: 'Aktifkan atau sembunyikan modul sesuai kebutuhan bisnis.' },
+      { href: '/dashboard/admin/access', icon: '🔐', label: 'Hak Akses & Peran', description: 'Atur izin tiap peran.' },
+      { href: '/dashboard/admin/payroll-rules', icon: '💼', label: 'Aturan Penggajian', description: 'Potongan terlambat, lembur, tunjangan, BPJS/pajak, jatah cuti.' },
+      { href: '/dashboard/admin/payment-methods', icon: '💳', label: 'Metode Pembayaran', description: 'Aktifkan atau nonaktifkan metode pembayaran per outlet.' },
     ],
   },
   {
-    title: 'Pengaturan',
+    title: 'Organisasi',
     items: [
-      { href: '/dashboard/admin/system', icon: '🛠️', label: 'Pengaturan Sistem', description: 'Nama bisnis, NPWP, tarif PPN, dan teks struk.' },
-      { href: '/dashboard/admin/master-data', icon: '🗄️', label: 'Data Master', description: 'Produk, kategori, pelanggan, supplier, akun, dan data referensi lainnya.' },
-      { href: '/dashboard/admin/features', icon: '🧩', label: 'Menu & Fitur', description: 'Aktifkan atau sembunyikan modul sesuai kebutuhan bisnis.' },
-      { href: '/dashboard/settings', icon: '⚙️', label: 'Info Outlet', description: 'Nama, alamat, target penjualan, dan lokasi absensi.' },
-      { href: '/dashboard/settings/payment-methods', icon: '💳', label: 'Metode Pembayaran', description: 'Aktifkan atau nonaktifkan metode pembayaran per outlet.' },
-      { href: '/dashboard/staff/reports', icon: '🧾', label: 'Riwayat Karyawan', description: 'Ringkasan kehadiran, cuti, insentif, kasbon, dan gaji per karyawan.' },
-      { href: '/dashboard/staff/access', icon: '🔐', label: 'Hak Akses', description: 'Lihat peran dan izin yang berlaku di sistem.' },
+      { href: '/dashboard/admin/outlets', icon: '🏬', label: 'Outlets', description: 'Tambah, aktifkan/nonaktifkan, dan kelola data outlet.' },
+      { href: '/dashboard/admin/outlet-info', icon: '⚙️', label: 'Info Outlet', description: 'Nama, alamat, target penjualan, dan lokasi absensi.' },
+      { href: '/dashboard/admin/users', icon: '👤', label: 'Users', description: 'Undang pengguna, atur peran, reset password.' },
+    ],
+  },
+  {
+    title: 'Data Master',
+    items: [
+      { href: '/dashboard/admin/master-data', icon: '🗄️', label: 'Semua Data Master', description: 'Produk, kategori, pelanggan, supplier, akun, dan data referensi lainnya.' },
     ],
   },
   {
@@ -43,38 +50,30 @@ export const ADMIN_HUB_SECTIONS: AdminHubSection[] = [
   },
 ]
 
-// Master Admin > Data Master (todo.md Phase 32 batch 5): one place to reach
-// every screen that manages reference data. Links only — the screens exist.
 export const MASTER_DATA_SECTIONS: AdminHubSection[] = [
   {
     title: 'Produk & Katalog',
     items: [
-      { href: '/dashboard/sales/product/departments', icon: '🗂️', label: 'Departemen', description: 'Kelompok besar produk.' },
-      { href: '/dashboard/inventory/products', icon: '🏷️', label: 'Kategori', description: 'Kategori produk.' },
-      { href: '/dashboard/inventory', icon: '📦', label: 'Produk & Bahan', description: 'Daftar produk, bahan, dan stok.' },
-      { href: '/dashboard/sales/product/master-recipes', icon: '🍳', label: 'Master Resep', description: 'Resep dan komposisi bahan.' },
-      { href: '/dashboard/sales/product/bundling', icon: '🎁', label: 'Bundling', description: 'Paket produk.' },
-      { href: '/dashboard/sales/product/extra', icon: '➕', label: 'Extra Produk', description: 'Tambahan/topping.' },
-      { href: '/dashboard/sales/product/notes-category', icon: '📝', label: 'Kategori Catatan', description: 'Catatan pesanan yang bisa dipilih.' },
+      { href: '/dashboard/admin/data/departments', icon: '🗂️', label: 'Departemen', description: 'Kelompok besar produk.' },
+      { href: '/dashboard/admin/data/categories', icon: '🏷️', label: 'Kategori', description: 'Kategori produk.' },
+      { href: '/dashboard/admin/data/products', icon: '📦', label: 'Produk & Bahan', description: 'Daftar produk, bahan, dan stok.' },
+      { href: '/dashboard/admin/data/recipes', icon: '🍳', label: 'Master Resep', description: 'Resep dan komposisi bahan.' },
+      { href: '/dashboard/admin/data/bundling', icon: '🎁', label: 'Bundling', description: 'Paket produk.' },
+      { href: '/dashboard/admin/data/extra', icon: '➕', label: 'Extra Produk', description: 'Tambahan/topping.' },
+      { href: '/dashboard/admin/data/notes-category', icon: '📝', label: 'Kategori Catatan', description: 'Catatan pesanan yang bisa dipilih.' },
     ],
   },
   {
     title: 'Pelanggan & Pemasok',
     items: [
-      { href: '/dashboard/sales/customers/groups', icon: '👥', label: 'Grup Pelanggan', description: 'Kelompok pelanggan.' },
-      { href: '/dashboard/sales/customers/special-pricing', icon: '💲', label: 'Harga Khusus', description: 'Grup harga khusus pelanggan.' },
-      { href: '/dashboard/sales/customers/custom-fields', icon: '🧩', label: 'Kolom Kustom Pelanggan', description: 'Tambah kolom data pelanggan sendiri.' },
-      { href: '/dashboard/suppliers', icon: '🚚', label: 'Supplier', description: 'Daftar dan data supplier.' },
+      { href: '/dashboard/admin/data/customer-groups', icon: '👥', label: 'Grup Pelanggan', description: 'Kelompok pelanggan.' },
+      { href: '/dashboard/admin/data/special-pricing', icon: '💲', label: 'Harga Khusus', description: 'Grup harga khusus pelanggan.' },
+      { href: '/dashboard/admin/data/custom-fields', icon: '🧩', label: 'Kolom Kustom Pelanggan', description: 'Tambah kolom data pelanggan sendiri.' },
+      { href: '/dashboard/admin/data/suppliers', icon: '🚚', label: 'Supplier', description: 'Daftar dan data supplier.' },
     ],
   },
   {
-    title: 'Keuangan & Operasional',
-    items: [
-      { href: '/dashboard/accounting/accounts', icon: '📒', label: 'Chart of Accounts', description: 'Daftar akun untuk jurnal dan laporan.' },
-      { href: '/dashboard/settings/payment-methods', icon: '💳', label: 'Metode Pembayaran', description: 'Aktif/nonaktif per outlet.' },
-      { href: '/dashboard/admin/outlets', icon: '🏬', label: 'Outlet', description: 'Data outlet.' },
-      { href: '/dashboard/staff/schedule', icon: '🗓️', label: 'Shift & Jadwal', description: 'Shift kerja dan jadwal karyawan.' },
-      { href: '/dashboard/staff/incentives', icon: '🎯', label: 'Aturan Insentif', description: 'Aturan insentif harian per outlet.' },
-    ],
+    title: 'Keuangan',
+    items: [{ href: '/dashboard/admin/data/chart-of-accounts', icon: '📒', label: 'Chart of Accounts', description: 'Daftar akun untuk jurnal dan laporan.' }],
   },
 ]

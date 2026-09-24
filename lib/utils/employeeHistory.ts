@@ -53,3 +53,14 @@ export function tenureLabel(hireDate: string, today = new Date()): string {
   if (years > 0) return `${years} tahun ${rest} bulan`
   return `${rest} bulan`
 }
+
+/** Minutes worked past the scheduled shift end (0 if left on time/early).
+ * `shiftEnd` is a Postgres `time` string; overnight shifts (end earlier than
+ * start) are treated as ending the next day by the caller's schedule, so this
+ * only handles same-day shifts and returns 0 when it cannot tell. */
+export function overtimeMinutes(clockOutIso: string | null, shiftEnd: string | null, offsetMinutes = JAKARTA_OFFSET_MINUTES): number {
+  if (!clockOutIso || !shiftEnd) return 0
+  const [h, m] = shiftEnd.split(':').map(Number)
+  if (Number.isNaN(h) || Number.isNaN(m)) return 0
+  return Math.max(0, localMinutesOfDay(clockOutIso, offsetMinutes) - (h * 60 + m))
+}

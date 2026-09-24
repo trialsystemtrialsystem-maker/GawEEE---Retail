@@ -23,7 +23,7 @@ test('disabling a module persists and is marked for the owner; restore works', a
     expect(flags.json.features.bookings).toBe(false)
     expect(flags.json.is_master).toBe(true)
 
-    await page.goto('/dashboard/admin/features')
+    await page.goto('/dashboard')
     await page.getByRole('button', { name: /More/ }).click()
     await expect(page.getByRole('navigation', { name: 'Navigasi modul' }).getByRole('link', { name: /Booking.*nonaktif/ })).toBeVisible({ timeout: 30_000 })
   } finally {

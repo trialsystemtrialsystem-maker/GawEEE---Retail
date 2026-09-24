@@ -5,6 +5,8 @@ import { validate, generatePayrollRunSchema } from '@/lib/utils/validation'
 import { handleDatabaseError } from '@/lib/utils/errors'
 import { composePayslip, type AdvanceInstallment } from '@/lib/utils/payslipItems'
 import { nextInstallment } from '@/lib/utils/cashAdvance'
+import { parsePayrollRules } from '@/lib/utils/payrollRules'
+import { lateMinutes, overtimeMinutes } from '@/lib/utils/employeeHistory'
 
 // GET /api/payroll/runs?outlet_id=
 export async function GET(request: NextRequest) {
@@ -111,6 +113,32 @@ export async function POST(request: NextRequest) {
       .eq('outlet_id', outlet_id)
       .eq('status', 'paid_out'),
   ])
+  // Company payroll rules (all default to 0 = no effect) and the attendance
+  // facts they need: lateness, overtime past shift end, absent days.
+  const staffIdList = staff.map((s) => s.id)
+  const [companyRes, attRes, schedRes] = await Promise.all([
+    auth.supabase.from('companies').select('settings').eq('id', auth.company_id).single(),
+    auth.supabase.from('attendance').select('staff_id, attendance_date, clock_in_time, clock_out_time, status').in('staff_id', staffIdList).gte('attendance_date', period_start).lte('attendance_date', period_end),
+    auth.supabase.from('staff_schedules').select('staff_id, work_date, shifts(start_time, end_time)').in('staff_id', staffIdList).gte('work_date', period_start).lte('work_date', period_end),
+  ])
+  const rules = parsePayrollRules(companyRes.data?.settings)
+  type Sched = { staff_id: string; work_date: string; shifts: { start_time: string; end_time: string } | { start_time: string; end_time: string }[] | null }
+  const shiftOf = new Map(
+    ((schedRes.data ?? []) as unknown as Sched[]).map((sc) => [`${sc.staff_id}|${sc.work_date}`, Array.isArray(sc.shifts) ? sc.shifts[0] : sc.shifts])
+  )
+  const attendanceFacts = (staffId: string) => {
+    let late = 0
+    let overtime = 0
+    let absent = 0
+    for (const a of (attRes.data ?? []).filter((r) => r.staff_id === staffId)) {
+      const shift = shiftOf.get(`${staffId}|${a.attendance_date}`)
+      if (a.status === 'absent') absent += 1
+      late += lateMinutes(a.clock_in_time, shift?.start_time ?? null)
+      overtime += overtimeMinutes(a.clock_out_time, shift?.end_time ?? null)
+    }
+    return { late_minutes: late, overtime_minutes: overtime, absent_days: absent }
+  }
+
   const advIds = (advRes.data ?? []).map((a) => a.id)
   const repaidByAdvance = new Map<string, number>()
   if (advIds.length > 0) {
@@ -131,6 +159,8 @@ export async function POST(request: NextRequest) {
         commission_rate: Number(s.commission_rate),
         incentives: (incRes.data ?? []).filter((i) => i.staff_id === s.id),
         installments,
+        rules,
+        attendance: attendanceFacts(s.id),
       }),
     }
   })
