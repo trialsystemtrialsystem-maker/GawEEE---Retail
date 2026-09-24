@@ -212,6 +212,7 @@ export const PRIMARY_NAV: NavItem[] = [
       { label: 'Buka/Tutup Kasir', href: '/dashboard/staff/cashier-shifts' },
       { label: 'Payroll', href: '/dashboard/staff/payroll' },
       { label: 'Insentif Harian', href: '/dashboard/staff/incentives' },
+      { label: 'Riwayat Karyawan', href: '/dashboard/staff/reports' },
       { label: 'Hak Akses', href: '/dashboard/staff/access' },
       { label: 'Jadwal Kerja', href: '/dashboard/staff/schedule' },
       { label: 'Notifikasi', href: '/dashboard/staff/notifications' },

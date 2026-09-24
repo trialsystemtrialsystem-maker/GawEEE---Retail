@@ -1676,6 +1676,36 @@ live-verified/committed/pushed.
       step; `tsc`/`eslint`/`npm run build`/`npm test` all clean throughout. Deployed to production after all
       6 batches landed.
 
+## Phase 32 — Master Admin as the system control center (batches 1–3 shipped; 4–5 pending)
+- [x] Batch 1 — landing page of category cards (`lib/nav/adminHub.ts`, `/dashboard/admin`), sidebar children.
+- [x] Batch 2 — Pengaturan Sistem (`/dashboard/admin/system`): business name, NPWP, tax rate, currency, timezone,
+      receipt header/footer (merged into `companies.settings`, never replaced), wired to receipt + create_invoice.
+- [x] Batch 3 — editable role permissions (`lib/utils/permissions.ts`, overrides at
+      `companies.settings.permissions`, master_admin always allowed; defaults == previous hardcoded checks).
+- [ ] Batch 4 — Menu & Fitur feature flags (`companies.settings.features`, nav filtering).
+- [ ] Batch 5 — Data Master hub (`/dashboard/admin/master-data`).
+
+## Phase 33 — Employee 360: the most complete per-employee history
+- [x] **A** — `/dashboard/staff/[id]` profile with tabs (ringkasan, absensi, terlambat, ceklis, cuti/izin/sakit/libur,
+      penggajian, penjualan, kas shift) backed by one `GET /api/staff/[id]/history?type=` route; date range + CSV export.
+- [x] **B** — migration `064_employee_history.sql` (applied by the user) + kasbon: request → approve → payout →
+      repay (manual or payroll), outstanding balance math in `lib/utils/cashAdvance.ts`.
+- [x] **C** — daily incentives: rules per outlet (omzet / jumlah transaksi / hadir tepat waktu), idempotent
+      `POST /api/incentives/calculate` (replaces that day's auto rows, never manual ones), `/dashboard/staff/incentives`,
+      Insentif tab. Pure math in `lib/utils/incentives.ts` (unit-tested), e2e `incentives.spec.ts`.
+- [x] **D** — payroll breakdown: `POST /api/payroll/runs` composes each slip via `lib/utils/payslipItems.ts`
+      (gaji pokok, komisi, insentif per aturan, cicilan kasbon) and stores `payslip_items`. Incentives are folded into
+      `commission_amount`, kasbon into `deductions`, so the generated `net_pay` and old screens stay valid; totals equal
+      the old logic when there are no incentives/kasbon (unit-tested). Kasbon repayments are recorded only when the run
+      is marked paid (capped at the remaining balance). Itemized rows + printable slip in Penggajian. e2e
+      `payroll-breakdown.spec.ts`.
+- [x] **E** — Linimasa tab (trigger-logged jabatan/gaji/status/kontrak changes + manual catatan/peringatan via
+      `POST /api/staff/[id]/events` + leave, kasbon, paid payslips) and "Sisa Cuti" (entitlement from
+      `companies.settings.leave.days_per_year`, default 12, no UI to change it yet).
+- [x] **F** — `/dashboard/staff/reports` (Riwayat Karyawan): per-employee period summary with outlet selector,
+      date range, CSV export; nav child + Master Admin hub card.
+- [ ] Not built (disclosed): late-penalty deduction in payroll, UI to edit `leave.days_per_year`.
+
 ## Notes on scope
 This todo tracks the **engineering deliverables** of the PRD (a working Next.js + Supabase codebase
 implementing Phase 1 features, with payment gateways behind a swappable mock interface). Items marked

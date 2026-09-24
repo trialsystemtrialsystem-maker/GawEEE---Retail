@@ -28,6 +28,7 @@ export const ADMIN_HUB_SECTIONS: AdminHubSection[] = [
       { href: '/dashboard/admin/system', icon: '🛠️', label: 'Pengaturan Sistem', description: 'Nama bisnis, NPWP, tarif PPN, dan teks struk.' },
       { href: '/dashboard/settings', icon: '⚙️', label: 'Info Outlet', description: 'Nama, alamat, target penjualan, dan lokasi absensi.' },
       { href: '/dashboard/settings/payment-methods', icon: '💳', label: 'Metode Pembayaran', description: 'Aktifkan atau nonaktifkan metode pembayaran per outlet.' },
+      { href: '/dashboard/staff/reports', icon: '🧾', label: 'Riwayat Karyawan', description: 'Ringkasan kehadiran, cuti, insentif, kasbon, dan gaji per karyawan.' },
       { href: '/dashboard/staff/access', icon: '🔐', label: 'Hak Akses', description: 'Lihat peran dan izin yang berlaku di sistem.' },
     ],
   },
