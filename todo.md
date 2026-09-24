@@ -1682,8 +1682,8 @@ live-verified/committed/pushed.
       receipt header/footer (merged into `companies.settings`, never replaced), wired to receipt + create_invoice.
 - [x] Batch 3 — editable role permissions (`lib/utils/permissions.ts`, overrides at
       `companies.settings.permissions`, master_admin always allowed; defaults == previous hardcoded checks).
-- [ ] Batch 4 — Menu & Fitur feature flags (`companies.settings.features`, nav filtering).
-- [ ] Batch 5 — Data Master hub (`/dashboard/admin/master-data`).
+- [x] Batch 4 — Menu & Fitur (`/dashboard/admin/features`, `companies.settings.features`, `lib/nav/features.ts`): switched-off modules vanish from TopNav/Sidebar for everyone but master_admin (who sees them marked "nonaktif"). UI-level only — API routes are not blocked.
+- [x] Batch 5 — Data Master hub (`/dashboard/admin/master-data`): cards linking every reference-data screen (link-checked by e2e).
 
 ## Phase 33 — Employee 360: the most complete per-employee history
 - [x] **A** — `/dashboard/staff/[id]` profile with tabs (ringkasan, absensi, terlambat, ceklis, cuti/izin/sakit/libur,
