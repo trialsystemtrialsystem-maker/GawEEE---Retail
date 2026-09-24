@@ -4,7 +4,7 @@ import { resolveDateRange } from '@/lib/utils/dateRange'
 import { handleDatabaseError } from '@/lib/utils/errors'
 import { leaveDaysWithin, lateMinutes, workedMinutes } from '@/lib/utils/employeeHistory'
 
-const TYPES = ['overview', 'attendance', 'late', 'checklist', 'leave', 'payroll', 'sales', 'cashshift', 'incentive'] as const
+const TYPES = ['overview', 'attendance', 'late', 'checklist', 'leave', 'payroll', 'sales', 'cashshift', 'incentive', 'timeline'] as const
 type HistoryType = (typeof TYPES)[number]
 
 // GET /api/staff/:id/history?type=&start=&end= — Employee 360 (todo.md
@@ -170,8 +170,58 @@ export async function GET(request: NextRequest, ctx: RouteContext<'/api/staff/[i
     return data ?? []
   }
 
+  // Full career timeline (not date-filtered): employment changes and manual
+  // notes/warnings from staff_events, plus leave, paid-out kasbon and paid
+  // payslips, newest first.
+  const timelineRows = async () => {
+    const [events, leave, advances, slips] = await Promise.all([
+      auth.supabase.from('staff_events').select('id, event_type, from_value, to_value, occurred_on, note').eq('staff_id', id),
+      userId
+        ? auth.supabase.from('leave_requests').select('id, leave_type, start_date, end_date, status, reason').eq('requested_by', userId)
+        : Promise.resolve({ data: [], error: null }),
+      auth.supabase.from('cash_advances').select('id, amount, status, advance_date, reason').eq('staff_id', id).in('status', ['paid_out', 'repaid']),
+      auth.supabase
+        .from('payslips')
+        .select('id, net_pay, payroll_runs!inner(period_start, period_end, status, paid_at)')
+        .eq('staff_id', id)
+        .eq('payroll_runs.status', 'paid'),
+    ])
+    for (const r of [events, leave, advances, slips]) if (r.error) throw r.error
+    const fmt = (v: unknown) => (v === null || v === undefined ? '-' : typeof v === 'object' ? Object.values(v as object).join(' / ') : String(v))
+    const EVENT_TITLE: Record<string, string> = {
+      hired: 'Bergabung',
+      position_change: 'Perubahan jabatan',
+      salary_change: 'Perubahan gaji',
+      contract_renewal: 'Perubahan kontrak',
+      status_change: 'Perubahan status',
+      warning: 'Peringatan',
+      note: 'Catatan',
+    }
+    type Item = { id: string; date: string; kind: string; title: string; detail: string }
+    const items: Item[] = []
+    for (const e of events.data ?? []) {
+      const manual = e.event_type === 'note' || e.event_type === 'warning'
+      const change = e.from_value !== null && e.from_value !== undefined ? `${fmt(e.from_value)} → ${fmt(e.to_value)}` : fmt(e.to_value)
+      items.push({ id: `e-${e.id}`, date: e.occurred_on, kind: e.event_type, title: EVENT_TITLE[e.event_type] ?? e.event_type, detail: manual ? (e.note ?? '-') : change })
+    }
+    for (const l of (leave.data ?? []) as { id: string; leave_type: string; start_date: string; end_date: string; status: string; reason: string | null }[]) {
+      items.push({ id: `l-${l.id}`, date: l.start_date, kind: 'leave', title: `${l.leave_type} (${l.status})`, detail: `${l.start_date} s/d ${l.end_date}${l.reason ? ` — ${l.reason}` : ''}` })
+    }
+    for (const a of advances.data ?? []) {
+      items.push({ id: `a-${a.id}`, date: a.advance_date, kind: 'kasbon', title: 'Kasbon dicairkan', detail: `Rp ${Number(a.amount).toLocaleString('id-ID')} — ${a.reason}` })
+    }
+    type Slip = { id: string; net_pay: number; payroll_runs: { period_start: string; period_end: string; paid_at: string | null } | { period_start: string; period_end: string; paid_at: string | null }[] }
+    for (const sl of (slips.data ?? []) as unknown as Slip[]) {
+      const run = Array.isArray(sl.payroll_runs) ? sl.payroll_runs[0] : sl.payroll_runs
+      items.push({ id: `p-${sl.id}`, date: (run.paid_at ?? run.period_end).slice(0, 10), kind: 'payroll', title: 'Gaji dibayar', detail: `Periode ${run.period_start} s/d ${run.period_end} — Rp ${Number(sl.net_pay).toLocaleString('id-ID')}` })
+    }
+    return items.sort((a, b) => b.date.localeCompare(a.date))
+  }
+
   try {
     switch (type) {
+      case 'timeline':
+        return NextResponse.json({ staff, rows: await timelineRows() })
       case 'attendance':
         return NextResponse.json({ staff, rows: await attendanceRows() })
       case 'late': {
@@ -195,6 +245,21 @@ export async function GET(request: NextRequest, ctx: RouteContext<'/api/staff/[i
       default: {
         const [att, leave, pay, checklist, sales] = await Promise.all([attendanceRows(), leaveRows(), payrollRows(), checklistRows(), salesRows()])
         const approved = leave.filter((l) => l.status === 'approved')
+        const { data: company } = await auth.supabase.from('companies').select('settings').eq('id', auth.company_id).single()
+        const leaveSettings = ((company?.settings ?? {}) as { leave?: { days_per_year?: number } }).leave
+        const entitlement = Number(leaveSettings?.days_per_year ?? 12)
+        const year = new Date().getFullYear()
+        const { data: yearLeave } = userId
+          ? await auth.supabase
+              .from('leave_requests')
+              .select('start_date, end_date')
+              .eq('requested_by', userId)
+              .eq('leave_type', 'cuti')
+              .eq('status', 'approved')
+              .lte('start_date', `${year}-12-31`)
+              .gte('end_date', `${year}-01-01`)
+          : { data: [] as { start_date: string; end_date: string }[] }
+        const cutiUsed = (yearLeave ?? []).reduce((sum, l) => sum + leaveDaysWithin(l.start_date, l.end_date, `${year}-01-01`, `${year}-12-31`), 0)
         const leaveDays = (t: string) => approved.filter((l) => l.leave_type === t).reduce((s, l) => s + l.days, 0)
         return NextResponse.json({
           staff,
@@ -205,6 +270,7 @@ export async function GET(request: NextRequest, ctx: RouteContext<'/api/staff/[i
             late_days: att.filter((a) => a.status === 'late' || a.late_minutes > 0).length,
             late_minutes: att.reduce((s, a) => s + a.late_minutes, 0),
             worked_minutes: att.reduce((s, a) => s + a.worked_minutes, 0),
+            leave_balance: { entitlement, used: cutiUsed, remaining: Math.max(0, entitlement - cutiUsed), year },
             leave_days: { izin: leaveDays('izin'), sakit: leaveDays('sakit'), libur: leaveDays('libur'), cuti: leaveDays('cuti') },
             pending_leave_requests: leave.filter((l) => l.status === 'pending').length,
             checklist_completed: checklist.length,

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { Alert } from '@/components/ui/Alert'
+import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { DateRangePicker, defaultDateRange, type DateRange } from '@/components/ui/DateRangePicker'
 import { ExportCsvButton } from '@/components/ui/ExportCsvButton'
@@ -104,6 +105,16 @@ const TABS: { key: string; label: string; columns?: Column[]; empty: string }[] 
     ],
   },
   {
+    key: 'timeline',
+    label: 'Linimasa',
+    empty: 'Belum ada riwayat',
+    columns: [
+      { label: 'Tanggal', render: (r) => formatDate(s(r.date)), csv: (r) => s(r.date) },
+      { label: 'Jenis', render: (r) => <span className={s(r.kind) === 'warning' ? 'font-semibold text-red-600' : 'font-medium text-gray-900'}>{s(r.title)}</span>, csv: (r) => s(r.title) },
+      { label: 'Keterangan', render: (r) => s(r.detail), csv: (r) => s(r.detail) },
+    ],
+  },
+  {
     key: 'incentive',
     label: 'Insentif Harian',
     empty: 'Belum ada insentif pada periode ini',
@@ -186,6 +197,7 @@ interface Summary {
   sales_revenue: number
   sales_transactions: number
   voided_transactions: number
+  leave_balance?: { entitlement: number; used: number; remaining: number; year: number }
 }
 
 function Kpi({ label, value, hint }: { label: string; value: string; hint?: string }) {
@@ -195,6 +207,55 @@ function Kpi({ label, value, hint }: { label: string; value: string; hint?: stri
       <p className="mt-1 text-xl font-bold text-gray-900">{value}</p>
       {hint && <p className="text-xs text-gray-400">{hint}</p>}
     </Card>
+  )
+}
+
+function TimelineNoteForm({ staffId, onSaved }: { staffId: string; onSaved: () => void }) {
+  const [type, setType] = useState<'note' | 'warning'>('note')
+  const [note, setNote] = useState('')
+  const [err, setErr] = useState<string | null>(null)
+  const [saving, setSaving] = useState(false)
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault()
+    setErr(null)
+    setSaving(true)
+    try {
+      const res = await fetch(`/api/staff/${staffId}/events`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ event_type: type, note }),
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        setErr(typeof data.error === 'string' ? data.error : 'Periksa kembali isian Anda')
+        return
+      }
+      setNote('')
+      onSaved()
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <form onSubmit={submit} className="flex flex-wrap items-end gap-2 rounded-lg border border-gray-200 p-3">
+      <select value={type} onChange={(e) => setType(e.target.value as 'note' | 'warning')} className="rounded-sm border border-gray-200 px-3 py-2 text-sm" aria-label="Jenis catatan">
+        <option value="note">Catatan</option>
+        <option value="warning">Peringatan</option>
+      </select>
+      <input
+        value={note}
+        onChange={(e) => setNote(e.target.value)}
+        placeholder="Tulis catatan / peringatan untuk karyawan ini"
+        className="min-w-[16rem] flex-1 rounded-sm border border-gray-200 px-3 py-2 text-sm"
+        aria-label="Isi catatan"
+      />
+      <Button type="submit" size="sm" isLoading={saving}>
+        Tambah
+      </Button>
+      {err && <p className="w-full text-sm text-red-600">{err}</p>}
+    </form>
   )
 }
 
@@ -273,7 +334,7 @@ export function EmployeeProfile({ staffId, canManage = false }: { staffId: strin
           ))}
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          {tab !== 'kasbon' && <DateRangePicker value={range} onChange={setRange} />}
+          {tab !== 'kasbon' && tab !== 'timeline' && <DateRangePicker value={range} onChange={setRange} />}
           {active.columns && <ExportCsvButton filename={`karyawan-${active.key}`} rows={csvRows} />}
         </div>
       </div>
@@ -298,7 +359,12 @@ export function EmployeeProfile({ staffId, canManage = false }: { staffId: strin
               <Kpi label="Terlambat" value={`${summary.late_days} hari`} hint={summary.late_minutes ? formatDuration(summary.late_minutes) : 'Tidak ada'} />
               <Kpi label="Total Jam Kerja" value={formatDuration(summary.worked_minutes)} />
               <Kpi label="Ceklis Selesai" value={String(summary.checklist_completed)} />
-              <Kpi label="Cuti" value={`${summary.leave_days.cuti} hari`} />
+              <Kpi
+                label="Sisa Cuti"
+                value={summary.leave_balance ? `${summary.leave_balance.remaining} hari` : '-'}
+                hint={summary.leave_balance ? `${summary.leave_balance.used} dari ${summary.leave_balance.entitlement} hari terpakai (${summary.leave_balance.year})` : undefined}
+              />
+              <Kpi label="Cuti (periode)" value={`${summary.leave_days.cuti} hari`} />
               <Kpi label="Sakit" value={`${summary.leave_days.sakit} hari`} />
               <Kpi label="Izin" value={`${summary.leave_days.izin} hari`} />
               <Kpi label="Libur" value={`${summary.leave_days.libur} hari`} hint={summary.pending_leave_requests ? `${summary.pending_leave_requests} menunggu persetujuan` : undefined} />
@@ -315,6 +381,7 @@ export function EmployeeProfile({ staffId, canManage = false }: { staffId: strin
         )
       ) : (
         <div className="space-y-3">
+          {tab === 'timeline' && canManage && <TimelineNoteForm staffId={staffId} onSaved={load} />}
           {tab === 'late' && !isLoading && rows.length > 0 && (
             <p className="text-sm text-gray-600">
               Total keterlambatan: <span className="font-bold text-gray-900">{formatDuration(totalLate)}</span> dalam {rows.length} hari
