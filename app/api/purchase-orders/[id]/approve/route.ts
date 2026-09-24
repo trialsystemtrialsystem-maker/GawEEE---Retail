@@ -1,12 +1,13 @@
 import { NextResponse } from 'next/server'
 import { getAuthContext } from '@/lib/utils/auth-context'
+import { can } from '@/lib/utils/permissions'
 import { handleDatabaseError } from '@/lib/utils/errors'
 
 // POST /api/purchase-orders/:id/approve — manager+ only. See prd.md §4.5.
 export async function POST(_request: Request, ctx: RouteContext<'/api/purchase-orders/[id]/approve'>) {
   const auth = await getAuthContext()
   if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  if (!['outlet_manager', 'master_admin'].includes(auth.role)) {
+  if (!(await can(auth, 'po.approve'))) {
     return NextResponse.json({ error: 'Tidak memiliki izin' }, { status: 403 })
   }
 

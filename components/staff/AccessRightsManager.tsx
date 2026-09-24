@@ -23,17 +23,13 @@ const ROLE_LABEL: Record<string, string> = {
 
 const ROLES = ['master_admin', 'outlet_manager', 'cashier', 'staff'] as const
 
-// Reflects the actual role checks enforced in the API routes (not just a
-// wishlist) — see e.g. app/api/purchase-orders/[id]/approve, app/api/
-// invoices/[id]/void, app/api/inventory/adjust, app/api/admin/*.
+// Fixed actions (not configurable yet) — reflect the hardcoded role checks in
+// the API routes. Configurable actions live in the editable matrix rendered
+// above this one (lib/utils/permissions.ts).
 const PERMISSION_MATRIX: { action: string; master_admin: boolean; outlet_manager: boolean; cashier: boolean; staff: boolean }[] = [
   { action: 'Transaksi Kasir (POS)', master_admin: true, outlet_manager: true, cashier: true, staff: true },
-  { action: 'Void Invoice', master_admin: true, outlet_manager: true, cashier: false, staff: false },
-  { action: 'Adjust Stok', master_admin: true, outlet_manager: true, cashier: false, staff: false },
-  { action: 'Kelola Produk & Supplier', master_admin: true, outlet_manager: true, cashier: false, staff: false },
-  { action: 'Approve Purchase Order', master_admin: true, outlet_manager: true, cashier: false, staff: false },
-  { action: 'Post Jurnal Akuntansi', master_admin: true, outlet_manager: true, cashier: false, staff: false },
-  { action: 'Kelola Karyawan & Payroll', master_admin: true, outlet_manager: true, cashier: false, staff: false },
+  { action: 'Kelola Produk', master_admin: true, outlet_manager: true, cashier: false, staff: false },
+  { action: 'Kelola Karyawan', master_admin: true, outlet_manager: true, cashier: false, staff: false },
   { action: 'Kelola Outlet & Undang User', master_admin: true, outlet_manager: false, cashier: false, staff: false },
   { action: 'Lihat Semua Outlet (multi-outlet)', master_admin: true, outlet_manager: false, cashier: false, staff: false },
 ]
@@ -61,6 +57,43 @@ export function AccessRightsManager({ isMasterAdmin }: { isMasterAdmin: boolean 
     return () => clearTimeout(timeout)
   }, [load])
 
+  const [editable, setEditable] = useState<{
+    permissions: { key: string; label: string }[]
+    roles: string[]
+    matrix: Record<string, Record<string, boolean>>
+  } | null>(null)
+  const [togglingKey, setTogglingKey] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!isMasterAdmin) return
+    const timeout = setTimeout(async () => {
+      const res = await fetch('/api/admin/permissions')
+      if (res.ok) setEditable(await res.json())
+    }, 0)
+    return () => clearTimeout(timeout)
+  }, [isMasterAdmin])
+
+  async function togglePermission(role: string, key: string, allowed: boolean) {
+    const id = `${role}:${key}`
+    setTogglingKey(id)
+    // Optimistic — reverted below if the save fails.
+    setEditable((e) => (e ? { ...e, matrix: { ...e.matrix, [role]: { ...e.matrix[role], [key]: allowed } } } : e))
+    try {
+      const res = await fetch('/api/admin/permissions', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ role, key, allowed }),
+      })
+      if (!res.ok) throw new Error('save failed')
+      showToast('Izin diperbarui', 'success')
+    } catch {
+      setEditable((e) => (e ? { ...e, matrix: { ...e.matrix, [role]: { ...e.matrix[role], [key]: !allowed } } } : e))
+      showToast('Gagal memperbarui izin', 'danger')
+    } finally {
+      setTogglingKey(null)
+    }
+  }
+
   async function changeRole(userId: string, role: string) {
     setSavingId(userId)
     try {
@@ -82,8 +115,53 @@ export function AccessRightsManager({ isMasterAdmin }: { isMasterAdmin: boolean 
 
   return (
     <div className="space-y-6">
+      {isMasterAdmin && editable && (
+        <Card>
+          <h2 className="mb-1 text-lg font-semibold text-gray-900">Izin yang Dapat Diatur</h2>
+          <p className="mb-3 text-sm text-gray-500">
+            Centang untuk mengizinkan sebuah peran melakukan aksi. Berlaku langsung; Master Admin selalu memiliki semua izin.
+          </p>
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200 text-sm">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-4 py-2 text-left font-semibold text-gray-600">Aksi</th>
+                  <th className="px-4 py-2 text-center font-semibold text-gray-600">{ROLE_LABEL.master_admin}</th>
+                  {editable.roles.map((r) => (
+                    <th key={r} className="px-4 py-2 text-center font-semibold text-gray-600">
+                      {ROLE_LABEL[r]}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100 bg-white">
+                {editable.permissions.map((p) => (
+                  <tr key={p.key}>
+                    <td className="px-4 py-2 text-gray-700">{p.label}</td>
+                    <td className="px-4 py-2 text-center">
+                      <input type="checkbox" checked disabled aria-label={`${p.label} — ${ROLE_LABEL.master_admin}`} />
+                    </td>
+                    {editable.roles.map((r) => (
+                      <td key={r} className="px-4 py-2 text-center">
+                        <input
+                          type="checkbox"
+                          checked={editable.matrix[r]?.[p.key] ?? false}
+                          disabled={togglingKey === `${r}:${p.key}`}
+                          onChange={(e) => togglePermission(r, p.key, e.target.checked)}
+                          aria-label={`${p.label} — ${ROLE_LABEL[r]}`}
+                        />
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
+
       <Card>
-        <h2 className="mb-3 text-lg font-semibold text-gray-900">Matriks Izin per Role</h2>
+        <h2 className="mb-3 text-lg font-semibold text-gray-900">Izin Tetap per Role</h2>
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200 text-sm">
             <thead className="bg-gray-50">

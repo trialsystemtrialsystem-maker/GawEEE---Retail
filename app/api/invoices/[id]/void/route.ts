@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthContext } from '@/lib/utils/auth-context'
+import { can } from '@/lib/utils/permissions'
 import { handleDatabaseError } from '@/lib/utils/errors'
 
 // POST /api/invoices/:id/void — manager+ only, within 24h. See prd.md §4.3.
 export async function POST(request: NextRequest, ctx: RouteContext<'/api/invoices/[id]/void'>) {
   const auth = await getAuthContext()
   if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  if (!['outlet_manager', 'master_admin'].includes(auth.role)) {
+  if (!(await can(auth, 'invoice.void'))) {
     return NextResponse.json({ error: 'Pembatalan memerlukan persetujuan manager' }, { status: 403 })
   }
 

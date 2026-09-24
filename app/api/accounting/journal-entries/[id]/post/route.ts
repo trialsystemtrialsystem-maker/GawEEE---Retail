@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthContext } from '@/lib/utils/auth-context'
+import { can } from '@/lib/utils/permissions'
 import { handleDatabaseError } from '@/lib/utils/errors'
 
 // POST /api/accounting/journal-entries/:id/post — manager+ only. Atomically
@@ -8,7 +9,7 @@ import { handleDatabaseError } from '@/lib/utils/errors'
 export async function POST(_request: NextRequest, ctx: RouteContext<'/api/accounting/journal-entries/[id]/post'>) {
   const auth = await getAuthContext()
   if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  if (!['outlet_manager', 'master_admin'].includes(auth.role)) {
+  if (!(await can(auth, 'journal.post'))) {
     return NextResponse.json({ error: 'Tidak memiliki izin' }, { status: 403 })
   }
 

@@ -46,7 +46,7 @@ interface Refund {
   customer_refund_items: { product_id: string; quantity: number; unit_price: number }[]
 }
 
-export function InvoiceDetail({ invoiceId, canVoid }: { invoiceId: string; canVoid: boolean }) {
+export function InvoiceDetail({ invoiceId, canVoid, canRefund: canRefundPerm }: { invoiceId: string; canVoid: boolean; canRefund: boolean }) {
   const router = useRouter()
   const [invoice, setInvoice] = useState<Invoice | null>(null)
   const [items, setItems] = useState<InvoiceItem[]>([])
@@ -164,7 +164,7 @@ export function InvoiceDetail({ invoiceId, canVoid }: { invoiceId: string; canVo
     }
     return acc
   }, {})
-  const canRefund = canVoid && invoice.order_status !== 'voided' && invoice.payment_status === 'paid'
+  const canRefund = canRefundPerm && invoice.order_status !== 'voided' && invoice.payment_status === 'paid'
 
   return (
     <div className="space-y-4">
