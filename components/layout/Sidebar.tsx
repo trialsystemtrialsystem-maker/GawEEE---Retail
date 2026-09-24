@@ -108,19 +108,6 @@ export function Sidebar({ outletName, onNavigate }: { outletName?: string; onNav
       </div>
 
       <div className="flex-1 space-y-1 overflow-y-auto px-2 py-3">
-        <Link
-          href="/pos"
-          onClick={onNavigate}
-          aria-current={pathname === '/pos' ? 'page' : undefined}
-          className={`mb-2 flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
-            pathname === '/pos'
-              ? 'bg-brand-500 text-white shadow-sm shadow-brand-900/40'
-              : 'text-blue-200 hover:bg-white/10 hover:text-white'
-          }`}
-        >
-          <span aria-hidden>🛒</span>
-          Kasir (POS)
-        </Link>
 
         {/* On desktop, section-switching lives in the TopNav pill bar (Header)
             instead — this block only appears in the mobile drawer, since the
@@ -147,7 +134,7 @@ export function Sidebar({ outletName, onNavigate }: { outletName?: string; onNav
         </div>
 
         {activeItem && (
-          <div className="space-y-3 border-t border-white/10 pt-3">
+          <div className="space-y-3 border-t border-white/10 pt-3 md:border-t-0 md:pt-0">
             <div>
               <p className="px-3 pb-2 text-xs font-semibold uppercase tracking-wide text-blue-300">{activeItem.label}</p>
               {activeItem.children && activeItem.children.length > 0 ? (
@@ -164,6 +151,21 @@ export function Sidebar({ outletName, onNavigate }: { outletName?: string; onNav
             )}
           </div>
         )}
+        <div className="border-t border-white/10 pt-3">
+          <Link
+            href="/pos"
+            onClick={onNavigate}
+            aria-current={pathname === '/pos' ? 'page' : undefined}
+            className={`flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
+              pathname === '/pos'
+                ? 'bg-brand-500 text-white shadow-sm shadow-brand-900/40'
+                : 'text-blue-200 hover:bg-white/10 hover:text-white'
+            }`}
+          >
+            <span aria-hidden>🛒</span>
+            Kasir (POS)
+          </Link>
+          </div>
       </div>
 
       <div className="border-t border-white/10 px-4 py-3">
