@@ -4,6 +4,7 @@ import { can } from '@/lib/utils/permissions'
 import { validate, cashAdvanceActionSchema } from '@/lib/utils/validation'
 import { handleDatabaseError } from '@/lib/utils/errors'
 import { isFullyRepaid } from '@/lib/utils/cashAdvance'
+import { postJournal } from '@/lib/utils/journalPosting'
 
 // PATCH /api/cash-advances/:id { action: approve|reject|payout|repay } —
 // gated by the same permission as payroll (payroll.manage): whoever can run
@@ -42,7 +43,21 @@ export async function PATCH(request: NextRequest, ctx: RouteContext<'/api/cash-a
   if (body.action === 'payout') {
     if (advance.status !== 'approved') return NextResponse.json({ error: 'Kasbon harus disetujui sebelum dicairkan' }, { status: 409 })
     const { error } = await auth.supabase.from('cash_advances').update({ status: 'paid_out', paid_out_at: now }).eq('id', id)
-    return error ? fail(error) : NextResponse.json({ ok: true })
+    if (error) return fail(error)
+    // Kasbon handed over is a receivable from the employee: Dr Piutang Karyawan / Cr Kas.
+    await postJournal(auth.supabase, {
+      outletId: advance.outlet_id,
+      createdBy: auth.id,
+      date: now.slice(0, 10),
+      description: 'Pencairan kasbon karyawan',
+      sourceType: 'cash_advance',
+      sourceId: id,
+      lines: [
+        { code: '1150', debit: advance.amount },
+        { code: '1000', credit: advance.amount },
+      ],
+    })
+    return NextResponse.json({ ok: true })
   }
 
   // repay (manual)
@@ -55,6 +70,20 @@ export async function PATCH(request: NextRequest, ctx: RouteContext<'/api/cash-a
     .from('cash_advance_repayments')
     .insert({ advance_id: id, amount: body.amount, method: 'manual', note: body.note ?? null, created_by: auth.id })
   if (repError) return fail(repError)
+  // Manual repayment in cash: Dr Kas / Cr Piutang Karyawan. Keyed by a fresh id
+  // per repayment (there can be several per advance).
+  await postJournal(auth.supabase, {
+    outletId: advance.outlet_id,
+    createdBy: auth.id,
+    date: now.slice(0, 10),
+    description: 'Pelunasan kasbon karyawan',
+    sourceType: 'cash_advance_repayment',
+    sourceId: crypto.randomUUID(),
+    lines: [
+      { code: '1000', debit: body.amount },
+      { code: '1150', credit: body.amount },
+    ],
+  })
   if (isFullyRepaid(advance.amount, repaid + body.amount)) await auth.supabase.from('cash_advances').update({ status: 'repaid' }).eq('id', id)
   return NextResponse.json({ ok: true })
 }

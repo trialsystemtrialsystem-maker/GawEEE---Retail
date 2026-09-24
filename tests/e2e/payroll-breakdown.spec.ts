@@ -46,6 +46,13 @@ test('kasbon instalment is itemized on the payslip and repaid when the run is pa
   expect(earn - ded).toBe(slip.net_pay)
 
   expect((await api(page, 'POST', `/api/payroll/runs/${run.json.payroll_run_id}/pay`)).status).toBe(200)
+  // The accounting side: kasbon payout and the salary run each posted a journal.
+  const today = new Date().toISOString().slice(0, 10)
+  const journals = await api(page, 'GET', `/api/accounting/journal-entries?outlet_id=${outletId}&start=${today}`)
+  const sources = journals.json.entries.map((e: { source_type: string; source_id: string }) => e.source_type + ':' + e.source_id)
+  expect(sources).toContain('payroll_run:' + run.json.payroll_run_id)
+  expect(sources).toContain('cash_advance:' + advId)
+
   const hist = await api(page, 'GET', `/api/staff/${staff.id}/history?type=overview`)
   expect(hist.status).toBe(200)
   const list = await api(page, 'GET', `/api/cash-advances?outlet_id=${outletId}&staff_id=${staff.id}`)

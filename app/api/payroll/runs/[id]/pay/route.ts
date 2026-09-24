@@ -3,6 +3,7 @@ import { getAuthContext } from '@/lib/utils/auth-context'
 import { can } from '@/lib/utils/permissions'
 import { handleDatabaseError } from '@/lib/utils/errors'
 import { isFullyRepaid } from '@/lib/utils/cashAdvance'
+import { postJournal } from '@/lib/utils/journalPosting'
 
 // POST /api/payroll/runs/:id/pay — manager+ only, marks a draft run as paid.
 export async function POST(_request: NextRequest, ctx: RouteContext<'/api/payroll/runs/[id]/pay'>) {
@@ -48,6 +49,27 @@ export async function POST(_request: NextRequest, ctx: RouteContext<'/api/payrol
       .insert({ advance_id: advanceId, payslip_id: item.payslip_id, amount, method: 'payroll', note: 'Potongan gaji', created_by: auth.id })
     if (isFullyRepaid(adv.amount, repaid + amount)) await auth.supabase.from('cash_advances').update({ status: 'repaid' }).eq('id', advanceId)
   }
+
+  // Books the salary: Dr Beban Gaji (gross) / Cr Kas (net paid) / Cr Piutang
+  // Karyawan (kasbon collected through payroll). Best-effort and idempotent per
+  // run, so it can never block or double-count the real payment.
+  const { data: slips } = await auth.supabase.from('payslips').select('base_salary, commission_amount, deductions, net_pay').eq('payroll_run_id', id)
+  const gross = (slips ?? []).reduce((sum, p) => sum + p.base_salary + p.commission_amount, 0)
+  const net = (slips ?? []).reduce((sum, p) => sum + p.net_pay, 0)
+  const kasbon = (slips ?? []).reduce((sum, p) => sum + p.deductions, 0)
+  await postJournal(auth.supabase, {
+    outletId: data.outlet_id,
+    createdBy: auth.id,
+    date: (data.paid_at ?? new Date().toISOString()).slice(0, 10),
+    description: `Penggajian ${data.period_start} s/d ${data.period_end}`,
+    sourceType: 'payroll_run',
+    sourceId: id,
+    lines: [
+      { code: '5100', debit: gross, description: 'Gaji, komisi, dan insentif' },
+      { code: '1000', credit: net, description: 'Gaji dibayar tunai' },
+      { code: '1150', credit: kasbon, description: 'Potongan cicilan kasbon' },
+    ],
+  })
 
   return NextResponse.json({ run: data })
 }
