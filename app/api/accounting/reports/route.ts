@@ -67,6 +67,9 @@ export async function GET(request: NextRequest) {
     const start = searchParams.get('start') ?? firstDayOfMonth()
     const end = searchParams.get('end') ?? new Date().toISOString().slice(0, 10)
     query = query.gte('journal_entries.entry_date', start).lte('journal_entries.entry_date', end)
+    // Year-end closing entries just move profit to Laba Ditahan; the P&L must keep
+    // showing the operating income/expense they zeroed out.
+    query = query.or('source_type.is.null,source_type.neq.closing', { referencedTable: 'journal_entries' })
   } else {
     const asOf = searchParams.get('as_of') ?? new Date().toISOString().slice(0, 10)
     query = query.lte('journal_entries.entry_date', asOf)
