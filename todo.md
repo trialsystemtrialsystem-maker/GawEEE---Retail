@@ -1720,8 +1720,11 @@ live-verified/committed/pushed.
       net pay below zero.
 - [x] Payroll run paid → journal (Dr Beban Gaji / Cr Kas / Cr Piutang Karyawan 1150 / Cr Utang Pajak 2100); kasbon
       payout and manual repayment also journal (`lib/utils/journalPosting.ts`, best-effort, idempotent per source).
-- [ ] Next (Employee/Accounting depth): tutup buku/periode akuntansi, jurnal balik, aset tetap + penyusutan,
+- [x] Accounting depth (migration 065, applied): jurnal balik, Neraca now includes Laba Berjalan and counts reversed entries (fixed void double-count), Rasio Keuangan, Aset Tetap + penyusutan bulanan (dijurnal), Anggaran vs Realisasi, Tutup Buku (jurnal penutup + kunci periode via trigger, buka kembali). P&L ignores closing entries.
       anggaran vs realisasi, rekonsiliasi bank, rasio keuangan; kontrak/dokumen karyawan, penilaian kinerja, THR.
+
+- [x] Employee records (migration 065): Dokumen karyawan (nomor, kedaluwarsa, tautan berkas; peringatan 60 hari di
+      Riwayat Karyawan) and Penilaian kinerja (skor 1–5 + aspek). Not built: THR, rekonsiliasi bank, pelepasan/disposal aset.
 
 ## Notes on scope
 This todo tracks the **engineering deliverables** of the PRD (a working Next.js + Supabase codebase
