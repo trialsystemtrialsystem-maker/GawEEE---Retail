@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { useEffect, useState, useCallback } from 'react'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
@@ -131,7 +132,7 @@ export function SupplierList() {
             ) : (
               suppliers.map((s) => (
                 <tr key={s.id} className="hover:bg-gray-50">
-                  <td className="px-4 py-2 text-gray-900">{s.name}</td>
+                  <td className="px-4 py-2 text-gray-900"><Link href={`/dashboard/suppliers/${s.id}`} className="font-medium text-brand-600 hover:underline">{s.name}</Link></td>
                   <td className="px-4 py-2 text-gray-600">{s.contact_person ?? '-'}</td>
                   <td className="px-4 py-2 text-gray-600">{s.phone ?? '-'}</td>
                   <td className="px-4 py-2 text-emerald-600">{s.status}</td>
