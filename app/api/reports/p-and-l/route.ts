@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthContext, canAccessOutlet } from '@/lib/utils/auth-context'
+import { selectAll } from '@/lib/utils/fetchAll'
 
 // GET /api/reports/p-and-l?from_date&to_date&outlet_id= — see prd.md §4.6.
 // Backs "Ringkasan Penjualan" (Sales Summary), NOT the official Laba Rugi —
@@ -26,13 +27,13 @@ export async function GET(request: NextRequest) {
   const fromDate = searchParams.get('from_date') ?? new Date().toISOString().slice(0, 10)
   const toDate = searchParams.get('to_date') ?? new Date().toISOString().slice(0, 10)
 
-  const { data: invoices } = await auth.supabase
+  const { data: invoices } = await selectAll(auth.supabase
     .from('invoices')
     .select('total, invoice_items(cost_of_goods_sold)')
     .eq('outlet_id', outletId)
     .neq('order_status', 'voided')
     .gte('created_at', `${fromDate}T00:00:00`)
-    .lte('created_at', `${toDate}T23:59:59`)
+    .lte('created_at', `${toDate}T23:59:59`))
 
   const rows = invoices ?? []
   const revenue = rows.reduce((s, i) => s + i.total, 0)

@@ -3,6 +3,7 @@ import { getAuthContext } from '@/lib/utils/auth-context'
 import { handleDatabaseError } from '@/lib/utils/errors'
 import { resolveDateRange } from '@/lib/utils/dateRange'
 import { resolveOutletScope } from '@/lib/utils/outletScope'
+import { selectAll } from '@/lib/utils/fetchAll'
 
 // GET /api/reports/void-analysis?start=&end=&outlet_id= — voided-sale (cancellation) loss-
 // prevention report, standard in enterprise POS/retail systems (a high or
@@ -25,12 +26,12 @@ export async function GET(request: NextRequest) {
   const { startIso, endIso } = resolveDateRange(searchParams, 30, 365)
 
   const [invoicesRes, usersRes] = await Promise.all([
-    auth.supabase
+    selectAll(auth.supabase
       .from('invoices')
       .select('id, total, created_at, voided_at, void_reason, cashier_id, order_status')
       .in('outlet_id', outletIds)
       .gte('created_at', startIso)
-      .lte('created_at', endIso),
+      .lte('created_at', endIso)),
     auth.supabase.from('users').select('id, full_name'),
   ])
 

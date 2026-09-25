@@ -3,6 +3,7 @@ import { getAuthContext } from '@/lib/utils/auth-context'
 import { handleDatabaseError } from '@/lib/utils/errors'
 import { resolveDateRange } from '@/lib/utils/dateRange'
 import { resolveOutletScope } from '@/lib/utils/outletScope'
+import { selectAll } from '@/lib/utils/fetchAll'
 
 type ItemRow = { product_id: string; quantity: number; unit_price: number; item_discount: number; products: { name: string; product_type: string } | null }
 
@@ -18,14 +19,14 @@ export async function GET(request: NextRequest) {
   const { outletIds } = scopeResult.scope
   const { startIso, endIso } = resolveDateRange(searchParams, 30, 180)
 
-  const { data, error } = await auth.supabase
+  const { data, error } = await selectAll(auth.supabase
     .from('invoice_items')
     .select('product_id, quantity, unit_price, item_discount, products!inner(name, product_type), invoices!inner(outlet_id, created_at, order_status)')
     .in('invoices.outlet_id', outletIds)
     .eq('products.product_type', 'service')
     .neq('invoices.order_status', 'voided')
     .gte('invoices.created_at', startIso)
-    .lte('invoices.created_at', endIso)
+    .lte('invoices.created_at', endIso))
 
   if (error) {
     const { status, message } = handleDatabaseError(error)

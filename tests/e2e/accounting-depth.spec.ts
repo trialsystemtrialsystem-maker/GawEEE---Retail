@@ -61,24 +61,31 @@ test.describe('Accounting depth', () => {
       lines: [{ account_id: kas.id, debit: 700, credit: 0 }, { account_id: pendapatan.id, debit: 0, credit: 700 }],
     })
 
-    const seed = await api(page, 'POST', '/api/accounting/journal-entries', entry('2020-03-10'))
+    // A fresh month per run (2018-2019): earlier runs leave posted entries behind.
+    const slot = Math.floor(Date.now() / 60_000) % 24
+    const ym = `${2018 + Math.floor(slot / 12)}-${String((slot % 12) + 1).padStart(2, '0')}`
+    const lastDay = new Date(Date.UTC(Number(ym.slice(0, 4)), Number(ym.slice(5)), 0)).toISOString().slice(0, 10)
+    const seed = await api(page, 'POST', '/api/accounting/journal-entries', entry(`${ym}-10`))
     expect(seed.status).toBe(201)
     expect((await api(page, 'POST', `/api/accounting/journal-entries/${seed.json.journal_entry_id}/post`)).status).toBe(200)
 
-    const closed = await api(page, 'POST', '/api/accounting/periods', { outlet_id: outletId, period_start: '2020-03-01', period_end: '2020-03-31' })
+    const closed = await api(page, 'POST', '/api/accounting/periods', { outlet_id: outletId, period_start: `${ym}-01`, period_end: lastDay })
     expect(closed.status).toBe(201)
     expect(closed.json.net_profit).toBeGreaterThanOrEqual(700)
 
     // Locked: a new entry inside the range is rejected.
-    expect((await api(page, 'POST', '/api/accounting/journal-entries', entry('2020-03-20'))).status).toBeGreaterThanOrEqual(400)
+    expect((await api(page, 'POST', '/api/accounting/journal-entries', entry(`${ym}-20`))).status).toBeGreaterThanOrEqual(400)
     // Overlapping close is refused.
-    expect((await api(page, 'POST', '/api/accounting/periods', { outlet_id: outletId, period_start: '2020-03-15', period_end: '2020-04-15' })).status).toBe(409)
+    expect((await api(page, 'POST', '/api/accounting/periods', { outlet_id: outletId, period_start: `${ym}-15`, period_end: '2020-12-31' })).status).toBe(409)
     // P&L still shows the period's income even though it was closed out.
-    const pl = await api(page, 'GET', `/api/accounting/reports?type=profit-loss&outlet_id=${outletId}&start=2020-03-01&end=2020-03-31`)
+    const pl = await api(page, 'GET', `/api/accounting/reports?type=profit-loss&outlet_id=${outletId}&start=${ym}-01&end=${lastDay}`)
     expect(pl.json.totalIncome).toBeGreaterThanOrEqual(700)
 
     expect((await api(page, 'POST', `/api/accounting/periods/${closed.json.period_id}/reopen`)).status).toBe(200)
-    const again = await api(page, 'POST', '/api/accounting/journal-entries', entry('2020-03-20'))
+    const again = await api(page, 'POST', '/api/accounting/journal-entries', entry(`${ym}-20`))
     expect(again.status).toBe(201)
+    // Leave no draft behind: post it, then reverse it.
+    await api(page, 'POST', `/api/accounting/journal-entries/${again.json.journal_entry_id}/post`)
+    await api(page, 'POST', `/api/accounting/journal-entries/${again.json.journal_entry_id}/reverse`, { reason: 'E2E cleanup' })
   })
 })

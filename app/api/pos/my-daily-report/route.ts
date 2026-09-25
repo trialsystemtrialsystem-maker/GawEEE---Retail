@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthContext } from '@/lib/utils/auth-context'
 import { handleDatabaseError } from '@/lib/utils/errors'
+import { selectAll } from '@/lib/utils/fetchAll'
 
 // GET /api/pos/my-daily-report?date=YYYY-MM-DD — cashier-scoped version of
 // the existing outlet-wide /api/invoices/daily-summary. Deliberately a
@@ -15,13 +16,13 @@ export async function GET(request: NextRequest) {
   const dayStart = `${date}T00:00:00`
   const dayEnd = `${date}T23:59:59`
 
-  const { data: invoices, error } = await auth.supabase
+  const { data: invoices, error } = await selectAll(auth.supabase
     .from('invoices')
     .select('id, total, order_status, payment_status, created_at')
     .eq('outlet_id', auth.outlet_id)
     .eq('cashier_id', auth.authUserId)
     .gte('created_at', dayStart)
-    .lte('created_at', dayEnd)
+    .lte('created_at', dayEnd))
 
   if (error) {
     const { status, message } = handleDatabaseError(error)
@@ -46,11 +47,11 @@ export async function GET(request: NextRequest) {
   const invoiceIds = activeInvoices.map((i) => i.id)
   let paymentBreakdown: { method: string; total: number }[] = []
   if (invoiceIds.length > 0) {
-    const { data: payments } = await auth.supabase
+    const { data: payments } = await selectAll(auth.supabase
       .from('payment_transactions')
       .select('payment_method, amount')
       .in('invoice_id', invoiceIds)
-      .eq('status', 'settled')
+      .eq('status', 'settled'))
 
     const byMethod = new Map<string, number>()
     for (const p of payments ?? []) {

@@ -3,6 +3,7 @@ import { getAuthContext } from '@/lib/utils/auth-context'
 import { handleDatabaseError } from '@/lib/utils/errors'
 import { resolveDateRange } from '@/lib/utils/dateRange'
 import { resolveOutletScope } from '@/lib/utils/outletScope'
+import { selectAll } from '@/lib/utils/fetchAll'
 
 // GET /api/reports/market-basket?days=90 — market basket / association-rule
 // analysis ("customers who bought X also bought Y"), standard in enterprise
@@ -29,13 +30,13 @@ export async function GET(request: NextRequest) {
   const { outletIds } = scopeResult.scope
   const { startIso, endIso } = resolveDateRange(searchParams, 90, 365)
 
-  const { data, error } = await auth.supabase
+  const { data, error } = await selectAll(auth.supabase
     .from('invoice_items')
     .select('invoice_id, product_id, products(name), invoices!inner(outlet_id, order_status, created_at)')
     .in('invoices.outlet_id', outletIds)
     .neq('invoices.order_status', 'voided')
     .gte('invoices.created_at', startIso)
-    .lte('invoices.created_at', endIso)
+    .lte('invoices.created_at', endIso))
 
   if (error) {
     const { status, message } = handleDatabaseError(error)

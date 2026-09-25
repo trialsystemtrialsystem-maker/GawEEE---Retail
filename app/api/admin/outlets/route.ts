@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthContext } from '@/lib/utils/auth-context'
 import { handleDatabaseError } from '@/lib/utils/errors'
+import { selectAll } from '@/lib/utils/fetchAll'
 
 // GET /api/admin/outlets — master_admin only. See prd.md §4.7.
 export async function GET() {
@@ -26,12 +27,12 @@ export async function GET() {
   const results = await Promise.all(
     (outlets ?? []).map(async (outlet) => {
       const [{ data: invoices }, { count: staffCount }] = await Promise.all([
-        auth.supabase
+        selectAll(auth.supabase
           .from('invoices')
           .select('total, created_at, invoice_items(cost_of_goods_sold)')
           .eq('outlet_id', outlet.id)
           .neq('order_status', 'voided')
-          .gte('created_at', startOfMonthIso),
+          .gte('created_at', startOfMonthIso)),
         auth.supabase.from('users').select('id', { count: 'exact', head: true }).eq('outlet_id', outlet.id),
       ])
 

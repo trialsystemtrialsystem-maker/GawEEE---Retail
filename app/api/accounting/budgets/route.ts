@@ -5,6 +5,7 @@ import { can } from '@/lib/utils/permissions'
 import { validate } from '@/lib/utils/validation'
 import { handleDatabaseError } from '@/lib/utils/errors'
 import { budgetVariance } from '@/lib/utils/budget'
+import { selectAll } from '@/lib/utils/fetchAll'
 
 const monthRe = /^\d{4}-\d{2}$/
 const putSchema = z.object({
@@ -48,7 +49,7 @@ export async function GET(request: NextRequest) {
 
   const [budgetRes, lineRes] = await Promise.all([
     auth.supabase.from('budgets').select('account_id, amount').eq('outlet_id', outletId).eq('period_month', start),
-    auth.supabase
+    selectAll(auth.supabase
       .from('journal_entry_details')
       .select('account_id, debit, credit, journal_entries!inner(entry_date, status, outlet_id)')
       .in('account_id', ids)
@@ -56,7 +57,7 @@ export async function GET(request: NextRequest) {
       .in('journal_entries.status', ['posted', 'reversed'])
       .or('source_type.is.null,source_type.neq.closing', { referencedTable: 'journal_entries' })
       .gte('journal_entries.entry_date', start)
-      .lte('journal_entries.entry_date', end),
+      .lte('journal_entries.entry_date', end)),
   ])
   if (budgetRes.error) return fail(budgetRes.error)
   if (lineRes.error) return fail(lineRes.error)

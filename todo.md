@@ -1781,6 +1781,17 @@ live-verified/committed/pushed.
 - [ ] Not built: refund netting in the turnover base, e-Faktur export, SPT/billing-code helpers. Known risk to sweep: other report
       routes that aggregate in JS over a single un-paged query can under-count beyond 1000 rows.
 
+## Phase 40 — Silent 1000-row truncation sweep (correctness)
+- [x] Found empirically (service-role probe): `journal_entry_details` has 4,428 rows and `invoices` 1,349, but a plain query returns
+      only 1,000 — PostgREST's default cap is silent. Every report that aggregated in JS was therefore computed on a truncated
+      subset once a company had more than 1,000 rows (trial balance / neraca / laba rugi / buku besar / arus kas / anggaran / tutup
+      buku, and the sales reports below). Added `selectAll(query)` (pages with `.range()` + primary-key tie-break) and paged:
+      accounting reports, ledger, budgets, period close, sales-trend, p-and-l, daily-summary (+backfill), admin/outlets(+daily,+hourly),
+      abc-analysis, customer-segmentation/summary, kitchen, market-basket, new-vs-returning, peak-time, service, stock-turnover,
+      target-vs-actual, void-analysis, my-daily-report, expiry, accounts-receivable, payroll runs (sales for commission).
+      Unit-tested with a fake builder; e2e `reports-smoke.spec.ts` hits them all and asserts the books still balance.
+- [ ] Not swept (small/bounded tables): attendance, schedules, staff lists. Worth re-running the probe when adding new aggregating routes.
+
 ## Notes on scope
 This todo tracks the **engineering deliverables** of the PRD (a working Next.js + Supabase codebase
 implementing Phase 1 features, with payment gateways behind a swappable mock interface). Items marked

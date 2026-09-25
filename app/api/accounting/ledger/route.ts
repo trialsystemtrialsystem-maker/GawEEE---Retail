@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthContext, canAccessOutlet } from '@/lib/utils/auth-context'
 import { handleDatabaseError } from '@/lib/utils/errors'
+import { selectAll } from '@/lib/utils/fetchAll'
 
 const DEBIT_NORMAL_TYPES = new Set(['asset', 'expense'])
 
@@ -43,13 +44,13 @@ export async function GET(request: NextRequest) {
 
   let openingBalance = 0
   if (start) {
-    const { data: priorLines, error: priorError } = await auth.supabase
+    const { data: priorLines, error: priorError } = await selectAll(auth.supabase
       .from('journal_entry_details')
       .select('debit, credit, journal_entries!inner(entry_date, status, outlet_id)')
       .eq('account_id', accountId)
       .eq('journal_entries.outlet_id', outletId)
       .in('journal_entries.status', ['posted', 'reversed'])
-      .lt('journal_entries.entry_date', start)
+      .lt('journal_entries.entry_date', start))
 
     if (priorError) {
       const { status, message } = handleDatabaseError(priorError)
@@ -69,7 +70,7 @@ export async function GET(request: NextRequest) {
   if (start) query = query.gte('journal_entries.entry_date', start)
   if (end) query = query.lte('journal_entries.entry_date', end)
 
-  const { data: lines, error } = await query
+  const { data: lines, error } = await selectAll(query)
   if (error) {
     const { status, message } = handleDatabaseError(error)
     return NextResponse.json({ error: message }, { status })

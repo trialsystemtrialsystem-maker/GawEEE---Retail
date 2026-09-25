@@ -7,6 +7,7 @@ import { composePayslip, type AdvanceInstallment } from '@/lib/utils/payslipItem
 import { nextInstallment } from '@/lib/utils/cashAdvance'
 import { parsePayrollRules } from '@/lib/utils/payrollRules'
 import { lateMinutes, overtimeMinutes } from '@/lib/utils/employeeHistory'
+import { selectAll } from '@/lib/utils/fetchAll'
 
 // GET /api/payroll/runs?outlet_id=
 export async function GET(request: NextRequest) {
@@ -71,13 +72,13 @@ export async function POST(request: NextRequest) {
 
   const [usersRes, invoicesRes] = await Promise.all([
     auth.supabase.from('users').select('id, email').eq('company_id', auth.company_id),
-    auth.supabase
+    selectAll(auth.supabase
       .from('invoices')
       .select('cashier_id, total')
       .eq('outlet_id', outlet_id)
       .neq('order_status', 'voided')
       .gte('created_at', `${period_start}T00:00:00`)
-      .lte('created_at', `${period_end}T23:59:59`),
+      .lte('created_at', `${period_end}T23:59:59`)),
   ])
 
   const emailByUserId = new Map((usersRes.data ?? []).map((u) => [u.id, u.email]))

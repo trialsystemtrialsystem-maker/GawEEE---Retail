@@ -3,6 +3,7 @@ import { getAuthContext } from '@/lib/utils/auth-context'
 import { handleDatabaseError } from '@/lib/utils/errors'
 import { resolveDateRange } from '@/lib/utils/dateRange'
 import { resolveOutletScope } from '@/lib/utils/outletScope'
+import { selectAll } from '@/lib/utils/fetchAll'
 
 // GET /api/reports/stock-turnover?outlet_id=&days=30&start=&end= — COGS sold
 // per product over the period, divided by that product's *current*
@@ -22,17 +23,17 @@ export async function GET(request: NextRequest) {
   const { startIso, endIso } = resolveDateRange(searchParams, 30, 180)
 
   const [itemsRes, inventoryRes] = await Promise.all([
-    auth.supabase
+    selectAll(auth.supabase
       .from('invoice_items')
       .select('product_id, cost_of_goods_sold, products(name), invoices!inner(outlet_id, created_at, order_status)')
       .in('invoices.outlet_id', outletIds)
       .neq('invoices.order_status', 'voided')
       .gte('invoices.created_at', startIso)
-      .lte('invoices.created_at', endIso),
-    auth.supabase
+      .lte('invoices.created_at', endIso)),
+    selectAll(auth.supabase
       .from('inventory')
       .select('product_id, quantity_on_hand, products(purchase_price, name)')
-      .in('outlet_id', outletIds),
+      .in('outlet_id', outletIds)),
   ])
 
   if (itemsRes.error) {

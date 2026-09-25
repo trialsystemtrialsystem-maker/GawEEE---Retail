@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getAuthContext } from '@/lib/utils/auth-context'
 import { handleDatabaseError } from '@/lib/utils/errors'
 import { resolveOutletScope } from '@/lib/utils/outletScope'
+import { selectAll } from '@/lib/utils/fetchAll'
 
 // GET /api/reports/customer-segmentation — RFM (Recency/Frequency/Monetary)
 // customer segmentation, a standard enterprise CRM/sales-analytics tool
@@ -50,12 +51,12 @@ export async function GET(request: NextRequest) {
   const { outletIds } = scopeResult.scope
 
   const [invoicesRes, customersRes] = await Promise.all([
-    auth.supabase
+    selectAll(auth.supabase
       .from('invoices')
       .select('customer_phone, total, created_at')
       .in('outlet_id', outletIds)
       .neq('order_status', 'voided')
-      .not('customer_phone', 'is', null),
+      .not('customer_phone', 'is', null)),
     auth.supabase.from('customers').select('id, name, phone').in('outlet_id', outletIds),
   ])
 

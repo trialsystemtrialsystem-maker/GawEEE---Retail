@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { getAuthContext } from '@/lib/utils/auth-context'
+import { selectAll } from '@/lib/utils/fetchAll'
 
 // GET /api/invoices/daily-summary — see prd.md §4.3
 export async function GET() {
@@ -13,19 +14,19 @@ export async function GET() {
   const startOfDay = `${today}T00:00:00`
   const endOfDay = `${today}T23:59:59`
 
-  const { data: invoices } = await auth.supabase
+  const { data: invoices } = await selectAll(auth.supabase
     .from('invoices')
     .select('*, invoice_items(quantity)')
     .eq('outlet_id', auth.outlet_id)
     .gte('created_at', startOfDay)
-    .lte('created_at', endOfDay)
+    .lte('created_at', endOfDay))
 
-  const { data: payments } = await auth.supabase
+  const { data: payments } = await selectAll(auth.supabase
     .from('payment_transactions')
     .select('payment_method, amount, status, invoice_id, invoices!inner(outlet_id)')
     .eq('invoices.outlet_id', auth.outlet_id)
     .gte('created_at', startOfDay)
-    .lte('created_at', endOfDay)
+    .lte('created_at', endOfDay))
 
   const active = (invoices ?? []).filter((i) => i.order_status !== 'voided')
   const voided = (invoices ?? []).filter((i) => i.order_status === 'voided')

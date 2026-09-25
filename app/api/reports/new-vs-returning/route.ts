@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getAuthContext } from '@/lib/utils/auth-context'
 import { handleDatabaseError } from '@/lib/utils/errors'
 import { resolveOutletScope } from '@/lib/utils/outletScope'
+import { selectAll } from '@/lib/utils/fetchAll'
 
 // GET /api/reports/new-vs-returning?months=6 — new vs. returning customer
 // revenue/count per month, a standard KPI on every enterprise sales
@@ -22,13 +23,13 @@ export async function GET(request: NextRequest) {
   const { outletIds } = scopeResult.scope
   const months = Math.min(Number(request.nextUrl.searchParams.get('months') ?? '6'), 24)
 
-  const { data, error } = await auth.supabase
+  const { data, error } = await selectAll(auth.supabase
     .from('invoices')
     .select('customer_phone, total, created_at')
     .in('outlet_id', outletIds)
     .neq('order_status', 'voided')
     .not('customer_phone', 'is', null)
-    .order('created_at', { ascending: true })
+    .order('created_at', { ascending: true }))
 
   if (error) {
     const { status, message } = handleDatabaseError(error)

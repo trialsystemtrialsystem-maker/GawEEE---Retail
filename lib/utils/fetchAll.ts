@@ -11,3 +11,26 @@ export async function fetchAllRows<T>(build: (from: number, to: number) => Promi
   }
   return all
 }
+
+// Drop-in for `await query` when the result can exceed PostgREST's silent
+// 1000-row cap and is aggregated in JS (journal lines, invoices, ledger…). Pass
+// the un-awaited query builder; it is paged with .range() after adding a
+// primary-key tie-break order so pages never overlap or skip. Returns the same
+// { data, error } shape, with the row type preserved.
+export async function selectAll<Q extends { range: (from: number, to: number) => PromiseLike<{ data: unknown; error: unknown }> }>(
+  query: Q,
+  pageSize = 1000,
+  maxPages = 100
+): Promise<{ data: NonNullable<Awaited<ReturnType<Q['range']>>['data']> | null; error: Awaited<ReturnType<Q['range']>>['error'] }> {
+  type Res = Awaited<ReturnType<Q['range']>>
+  const ordered = (query as unknown as { order: (col: string) => Q }).order('id')
+  const all: unknown[] = []
+  for (let page = 0; page < maxPages; page++) {
+    const res = (await ordered.range(page * pageSize, page * pageSize + pageSize - 1)) as Res
+    if (res.error) return { data: null, error: res.error }
+    const rows = (res.data ?? []) as unknown[]
+    all.push(...rows)
+    if (rows.length < pageSize) break
+  }
+  return { data: all as NonNullable<Res['data']>, error: null as Res['error'] }
+}

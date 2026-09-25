@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { getAuthContext } from '@/lib/utils/auth-context'
+import { selectAll } from '@/lib/utils/fetchAll'
 
 const BACKFILL_DAYS = 7
 
@@ -10,19 +11,19 @@ async function computeSummary(auth: NonNullable<Awaited<ReturnType<typeof getAut
   const endOfDay = `${date}T23:59:59`
 
   const [{ data: invoices }, { data: payments }, { data: outlet }] = await Promise.all([
-    auth.supabase
+    selectAll(auth.supabase
       .from('invoices')
       .select('*, invoice_items(quantity, cost_of_goods_sold)')
       .eq('outlet_id', outletId)
       .neq('order_status', 'voided')
       .gte('created_at', startOfDay)
-      .lte('created_at', endOfDay),
-    auth.supabase
+      .lte('created_at', endOfDay)),
+    selectAll(auth.supabase
       .from('payment_transactions')
       .select('payment_method, amount, invoices!inner(outlet_id)')
       .eq('invoices.outlet_id', outletId)
       .gte('created_at', startOfDay)
-      .lte('created_at', endOfDay),
+      .lte('created_at', endOfDay)),
     auth.supabase.from('outlets').select('opening_cash').eq('id', outletId).single(),
   ])
 

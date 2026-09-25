@@ -6,6 +6,7 @@ import { validate } from '@/lib/utils/validation'
 import { handleDatabaseError } from '@/lib/utils/errors'
 import { postJournal } from '@/lib/utils/journalPosting'
 import { buildClosingLines, type PeriodAccountBalance } from '@/lib/utils/closingEntry'
+import { selectAll } from '@/lib/utils/fetchAll'
 
 const schema = z.object({
   outlet_id: z.string().uuid(),
@@ -72,7 +73,7 @@ export async function POST(request: NextRequest) {
   const byId = new Map((accounts ?? []).map((a) => [a.id, a]))
   const balances = new Map<string, number>()
   if (byId.size) {
-    const { data: lines, error: linesError } = await auth.supabase
+    const { data: lines, error: linesError } = await selectAll(auth.supabase
       .from('journal_entry_details')
       .select('account_id, debit, credit, journal_entries!inner(entry_date, status, outlet_id)')
       .in('account_id', Array.from(byId.keys()))
@@ -80,7 +81,7 @@ export async function POST(request: NextRequest) {
       .in('journal_entries.status', ['posted', 'reversed'])
       .or('source_type.is.null,source_type.neq.closing', { referencedTable: 'journal_entries' })
       .gte('journal_entries.entry_date', period_start)
-      .lte('journal_entries.entry_date', period_end)
+      .lte('journal_entries.entry_date', period_end))
     if (linesError) return fail(linesError)
     for (const l of lines ?? []) {
       const acc = byId.get(l.account_id)!

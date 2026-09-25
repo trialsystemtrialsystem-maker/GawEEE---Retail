@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getAuthContext } from '@/lib/utils/auth-context'
 import { resolveDateRange } from '@/lib/utils/dateRange'
 import { resolveOutletScope } from '@/lib/utils/outletScope'
+import { selectAll } from '@/lib/utils/fetchAll'
 
 type InvoiceRow = {
   customer_name: string | null
@@ -29,13 +30,13 @@ export async function GET(request: NextRequest) {
   const { startIso, endIso } = resolveDateRange(searchParams, 36500, 36500) // customer summary is lifetime-by-default — a huge default window rather than a hardcoded "no filter" path, so the same start/end params still narrow it down when given
 
   const [invoicesRes, customersRes] = await Promise.all([
-    auth.supabase
+    selectAll(auth.supabase
       .from('invoices')
       .select('customer_name, customer_phone, total, created_at, order_status')
       .in('outlet_id', outletIds)
       .not('customer_name', 'is', null)
       .gte('created_at', startIso)
-      .lte('created_at', endIso),
+      .lte('created_at', endIso)),
     auth.supabase.from('customers').select('id, name, phone').in('outlet_id', outletIds),
   ])
 

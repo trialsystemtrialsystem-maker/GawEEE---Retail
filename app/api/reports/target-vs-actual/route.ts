@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getAuthContext } from '@/lib/utils/auth-context'
 import { handleDatabaseError } from '@/lib/utils/errors'
 import { resolveOutletScope } from '@/lib/utils/outletScope'
+import { selectAll } from '@/lib/utils/fetchAll'
 
 // GET /api/reports/target-vs-actual?outlet_id= — sales target vs. actual
 // tracking, one of the most fundamental tools in any enterprise sales
@@ -45,12 +46,12 @@ export async function GET(request: NextRequest) {
   const daysInMonth = new Date(Date.UTC(year, month + 1, 0)).getUTCDate()
   const daysElapsed = now.getUTCDate() // includes today
 
-  const { data: invoices, error } = await auth.supabase
+  const { data: invoices, error } = await selectAll(auth.supabase
     .from('invoices')
     .select('total, created_at')
     .in('outlet_id', outletIds)
     .neq('order_status', 'voided')
-    .gte('created_at', monthStart.toISOString())
+    .gte('created_at', monthStart.toISOString()))
 
   if (error) {
     const { status, message } = handleDatabaseError(error)

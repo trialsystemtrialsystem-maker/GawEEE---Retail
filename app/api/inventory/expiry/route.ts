@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthContext, canAccessOutlet } from '@/lib/utils/auth-context'
 import { handleDatabaseError } from '@/lib/utils/errors'
+import { selectAll } from '@/lib/utils/fetchAll'
 
 // GET /api/inventory/expiry?outlet_id= — lists received batches that carry
 // an expiry_date (captured at PO receiving — see Phase 11 plan item 11).
@@ -16,12 +17,12 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Tidak memiliki izin' }, { status: 403 })
   }
 
-  const { data, error } = await auth.supabase
+  const { data, error } = await selectAll(auth.supabase
     .from('inventory_ledger')
     .select('id, product_id, batch_number, expiry_date, quantity_change, created_at, products(name, sku)')
     .eq('outlet_id', outletId)
     .not('expiry_date', 'is', null)
-    .order('expiry_date', { ascending: true })
+    .order('expiry_date', { ascending: true }))
 
   if (error) {
     const { status, message } = handleDatabaseError(error)

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthContext, canAccessOutlet, type AuthContext } from '@/lib/utils/auth-context'
 import { handleDatabaseError } from '@/lib/utils/errors'
+import { selectAll } from '@/lib/utils/fetchAll'
 
 type AccountRow = { id: string; account_code: string; account_name: string; account_type: string }
 type LineRow = { account_id: string; debit: number; credit: number; journal_entries: { entry_date: string } | { entry_date: string }[] }
@@ -75,7 +76,9 @@ export async function GET(request: NextRequest) {
     query = query.lte('journal_entries.entry_date', asOf)
   }
 
-  const { data: lines, error: linesError } = await query
+  // Journal lines routinely exceed 1000 rows; page them or every report silently
+  // sums only the first thousand.
+  const { data: lines, error: linesError } = await selectAll(query)
   if (linesError) {
     const { status, message } = handleDatabaseError(linesError)
     return NextResponse.json({ error: message }, { status })
@@ -213,21 +216,21 @@ async function getCashFlow(auth: AuthContext, outletId: string, searchParams: UR
   if (cashAccountIds.length === 0) return NextResponse.json(emptyCashFlow(period))
 
   const [openingRes, periodRes] = await Promise.all([
-    auth.supabase
+    selectAll(auth.supabase
       .from('journal_entry_details')
       .select('debit, credit, journal_entries!inner(entry_date, status, outlet_id)')
       .in('account_id', cashAccountIds)
       .eq('journal_entries.outlet_id', outletId)
       .in('journal_entries.status', ['posted', 'reversed'])
-      .lt('journal_entries.entry_date', start),
-    auth.supabase
+      .lt('journal_entries.entry_date', start)),
+    selectAll(auth.supabase
       .from('journal_entry_details')
       .select('debit, credit, journal_entries!inner(entry_date, status, outlet_id, source_type)')
       .in('account_id', cashAccountIds)
       .eq('journal_entries.outlet_id', outletId)
       .in('journal_entries.status', ['posted', 'reversed'])
       .gte('journal_entries.entry_date', start)
-      .lte('journal_entries.entry_date', end),
+      .lte('journal_entries.entry_date', end)),
   ])
 
   if (openingRes.error || periodRes.error) {

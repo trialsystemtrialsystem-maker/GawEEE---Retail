@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getAuthContext } from '@/lib/utils/auth-context'
 import { handleDatabaseError } from '@/lib/utils/errors'
 import { resolveDateRange } from '@/lib/utils/dateRange'
+import { selectAll } from '@/lib/utils/fetchAll'
 
 // GET /api/admin/outlets/daily?days=14 — master_admin only. Day-by-day
 // revenue/transaction-count for every one of the company's outlets, plus a
@@ -20,13 +21,13 @@ export async function GET(request: NextRequest) {
 
   const { data: outlets } = await auth.supabase.from('outlets').select('id, name').eq('company_id', auth.company_id)
 
-  const { data: invoices, error } = await auth.supabase
+  const { data: invoices, error } = await selectAll(auth.supabase
     .from('invoices')
     .select('outlet_id, created_at, total')
     .in('outlet_id', (outlets ?? []).map((o) => o.id))
     .neq('order_status', 'voided')
     .gte('created_at', startIso)
-    .lte('created_at', endIso)
+    .lte('created_at', endIso))
 
   if (error) {
     const { status, message } = handleDatabaseError(error)

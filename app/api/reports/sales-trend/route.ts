@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getAuthContext } from '@/lib/utils/auth-context'
 import { resolveDateRange } from '@/lib/utils/dateRange'
 import { resolveOutletScope } from '@/lib/utils/outletScope'
+import { selectAll } from '@/lib/utils/fetchAll'
 
 // GET /api/reports/sales-trend?days=90&start=&end=&outlet_id= — daily
 // revenue/profit series for charting, plus a current-vs-previous-period
@@ -35,13 +36,13 @@ export async function GET(request: NextRequest) {
   const prevStartDate = addUtcDays(prevEndDate, -(daySpan - 1))
   const prevStartIso = `${prevStartDate}T00:00:00.000Z`
 
-  const { data: invoices, error } = await auth.supabase
+  const { data: invoices, error } = await selectAll(auth.supabase
     .from('invoices')
     .select('id, created_at, total, order_status, invoice_items(quantity, cost_of_goods_sold, products(category_id, product_categories(name)))')
     .in('outlet_id', outletIds)
     .neq('order_status', 'voided')
     .gte('created_at', prevStartIso)
-    .lte('created_at', endIso)
+    .lte('created_at', endIso))
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 

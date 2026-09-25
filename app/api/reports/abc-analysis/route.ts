@@ -3,6 +3,7 @@ import { getAuthContext } from '@/lib/utils/auth-context'
 import { handleDatabaseError } from '@/lib/utils/errors'
 import { resolveDateRange } from '@/lib/utils/dateRange'
 import { resolveOutletScope } from '@/lib/utils/outletScope'
+import { selectAll } from '@/lib/utils/fetchAll'
 
 // GET /api/reports/abc-analysis?outlet_id=&days=90&start=&end= — Pareto
 // (ABC) product classification by revenue contribution, standard in
@@ -30,13 +31,13 @@ export async function GET(request: NextRequest) {
   const { outletIds } = scopeResult.scope
   const { startIso, endIso } = resolveDateRange(searchParams, 90, 365)
 
-  const { data, error } = await auth.supabase
+  const { data, error } = await selectAll(auth.supabase
     .from('invoice_items')
     .select('product_id, quantity, subtotal, cost_of_goods_sold, products(name), invoices!inner(outlet_id, order_status, created_at)')
     .in('invoices.outlet_id', outletIds)
     .neq('invoices.order_status', 'voided')
     .gte('invoices.created_at', startIso)
-    .lte('invoices.created_at', endIso)
+    .lte('invoices.created_at', endIso))
 
   if (error) {
     const { status, message } = handleDatabaseError(error)

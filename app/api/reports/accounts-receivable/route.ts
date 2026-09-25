@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getAuthContext } from '@/lib/utils/auth-context'
 import { handleDatabaseError } from '@/lib/utils/errors'
 import { resolveOutletScope } from '@/lib/utils/outletScope'
+import { selectAll } from '@/lib/utils/fetchAll'
 
 // GET /api/reports/accounts-receivable — customer aging report for unpaid
 // sales (pay_later, and any e-wallet/bank sale still awaiting settlement).
@@ -29,13 +30,13 @@ export async function GET(request: NextRequest) {
   if (!scopeResult.scope) return NextResponse.json({ error: scopeResult.error }, { status: scopeResult.status })
   const { outletIds } = scopeResult.scope
 
-  const { data, error } = await auth.supabase
+  const { data, error } = await selectAll(auth.supabase
     .from('invoices')
     .select('id, invoice_number, customer_name, customer_phone, total, payment_status, order_status, created_at')
     .in('outlet_id', outletIds)
     .in('payment_status', ['pending', 'partial'])
     .neq('order_status', 'voided')
-    .order('created_at', { ascending: true })
+    .order('created_at', { ascending: true }))
 
   if (error) {
     const { status, message } = handleDatabaseError(error)
