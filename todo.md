@@ -1831,6 +1831,16 @@ live-verified/committed/pushed.
 - [x] Redemption with insufficient points is now rejected (previously the discount was granted and the ledger deduction silently skipped).
 - [ ] Not built: per-product minimum margin, manager PIN override on the POS, promo scope / min purchase / usage caps, buy-X-get-Y.
 
+## Phase 44 — Promotions & coupons (migration 071, applied)
+- [x] Rules: minimum purchase, maximum discount (caps percentage promos), promotion usage limit, coupon start date, notes. One shared
+      `promoDiscount`/`promoStatus` (lib/utils/promoRules.ts) is used by the POS, coupon validation and the server discount guard.
+- [x] Edit (PUT) and duplicate promotions, edit coupons (limit can't drop below current use), random coupon code, codes stored uppercase,
+      status badges (aktif / terjadwal / berakhir / nonaktif / habis dipakai) + filter, per-promotion uses and total discount, KPI strip.
+- [x] Fix: a coupon typed into a cart used to burn a use immediately, even if the cart was abandoned. `/api/coupons/redeem` now only
+      validates; the use is consumed when the invoice is created and returned on void.
+- [x] POS: promo chips show minimum purchase, refuse promos whose minimum isn't met, hide exhausted/expired ones.
+- [ ] Not built: promo scope by product/category, buy-X-get-Y, per-customer limits, loyalty tiers / points expiry, automatic promo application.
+
 ## Notes on scope
 This todo tracks the **engineering deliverables** of the PRD (a working Next.js + Supabase codebase
 implementing Phase 1 features, with payment gateways behind a swappable mock interface). Items marked

@@ -1,5 +1,6 @@
 import type { AuthContext } from '@/lib/utils/auth-context'
-import { checkDiscounts, grantedDiscount, DEFAULT_MAX_CASHIER_DISCOUNT_PERCENT, type Claim } from '@/lib/utils/discountRules'
+import { checkDiscounts, DEFAULT_MAX_CASHIER_DISCOUNT_PERCENT, type Claim } from '@/lib/utils/discountRules'
+import { promoDiscount } from '@/lib/utils/promoRules'
 
 export interface InvoiceDiscountInput {
   outlet_id: string
@@ -31,15 +32,24 @@ export async function guardInvoiceDiscounts(auth: AuthContext, input: InvoiceDis
   const today = new Date().toISOString().slice(0, 10)
 
   if (input.promotion_id && input.promotion_discount_amount) {
-    const { data: promo } = await sb.from('promotions').select('discount_type, discount_value, start_date, end_date, is_active, outlet_id').eq('id', input.promotion_id).maybeSingle()
+    const { data: promo } = await sb.from('promotions').select('*').eq('id', input.promotion_id).maybeSingle()
     if (!promo || promo.outlet_id !== input.outlet_id || !promo.is_active || promo.start_date > today || promo.end_date < today) return 'Promo yang dipakai tidak berlaku'
-    claims.push({ claimed: input.promotion_discount_amount, max: grantedDiscount(gross, promo.discount_type as 'percentage' | 'fixed', promo.discount_value), label: 'promo' })
+    if (promo.usage_limit != null) {
+      const { count } = await sb.from('promotion_applications').select('id', { count: 'exact', head: true }).eq('promotion_id', promo.id)
+      if ((count ?? 0) >= promo.usage_limit) return 'Promo sudah mencapai batas pemakaian'
+    }
+    const granted = promoDiscount(promo, gross)
+    if (!granted.ok) return `Promo tidak berlaku: ${granted.reason}`
+    claims.push({ claimed: input.promotion_discount_amount, max: granted.amount, label: 'promo' })
   }
 
   if (input.coupon_code && input.coupon_discount_amount) {
-    const { data: coupon } = await sb.from('coupons').select('discount_type, discount_value, expires_at, is_active').eq('outlet_id', input.outlet_id).ilike('code', input.coupon_code).maybeSingle()
-    if (!coupon || !coupon.is_active || (coupon.expires_at && coupon.expires_at < today)) return 'Kupon yang dipakai tidak berlaku'
-    claims.push({ claimed: input.coupon_discount_amount, max: grantedDiscount(gross, coupon.discount_type as 'percentage' | 'fixed', coupon.discount_value), label: 'kupon' })
+    const { data: coupon } = await sb.from('coupons').select('*').eq('outlet_id', input.outlet_id).ilike('code', input.coupon_code).maybeSingle()
+    if (!coupon || !coupon.is_active || (coupon.starts_at && coupon.starts_at > today) || (coupon.expires_at && coupon.expires_at < today)) return 'Kupon yang dipakai tidak berlaku'
+    if (coupon.usage_limit != null && coupon.usage_count >= coupon.usage_limit) return 'Kupon sudah mencapai batas penggunaan'
+    const granted = promoDiscount(coupon, gross)
+    if (!granted.ok) return `Kupon tidak berlaku: ${granted.reason}`
+    claims.push({ claimed: input.coupon_discount_amount, max: granted.amount, label: 'kupon' })
   }
 
   if (input.redeem_points && input.redeem_points > 0) {

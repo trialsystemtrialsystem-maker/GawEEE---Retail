@@ -110,12 +110,12 @@ export async function POST(request: NextRequest) {
 
   // 2. Record which coupon (if any) this sale actually redeemed, so usage
   //    can be traced back to a real transaction instead of just an
-  //    aggregate counter (coupons.usage_count, incremented separately by
-  //    POST /api/coupons/redeem when the code was first applied at
-  //    cart-build time, before an invoice existed to link to).
+  //    aggregate counter (coupons.usage_count, incremented right below).
   if (coupon_code && coupon_discount_amount) {
-    const { data: coupon } = await auth.supabase.from('coupons').select('id').eq('outlet_id', outlet_id).ilike('code', coupon_code).maybeSingle()
+    const { data: coupon } = await auth.supabase.from('coupons').select('id, usage_count').eq('outlet_id', outlet_id).ilike('code', coupon_code).maybeSingle()
     if (coupon) {
+      // The use is consumed here, when the sale completes (void gives it back).
+      await auth.supabase.from('coupons').update({ usage_count: coupon.usage_count + 1 }).eq('id', coupon.id)
       await auth.supabase.from('coupon_redemptions').insert({
         coupon_id: coupon.id,
         invoice_id: data!.invoice_id,

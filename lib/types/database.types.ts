@@ -1052,6 +1052,10 @@ export type Promotion = {
   start_date: string
   end_date: string
   is_active: boolean
+  min_purchase: number
+  max_discount: number | null
+  usage_limit: number | null
+  description: string | null
   created_by: string
   created_at: string
 }
@@ -1065,6 +1069,10 @@ export type Coupon = {
   usage_limit: number | null
   usage_count: number
   expires_at: string | null
+  starts_at: string | null
+  min_purchase: number
+  max_discount: number | null
+  description: string | null
   is_active: boolean
   created_by: string
   created_at: string

@@ -10,6 +10,7 @@ import { Receipt } from '@/components/pos/Receipt'
 import { ShiftStatusBanner } from '@/components/pos/ShiftStatusBanner'
 import { HeldTransactionsPanel } from '@/components/pos/HeldTransactionsPanel'
 import { BundleQuickAdd } from '@/components/pos/BundleQuickAdd'
+import { promoDiscount, promoStatus } from '@/lib/utils/promoRules'
 import { QrCodeCanvas } from '@/components/pos/QrCodeCanvas'
 import { SplitPaymentEditor, type SplitLine } from '@/components/pos/SplitPaymentEditor'
 import { KasirStatsHeader } from '@/components/pos/KasirStatsHeader'
@@ -46,7 +47,7 @@ export function POSScreen({ outletId, cashierName }: { outletId: string; cashier
   const [couponCode, setCouponCode] = useState('')
   const [isApplyingCoupon, setIsApplyingCoupon] = useState(false)
   const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; amount: number } | null>(null)
-  const [activePromotions, setActivePromotions] = useState<{ id: string; name: string; discount_type: 'percentage' | 'fixed'; discount_value: number }[]>([])
+  const [activePromotions, setActivePromotions] = useState<{ id: string; name: string; discount_type: 'percentage' | 'fixed'; discount_value: number; min_purchase: number; max_discount: number | null }[]>([])
   const [appliedPromotion, setAppliedPromotion] = useState<{ id: string; name: string; amount: number } | null>(null)
   const [loyaltyRpPerPoint, setLoyaltyRpPerPoint] = useState(0)
   const [customerLoyaltyBalance, setCustomerLoyaltyBalance] = useState(0)
@@ -69,7 +70,7 @@ export function POSScreen({ outletId, cashierName }: { outletId: string; cashier
       const data = await res.json()
       if (!res.ok) return
       const today = new Date().toISOString().slice(0, 10)
-      setActivePromotions((data.promotions ?? []).filter((p: { is_active: boolean; start_date: string; end_date: string }) => p.is_active && p.start_date <= today && today <= p.end_date))
+      setActivePromotions((data.promotions ?? []).filter((p: { is_active: boolean; start_date: string; end_date: string; usage_limit: number | null; uses: number }) => promoStatus({ is_active: p.is_active, start: p.start_date, end: p.end_date, usage_limit: p.usage_limit, usage_count: p.uses }, today) === 'active'))
     }, 0)
     return () => clearTimeout(timeout)
   }, [outletId])
@@ -115,7 +116,12 @@ export function POSScreen({ outletId, cashierName }: { outletId: string; cashier
   }
 
   function applyPromotion(promo: (typeof activePromotions)[number]) {
-    const amount = promo.discount_type === 'percentage' ? Math.round((subtotal * promo.discount_value) / 100) : promo.discount_value
+    const outcome = promoDiscount(promo, subtotal)
+    if (!outcome.ok) {
+      showToast(`Promo "${promo.name}" belum bisa dipakai: ${outcome.reason}`, 'danger')
+      return
+    }
+    const amount = outcome.amount
     setDiscount(discountAmount + amount, discountReason ? `${discountReason}; Promo: ${promo.name}` : `Promo: ${promo.name}`)
     setAppliedPromotion({ id: promo.id, name: promo.name, amount })
     showToast(`Promo "${promo.name}" diterapkan`, 'success')
@@ -128,15 +134,15 @@ export function POSScreen({ outletId, cashierName }: { outletId: string; cashier
       const res = await fetch('/api/coupons/redeem', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ outlet_id: outletId, code: couponCode.trim() }),
+        body: JSON.stringify({ outlet_id: outletId, code: couponCode.trim(), subtotal }),
       })
       const data = await res.json()
       if (!res.ok) {
         showToast(typeof data.error === 'string' ? data.error : 'Kode promo tidak valid', 'danger')
         return
       }
-      const coupon = data.coupon as { code: string; discount_type: 'percentage' | 'fixed'; discount_value: number }
-      const amount = coupon.discount_type === 'percentage' ? Math.round((subtotal * coupon.discount_value) / 100) : coupon.discount_value
+      const coupon = data.coupon as { code: string }
+      const amount = data.amount as number
       setDiscount(discountAmount + amount, discountReason ? `${discountReason}; Promo: ${coupon.code}` : `Promo: ${coupon.code}`)
       setAppliedCoupon({ code: coupon.code, amount })
       showToast(`Promo "${coupon.code}" diterapkan`, 'success')
@@ -524,7 +530,7 @@ export function POSScreen({ outletId, cashierName }: { outletId: string; cashier
                         : 'border-gray-200 text-gray-600 hover:border-[var(--brand-500)] hover:bg-[var(--brand-50)]'
                     }`}
                   >
-                    {promo.name} ({promo.discount_type === 'percentage' ? `${promo.discount_value}%` : formatCurrency(promo.discount_value)})
+                    {promo.name} ({promo.discount_type === 'percentage' ? `${promo.discount_value}%` : formatCurrency(promo.discount_value)}){promo.min_purchase > 0 ? ` · min ${formatCurrency(promo.min_purchase)}` : ''}
                   </button>
                 ))}
               </div>

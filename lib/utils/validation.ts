@@ -437,16 +437,26 @@ export const promotionSchema = z.object({
   discount_value: z.number().positive(),
   start_date: z.string().min(1),
   end_date: z.string().min(1),
-})
+  min_purchase: z.number().min(0).optional(),
+  max_discount: z.number().positive().nullable().optional(),
+  usage_limit: z.number().int().positive().nullable().optional(),
+  description: z.string().trim().max(300).nullable().optional(),
+}).refine((p) => p.end_date >= p.start_date, { message: 'Tanggal selesai tidak boleh sebelum tanggal mulai', path: ['end_date'] })
+  .refine((p) => p.discount_type !== 'percentage' || p.discount_value <= 100, { message: 'Persentase maksimal 100', path: ['discount_value'] })
 
 export const couponSchema = z.object({
   outlet_id: z.string().uuid(),
   code: z.string().min(1, 'Kode kupon wajib diisi'),
   discount_type: z.enum(['percentage', 'fixed']),
   discount_value: z.number().positive(),
-  usage_limit: z.number().int().positive().optional(),
-  expires_at: z.string().optional(),
-})
+  usage_limit: z.number().int().positive().nullable().optional(),
+  starts_at: z.string().nullable().optional(),
+  expires_at: z.string().nullable().optional(),
+  min_purchase: z.number().min(0).optional(),
+  max_discount: z.number().positive().nullable().optional(),
+  description: z.string().trim().max(300).nullable().optional(),
+}).refine((c) => !c.starts_at || !c.expires_at || c.expires_at >= c.starts_at, { message: 'Tanggal kadaluarsa tidak boleh sebelum tanggal mulai', path: ['expires_at'] })
+  .refine((c) => c.discount_type !== 'percentage' || c.discount_value <= 100, { message: 'Persentase maksimal 100', path: ['discount_value'] })
 
 export const loyaltyAdjustSchema = z.object({
   customer_id: z.string().uuid(),

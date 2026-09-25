@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Tidak memiliki izin' }, { status: 403 })
   }
 
-  const { data, error } = await auth.supabase.from('coupons').insert({ ...result.data, created_by: auth.id }).select().single()
+  const { data, error } = await auth.supabase.from('coupons').insert({ ...result.data, code: result.data.code.trim().toUpperCase(), created_by: auth.id }).select().single()
 
   if (error) {
     const { status, message } = handleDatabaseError(error)
