@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { useEffect, useState, useCallback } from 'react'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
@@ -131,51 +132,6 @@ export function PurchaseOrderList({ outletId }: { outletId: string }) {
     }
   }
 
-  async function handleReceive(po: PORow) {
-    setBusyId(po.id)
-    setError(null)
-    try {
-      const detailRes = await fetch(`/api/purchase-orders/${po.id}`)
-      const detail = await detailRes.json()
-      if (!detailRes.ok) {
-        setError('Gagal memuat detail PO')
-        return
-      }
-      const items = (detail.items ?? []) as { id: string; quantity_ordered: number; quantity_received: number; products: { name: string } | null }[]
-      const receiveItems = []
-      for (const item of items) {
-        const remaining = item.quantity_ordered - item.quantity_received
-        if (remaining <= 0) continue
-        const input = window.prompt(
-          `${item.products?.name ?? item.id} — sisa ${remaining}. Jumlah diterima sekarang?`,
-          String(remaining)
-        )
-        if (input === null) continue
-        const qty = Number(input)
-        if (!Number.isFinite(qty) || qty <= 0) continue
-        const batchNumber = window.prompt(`No. Batch untuk ${item.products?.name ?? item.id} (opsional, kosongkan untuk lewati)`) || undefined
-        const expiryDate = window.prompt(`Tanggal kadaluarsa untuk ${item.products?.name ?? item.id}, format YYYY-MM-DD (opsional)`) || undefined
-        receiveItems.push({ po_item_id: item.id, quantity_received: qty, batch_number: batchNumber, expiry_date: expiryDate })
-      }
-      if (receiveItems.length === 0) return
-
-      const res = await fetch(`/api/purchase-orders/${po.id}/receive`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ items: receiveItems }),
-      })
-      const data = await res.json()
-      if (!res.ok) {
-        setError(typeof data.error === 'string' ? data.error : 'Gagal menerima barang')
-        return
-      }
-      setNotice(`Barang diterima. Status PO: ${STATUS_LABEL[data.po_status] ?? data.po_status}`)
-      load()
-    } finally {
-      setBusyId(null)
-    }
-  }
-
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -284,7 +240,7 @@ export function PurchaseOrderList({ outletId }: { outletId: string }) {
             ) : (
               pos.map((po) => (
                 <tr key={po.id} className="hover:bg-gray-50">
-                  <td className="px-4 py-2 font-medium text-gray-900">{po.po_number}</td>
+                  <td className="px-4 py-2 font-medium"><Link href={`/dashboard/suppliers/purchase-orders/${po.id}`} className="text-brand-600 hover:underline">{po.po_number}</Link></td>
                   <td className="px-4 py-2 text-gray-600">{po.suppliers?.name ?? '-'}</td>
                   <td className="px-4 py-2 text-gray-600">{formatDate(po.order_date)}</td>
                   <td className="px-4 py-2 text-right text-gray-700">{formatCurrency(po.total ?? 0)}</td>
@@ -301,9 +257,9 @@ export function PurchaseOrderList({ outletId }: { outletId: string }) {
                       </Button>
                     )}
                     {(po.status === 'ordered' || po.status === 'partial_received') && (
-                      <Button size="sm" variant="secondary" isLoading={busyId === po.id} onClick={() => handleReceive(po)}>
+                      <Link href={`/dashboard/suppliers/purchase-orders/${po.id}`} className="rounded-md border border-gray-300 px-3 py-1 text-sm text-gray-700 hover:bg-gray-50">
                         Terima Barang
-                      </Button>
+                      </Link>
                     )}
                   </td>
                 </tr>

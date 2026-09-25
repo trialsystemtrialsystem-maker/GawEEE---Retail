@@ -1751,7 +1751,8 @@ live-verified/committed/pushed.
 - [x] Owner's "Outlet aktif": 49 dashboard pages showed "Pilih outlet terlebih dahulu" to any master_admin without a fixed
       outlet. `resolveActiveOutletId()` (cookie `gw_outlet` → own outlet → first) now feeds those pages, the notification
       bell and `useResolvedOutlet`; a header switcher (`POST /api/outlets/active`) lets the owner change it.
-- [ ] Not built: Purchase Order print/detail page and partial-receipt tracking UI; supplier price agreements.
+- [x] Purchase Order detail (`/dashboard/suppliers/purchase-orders/[id]`): status stepper, proper receive form (partial qty, batch, expiry, tanggal), riwayat penerimaan from the stock ledger, cetak PO, ajukan/setujui/tolak, batalkan (alasan wajib, only before any receipt). Receive route now refuses non-ordered POs and over-receipt (previously unchecked). e2e `purchase-order-lifecycle.spec.ts`.
+- [ ] Not built: supplier price agreements.
 
 ## Notes on scope
 This todo tracks the **engineering deliverables** of the PRD (a working Next.js + Supabase codebase

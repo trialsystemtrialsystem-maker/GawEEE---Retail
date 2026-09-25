@@ -10,7 +10,7 @@ export async function GET(_request: NextRequest, ctx: RouteContext<'/api/purchas
   if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const { id } = await ctx.params
-  const { data: po, error } = await auth.supabase.from('purchase_orders').select('*, suppliers(name)').eq('id', id).single()
+  const { data: po, error } = await auth.supabase.from('purchase_orders').select('*, suppliers(name), outlets(name)').eq('id', id).single()
   if (error || !po) return NextResponse.json({ error: 'Purchase order tidak ditemukan' }, { status: 404 })
 
   const { data: items } = await auth.supabase

@@ -24,6 +24,19 @@ export async function POST(request: Request, ctx: RouteContext<'/api/purchase-or
   const { data: po } = await auth.supabase.from('purchase_orders').select('*').eq('id', id).single()
   if (!po) return NextResponse.json({ error: 'Purchase order tidak ditemukan' }, { status: 404 })
 
+  // Only an ordered / partly received PO can take goods, and never more than is
+  // still outstanding per line (both were previously unchecked, so a draft or
+  // cancelled PO could be "received" and a delivery could over-fill a line).
+  if (!['ordered', 'partial_received'].includes(po.status)) {
+    return NextResponse.json({ error: 'PO ini tidak dalam status yang bisa menerima barang' }, { status: 409 })
+  }
+  const { data: outstanding } = await auth.supabase.from('po_items').select('id, quantity_ordered, quantity_received').eq('po_id', id)
+  const remainingById = new Map((outstanding ?? []).map((i) => [i.id, i.quantity_ordered - i.quantity_received]))
+  const over = result.data.items.filter((l) => l.quantity_received > (remainingById.get(l.po_item_id) ?? 0))
+  if (over.length > 0) {
+    return NextResponse.json({ error: 'Jumlah diterima melebihi sisa pesanan pada satu atau lebih barang' }, { status: 400 })
+  }
+
   let totalReceivedAmount = 0
 
   for (const line of result.data.items) {
