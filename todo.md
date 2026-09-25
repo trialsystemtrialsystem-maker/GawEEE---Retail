@@ -1739,7 +1739,7 @@ live-verified/committed/pushed.
 - [ ] Not built: perpetual moving-average costing (COGS still uses the master price), serial numbers, bin/rak locations.
 
 ## Phase 36 — Inventory costing/bins/serials, Supplier 360, owner's active outlet
-- [!] Migration `066_inventory_costing_bins_serials.sql` (must be run in Supabase BEFORE deploying this code):
+- [x] Migration `066_inventory_costing_bins_serials.sql` (applied; verified live by inventory-costing.spec.ts):
       `inventory.avg_cost` (perpetual moving average, moved only by priced receipts — purchase/transfer/production),
       `inventory.bin_location`, `product_serials`; a BEFORE INSERT trigger on `invoice_items` sets COGS to
       avg_cost × qty when an average exists (create_invoice itself is untouched). Backfills avg_cost from ledger history.

@@ -104,5 +104,5 @@ test('stock import: dry run changes nothing, apply changes and is reversible; ba
 
   // Average purchase cost is exposed with analytics.
   const analytics = await api(page, 'GET', `/api/inventory/${outletId}?analytics=1`)
-  expect(analytics.json.inventory[0]).toHaveProperty('avg_cost_value')
+  expect(analytics.json.inventory[0]).toHaveProperty('master_cost_value')
 })
