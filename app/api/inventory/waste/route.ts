@@ -49,6 +49,8 @@ export async function POST(request: NextRequest) {
   }
 
   const { data: product } = await auth.supabase.from('products').select('purchase_price').eq('id', result.data.product_id).single()
+  const { data: invRow } = await auth.supabase.from('inventory').select('avg_cost').eq('outlet_id', result.data.outlet_id).eq('product_id', result.data.product_id).maybeSingle()
+  const unitCost = invRow?.avg_cost ?? product?.purchase_price ?? 0
 
   const { data, error } = await auth.supabase.rpc('update_inventory', {
     p_outlet_id: result.data.outlet_id,
@@ -57,7 +59,7 @@ export async function POST(request: NextRequest) {
     p_movement_type: 'waste',
     p_recorded_by: auth.id,
     p_reference_type: 'waste',
-    p_unit_cost: product?.purchase_price ?? undefined,
+    p_unit_cost: unitCost || undefined,
     p_notes: result.data.reason,
   })
 
@@ -73,7 +75,7 @@ export async function POST(request: NextRequest) {
     description: `Waste/barang rusak: ${result.data.reason}`,
     sourceType: 'stock_waste',
     sourceId: crypto.randomUUID(),
-    value: -Math.abs(result.data.quantity) * (product?.purchase_price ?? 0),
+    value: -Math.abs(result.data.quantity) * unitCost,
   })
 
   return NextResponse.json({ new_quantity: data?.[0]?.new_quantity_on_hand }, { status: 201 })

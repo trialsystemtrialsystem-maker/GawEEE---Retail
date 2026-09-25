@@ -142,6 +142,8 @@ export type Inventory = {
   quantity_available: number
   last_count_date: string | null
   reorder_level: number | null
+  avg_cost: number | null
+  bin_location: string | null
   alert_status: 'normal' | 'low_stock' | 'overstock' | 'out_of_stock' | 'expired'
   created_at: string
   updated_at: string
@@ -1329,6 +1331,20 @@ export type PerformanceReview = {
 }
 
 
+export type ProductSerial = {
+  id: string
+  outlet_id: string
+  product_id: string
+  serial_number: string
+  status: 'in_stock' | 'sold' | 'returned' | 'damaged'
+  received_on: string
+  sold_on: string | null
+  invoice_id: string | null
+  notes: string | null
+  created_by: string | null
+  created_at: string
+}
+
 type Table<Row> = { Row: Row; Insert: Partial<Row>; Update: Partial<Row>; Relationships: [] }
 type View<Row> = { Row: Row; Relationships: [] }
 
@@ -1407,6 +1423,7 @@ export type Database = {
       budgets: Table<Budget>
       employee_documents: Table<EmployeeDocument>
       performance_reviews: Table<PerformanceReview>
+      product_serials: Table<ProductSerial>
       checklist_items: Table<ChecklistItem>
       checklist_completions: Table<ChecklistCompletion>
       stocktakes: Table<Stocktake>

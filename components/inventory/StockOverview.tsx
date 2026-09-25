@@ -29,6 +29,8 @@ interface Item {
   quantity_reserved: number
   quantity_available: number
   reorder_level: number
+  bin_location: string | null
+  avg_cost: number | null
   cost_value: number
   retail_value: number
   margin_pct: number | null
@@ -77,6 +79,7 @@ export function StockOverview({ canAdjust }: { canAdjust: boolean }) {
   const [saving, setSaving] = useState(false)
   const [levelFor, setLevelFor] = useState<Item | null>(null)
   const [level, setLevel] = useState('')
+  const [bin, setBin] = useState('')
   const showToast = useNotificationStore((s) => s.show)
 
   const load = useCallback(
@@ -192,14 +195,14 @@ export function StockOverview({ canAdjust }: { canAdjust: boolean }) {
       const res = await fetch('/api/inventory/reorder-level', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ outlet_id: outletId, product_id: levelFor.product_id, reorder_level: Number(level) }),
+        body: JSON.stringify({ outlet_id: outletId, product_id: levelFor.product_id, reorder_level: Number(level), bin_location: bin }),
       })
       const data = await res.json()
       if (!res.ok) {
         setError(typeof data.error === 'string' ? data.error : 'Periksa kembali isian Anda')
         return
       }
-      showToast(`Titik pesan ${levelFor.name} diubah menjadi ${data.reorder_level}`, 'success')
+      showToast(`Pengaturan stok ${levelFor.name} disimpan`, 'success')
       setLevelFor(null)
       load({ silent: true })
     } finally {
@@ -253,7 +256,7 @@ export function StockOverview({ canAdjust }: { canAdjust: boolean }) {
           filename="stok-barang"
           rows={shown.map((i) => ({
             SKU: i.sku, Produk: i.name, Kategori: i.category_name ?? '', Supplier: i.supplier_name ?? '', Satuan: i.unit_type,
-            Stok: i.quantity_on_hand, Tertahan: i.quantity_reserved, Tersedia: i.quantity_available, 'Titik Pesan': i.reorder_level,
+            Stok: i.quantity_on_hand, Tertahan: i.quantity_reserved, Tersedia: i.quantity_available, 'Titik Pesan': i.reorder_level, Rak: i.bin_location ?? '', 'HPP Rata-rata': i.avg_cost ?? '',
             'Harga Beli': i.purchase_price, 'Harga Jual': i.unit_price, 'Nilai Stok': i.cost_value, 'Nilai Jual': i.retail_value,
             'Margin %': i.margin_pct ?? '', 'Terjual 30h': i.sold_30d, 'Sisa Hari': i.days_of_cover ?? '', Pergerakan: HEALTH_LABEL[i.health], ABC: i.abc_class, 'Saran Pesan': i.suggested_reorder,
           }))}
@@ -292,10 +295,11 @@ export function StockOverview({ canAdjust }: { canAdjust: boolean }) {
         <Card>
           <form onSubmit={saveLevel} className="flex flex-wrap items-end gap-3">
             <div>
-              <p className="font-medium text-gray-900">Titik pesan: {levelFor.name}</p>
+              <p className="font-medium text-gray-900">Pengaturan stok: {levelFor.name}</p>
               <p className="text-sm text-gray-500">Stok di bawah angka ini ditandai &quot;Stok Rendah&quot; dan masuk rekomendasi pemesanan (khusus outlet ini).</p>
             </div>
             <Input name="level" label="Titik pesan" type="number" min="0" required value={level} onChange={(e) => setLevel(e.target.value)} />
+            <Input name="bin" label="Lokasi rak / bin" maxLength={50} value={bin} onChange={(e) => setBin(e.target.value)} />
             <Button type="submit" isLoading={saving}>Simpan</Button>
             <Button type="button" variant="secondary" onClick={() => setLevelFor(null)}>Batal</Button>
           </form>
@@ -335,7 +339,7 @@ export function StockOverview({ canAdjust }: { canAdjust: boolean }) {
                         <span>
                           {row.name}
                           <span className="ml-1 rounded bg-gray-100 px-1 text-[10px] font-semibold text-gray-500" title="Kelas ABC berdasarkan nilai stok">{row.abc_class}</span>
-                          <span className="block text-xs text-gray-400">{row.sku}{row.category_name ? ` · ${row.category_name}` : ''}</span>
+                          <span className="block text-xs text-gray-400">{row.sku}{row.category_name ? ` · ${row.category_name}` : ''}{row.bin_location ? ` · 📍 ${row.bin_location}` : ''}</span>
                         </span>
                       </span>
                     </td>
@@ -345,7 +349,7 @@ export function StockOverview({ canAdjust }: { canAdjust: boolean }) {
                     </td>
                     <td className="px-3 py-2 text-right text-gray-500">
                       {canAdjust ? (
-                        <button className="hover:text-brand-600 hover:underline" title="Ubah titik pesan" onClick={() => { setLevelFor(row); setLevel(String(row.reorder_level)) }}>
+                        <button className="hover:text-brand-600 hover:underline" title="Ubah titik pesan" onClick={() => { setLevelFor(row); setLevel(String(row.reorder_level)); setBin(row.bin_location ?? '') }}>
                           {row.reorder_level}
                         </button>
                       ) : (

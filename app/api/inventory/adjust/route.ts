@@ -41,7 +41,10 @@ export async function POST(request: NextRequest) {
   const newQuantity = Array.isArray(data) ? data[0]?.new_quantity_on_hand : undefined
 
   // Book the write-down/write-up at cost (best-effort; never blocks the adjustment).
-  const { data: priced } = await auth.supabase.from('products').select('purchase_price').eq('id', product_id).single()
+  const [{ data: priced }, { data: invRow }] = await Promise.all([
+    auth.supabase.from('products').select('purchase_price').eq('id', product_id).single(),
+    auth.supabase.from('inventory').select('avg_cost').eq('outlet_id', outlet_id).eq('product_id', product_id).maybeSingle(),
+  ])
   await postStockValueJournal(auth.supabase, {
     outletId: outlet_id,
     createdBy: auth.id,
@@ -49,7 +52,7 @@ export async function POST(request: NextRequest) {
     description: `Penyesuaian stok: ${reason}`,
     sourceType: 'stock_adjustment',
     sourceId: crypto.randomUUID(),
-    value: quantity_change * (priced?.purchase_price ?? 0),
+    value: quantity_change * (invRow?.avg_cost ?? priced?.purchase_price ?? 0),
   })
 
   const { data: auditEntry } = await auth.supabase

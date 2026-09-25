@@ -16,7 +16,7 @@ interface Item {
   category_name: string | null
   quantity_on_hand: number
   cost_value: number
-  avg_cost_value: number
+  master_cost_value: number
   avg_cost: number | null
   purchase_price: number
   retail_value: number
@@ -51,7 +51,7 @@ export function ValuationView() {
   const view = useMemo(() => {
     const cost = items.reduce((s, i) => s + i.cost_value, 0)
     const retail = items.reduce((s, i) => s + i.retail_value, 0)
-    const avg = items.reduce((s, i) => s + i.avg_cost_value, 0)
+    const master = items.reduce((s, i) => s + i.master_cost_value, 0)
     const byCategory = new Map<string, { sku: number; qty: number; cost: number }>()
     for (const i of items) {
       const k = i.category_name ?? 'Tanpa kategori'
@@ -64,7 +64,7 @@ export function ValuationView() {
     const abc = (['A', 'B', 'C'] as const).map((c) => ({ c, n: items.filter((i) => i.abc_class === c).length, v: items.filter((i) => i.abc_class === c).reduce((s, i) => s + i.cost_value, 0) }))
     return {
       cost,
-      avg,
+      master,
       retail,
       categories: Array.from(byCategory.entries()).sort((a, b) => b[1].cost - a[1].cost),
       abc,
@@ -120,14 +120,14 @@ export function ValuationView() {
         <OutletSelector includeAll={false} value={selectedOutlet} onChange={setSelectedOutlet} />
         <ExportCsvButton
           filename="nilai-persediaan"
-          rows={items.map((i) => ({ SKU: i.sku, Produk: i.name, Kategori: i.category_name ?? '', Stok: i.quantity_on_hand, 'Nilai (HPP master)': i.cost_value, 'Nilai (rata-rata beli)': i.avg_cost_value, 'Harga beli rata-rata': i.avg_cost ?? '', 'Nilai Jual': i.retail_value, ABC: i.abc_class, Pergerakan: i.health }))}
+          rows={items.map((i) => ({ SKU: i.sku, Produk: i.name, Kategori: i.category_name ?? '', Stok: i.quantity_on_hand, 'Nilai (rata-rata bergerak)': i.cost_value, 'Nilai (harga master)': i.master_cost_value, 'Harga rata-rata': i.avg_cost ?? '', 'Nilai Jual': i.retail_value, ABC: i.abc_class, Pergerakan: i.health }))}
         />
       </div>
       {error && <Alert variant="danger">{error}</Alert>}
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
-        <Card><p className="text-sm text-gray-500">Nilai Persediaan (HPP)</p><p className="text-xl font-bold text-gray-900">{formatCurrency(view.cost)}</p></Card>
-        <Card><p className="text-sm text-gray-500">Nilai (rata-rata harga beli)</p><p className="text-xl font-bold text-gray-900">{formatCurrency(view.avg)}</p><p className="text-xs text-gray-400">{view.avg >= view.cost ? '+' : ''}{formatCurrency(view.avg - view.cost)} vs harga master</p></Card>
+        <Card><p className="text-sm text-gray-500">Nilai Persediaan (rata-rata bergerak)</p><p className="text-xl font-bold text-gray-900">{formatCurrency(view.cost)}</p></Card>
+        <Card><p className="text-sm text-gray-500">Nilai di harga master</p><p className="text-xl font-bold text-gray-900">{formatCurrency(view.master)}</p><p className="text-xs text-gray-400">selisih {view.cost - view.master >= 0 ? '+' : ''}{formatCurrency(view.cost - view.master)} karena harga rata-rata</p></Card>
         <Card><p className="text-sm text-gray-500">Nilai Jual</p><p className="text-xl font-bold text-gray-900">{formatCurrency(view.retail)}</p></Card>
         <Card><p className="text-sm text-gray-500">Potensi Laba Kotor</p><p className="text-xl font-bold text-emerald-600">{formatCurrency(view.retail - view.cost)}</p></Card>
         <Card><p className="text-sm text-gray-500">Modal Tertahan (tidak bergerak)</p><p className="text-xl font-bold text-red-600">{formatCurrency(view.dead.reduce((s, r) => s + r.cost_value, 0))}</p><p className="text-xs text-gray-400">{pct(view.dead.reduce((s, r) => s + r.cost_value, 0))} dari total</p></Card>

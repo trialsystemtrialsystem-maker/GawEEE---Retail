@@ -45,10 +45,11 @@ export async function POST(request: NextRequest) {
   const bySku = new Map((products ?? []).map((p) => [p.sku.toLowerCase(), p]))
   const { data: stock } = await auth.supabase
     .from('inventory')
-    .select('product_id, quantity_on_hand')
+    .select('product_id, quantity_on_hand, avg_cost')
     .eq('outlet_id', outlet_id)
     .in('product_id', (products ?? []).map((p) => p.id))
   const onHand = new Map((stock ?? []).map((s) => [s.product_id, s.quantity_on_hand]))
+  const avgCost = new Map((stock ?? []).map((s) => [s.product_id, s.avg_cost]))
 
   const results: Result[] = []
   const plan: { productId: string; delta: number; price: number }[] = []
@@ -70,7 +71,7 @@ export async function POST(request: NextRequest) {
       continue
     }
     results.push({ sku: r.sku, name: p.name, before, after, delta, status: 'ok' })
-    plan.push({ productId: p.id, delta, price: p.purchase_price ?? 0 })
+    plan.push({ productId: p.id, delta, price: avgCost.get(p.id) ?? p.purchase_price ?? 0 })
   }
 
   const summary = {
