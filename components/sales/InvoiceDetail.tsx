@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Alert } from '@/components/ui/Alert'
+import { Input } from '@/components/ui/Input'
 import { formatCurrency, formatDateTime } from '@/lib/utils/formatting'
 import { useNotificationStore } from '@/store/notificationStore'
 
@@ -59,6 +60,8 @@ export function InvoiceDetail({ invoiceId, canVoid, canRefund: canRefundPerm }: 
   const [refundMethod, setRefundMethod] = useState<'cash' | 'e_wallet' | 'bank_transfer'>('cash')
   const [refundReason, setRefundReason] = useState('')
   const [isRefunding, setIsRefunding] = useState(false)
+  const [collect, setCollect] = useState({ method: 'cash', amount: '', note: '' })
+  const [isCollecting, setIsCollecting] = useState(false)
   const showToast = useNotificationStore((s) => s.show)
 
   const load = useCallback(async () => {
@@ -101,6 +104,45 @@ export function InvoiceDetail({ invoiceId, canVoid, canRefund: canRefundPerm }: 
     } finally {
       setIsVoiding(false)
     }
+  }
+
+  // What is still owed: total minus payments already settled.
+  const settledPaid = payments.filter((p) => p.status === 'settled').reduce((sum, p) => sum + p.amount, 0)
+  const balance = invoice ? Math.max(0, Math.round((invoice.total - settledPaid) * 100) / 100) : 0
+
+  async function handleCollect(e: React.FormEvent) {
+    e.preventDefault()
+    setError(null)
+    setIsCollecting(true)
+    try {
+      const res = await fetch(`/api/invoices/${invoiceId}/payments`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ payment_method: collect.method, amount: Number(collect.amount), note: collect.note || undefined }),
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        setError(typeof data.error === 'string' ? data.error : 'Gagal mencatat pembayaran')
+        return
+      }
+      showToast(data.payment_status === 'paid' ? 'Tagihan lunas' : `Pembayaran dicatat, sisa ${formatCurrency(data.remaining)}`, 'success')
+      setCollect({ method: 'cash', amount: '', note: '' })
+      router.refresh()
+      load()
+    } finally {
+      setIsCollecting(false)
+    }
+  }
+
+  function printReceipt() {
+    if (!invoice) return
+    const esc = (t: string) => t.replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[c] as string)
+    const rows = items.map((i) => `<tr><td>${i.quantity}x ${esc(i.products?.name ?? '-')}</td><td style="text-align:right">${formatCurrency(i.subtotal)}</td></tr>`).join('')
+    const w = window.open('', '_blank', 'width=360,height=640')
+    if (!w) return
+    w.document.write(`<html><head><title>${esc(invoice.invoice_number)}</title><style>body{font-family:monospace;font-size:12px;width:300px;margin:8px auto}table{width:100%}hr{border:0;border-top:1px dashed #000}</style></head><body><center><strong>STRUK (SALINAN)</strong><br/>${esc(invoice.invoice_number)}<br/>${formatDateTime(invoice.created_at)}</center><hr/><table>${rows}</table><hr/><table><tr><td>Subtotal</td><td style="text-align:right">${formatCurrency(invoice.subtotal)}</td></tr><tr><td>Diskon</td><td style="text-align:right">${formatCurrency(invoice.discount_amount)}</td></tr><tr><td>PPN</td><td style="text-align:right">${formatCurrency(invoice.tax_amount)}</td></tr><tr><td><strong>Total</strong></td><td style="text-align:right"><strong>${formatCurrency(invoice.total)}</strong></td></tr>${balance > 0 ? `<tr><td>Sisa tagihan</td><td style="text-align:right">${formatCurrency(balance)}</td></tr>` : ''}</table><hr/><center>Terima kasih</center></body></html>`)
+    w.document.close()
+    w.print()
   }
 
   async function handleRefundSubmit(e: React.FormEvent) {
@@ -174,6 +216,9 @@ export function InvoiceDetail({ invoiceId, canVoid, canRefund: canRefundPerm }: 
             <h1 className="text-xl font-bold text-gray-900">{invoice.invoice_number}</h1>
             <p className="text-sm text-gray-500">{formatDateTime(invoice.created_at)}</p>
           </div>
+          <Button variant="secondary" size="sm" onClick={printReceipt}>
+            Cetak Struk
+          </Button>
           {invoice.order_status === 'voided' ? (
             <span className="rounded-full bg-red-100 px-3 py-1 text-sm font-medium text-red-600">Dibatalkan</span>
           ) : (
@@ -225,6 +270,30 @@ export function InvoiceDetail({ invoiceId, canVoid, canRefund: canRefundPerm }: 
           </div>
         </div>
       </Card>
+
+      {invoice.order_status !== 'voided' && invoice.payment_status !== 'paid' && balance > 0 && (
+        <Card className="space-y-3">
+          <div>
+            <h2 className="text-lg font-semibold text-gray-900">Terima Pembayaran</h2>
+            <p className="text-sm text-gray-500">Sisa tagihan <strong className="text-amber-600">{formatCurrency(balance)}</strong> — bisa dicicil, tiap pembayaran tercatat dan dijurnal.</p>
+          </div>
+          <form onSubmit={handleCollect} className="flex flex-wrap items-end gap-3">
+            <div className="space-y-1">
+              <label htmlFor="collect_method" className="block text-sm font-medium text-gray-700">Metode</label>
+              <select id="collect_method" value={collect.method} onChange={(e) => setCollect((c) => ({ ...c, method: e.target.value }))} className="rounded-sm border border-gray-200 px-3 py-2 text-sm">
+                <option value="cash">Tunai</option>
+                <option value="bank_transfer">Transfer Bank</option>
+                <option value="e_wallet">E-Wallet</option>
+                <option value="card">Kartu</option>
+              </select>
+            </div>
+            <Input name="collect_amount" label="Nominal (Rp)" type="number" min="1" max={balance} required value={collect.amount} onChange={(e) => setCollect((c) => ({ ...c, amount: e.target.value }))} />
+            <Input name="collect_note" label="Catatan" value={collect.note} onChange={(e) => setCollect((c) => ({ ...c, note: e.target.value }))} />
+            <Button type="button" variant="secondary" onClick={() => setCollect((c) => ({ ...c, amount: String(balance) }))}>Lunasi</Button>
+            <Button type="submit" isLoading={isCollecting}>Catat Pembayaran</Button>
+          </form>
+        </Card>
+      )}
 
       {payments.length > 0 && (
         <Card>

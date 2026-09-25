@@ -68,6 +68,8 @@ export async function postJournal(
     sourceType: string
     sourceId: string
     lines: JournalLine[]
+    /** Skip the one-journal-per-source guard, for events that legitimately post several times against one source (e.g. instalments on one invoice). */
+    allowMultiple?: boolean
   }
 ): Promise<string | null> {
   try {
@@ -75,7 +77,7 @@ export async function postJournal(
     if (lines.length < 2) return null
 
     // Idempotent per source: never double-post the same business event.
-    const { data: existing } = await supabase
+    const { data: existing } = params.allowMultiple ? { data: null } : await supabase
       .from('journal_entries')
       .select('id')
       .eq('outlet_id', params.outletId)

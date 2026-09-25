@@ -55,6 +55,11 @@ export async function GET(_request: NextRequest, ctx: RouteContext<'/api/custome
   const lastAt = valid[0]?.created_at ?? null
   const daysSinceLast = lastAt ? Math.floor((Date.now() - Date.parse(lastAt)) / 86_400_000) : null
   const unpaid = valid.filter((i) => i.payment_status !== 'paid')
+  const paidBy = new Map<string, number>()
+  if (unpaid.length > 0) {
+    const { data: settled } = await auth.supabase.from('payment_transactions').select('invoice_id, amount').eq('status', 'settled').in('invoice_id', unpaid.map((i) => i.id))
+    for (const p of settled ?? []) paidBy.set(p.invoice_id, (paidBy.get(p.invoice_id) ?? 0) + p.amount)
+  }
 
   const products = new Map<string, { name: string; quantity: number; spend: number }>()
   for (const it of (itemsRes.data ?? []) as unknown as ItemRow[]) {
@@ -84,7 +89,7 @@ export async function GET(_request: NextRequest, ctx: RouteContext<'/api/custome
       last_purchase_at: lastAt,
       days_since_last: daysSinceLast,
       purchase_interval_days: purchaseInterval(valid.map((i) => i.created_at)),
-      unpaid_total: unpaid.reduce((s, i) => s + i.total, 0),
+      unpaid_total: unpaid.reduce((s, i) => s + Math.max(0, i.total - (paidBy.get(i.id) ?? 0)), 0),
       unpaid_count: unpaid.length,
       loyalty_points: loyalty.reduce((s, l) => s + l.points_change, 0),
       segment: customerSegment({ orders: valid.length, spend, daysSinceLast }),

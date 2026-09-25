@@ -1761,6 +1761,18 @@ live-verified/committed/pushed.
       customer FK, so history is matched on a normalized phone (0812… = +62 812… = 62812…). e2e `customer-360.spec.ts`.
 - [ ] Not built: customer merge/duplicate detection, delete/archive, birthday/anniversary reminders.
 
+## Phase 38 — Sales: piutang collection + real invoice list
+- [x] Pay-later invoices had NO way to be collected (they stayed "pending" forever). New `POST /api/invoices/[id]/payments`
+      (+ "Terima Pembayaran" panel on the invoice page): instalments by tunai/transfer/e-wallet/kartu, over-collection refused,
+      pending → partial → paid, each payment journaled (Dr Kas/Bank / Cr Piutang) as a `sales` entry so voiding the invoice
+      reverses them too. It steps through 'partial' on purpose to avoid the 059 settlement trigger double-booking a full-total
+      journal. AR report and Customer 360 now show the outstanding balance, not the invoice total.
+- [x] Invoice list rebuilt: server-side filters (date range, status lunas/belum lunas/dibatalkan, outlet, search invoice/nama/telepon),
+      paging, kasir & outlet columns, KPI summary over the whole filtered set (the old "Total Pendapatan" summed only the current
+      page and counted voided sales as revenue), export of all matching rows. "Cetak Struk" (salinan) on the invoice page.
+- [x] e2e `receivable-collection.spec.ts`. `postJournal` gained `allowMultiple` for instalment-style postings.
+- [ ] Not built: loyalty points earned on late settlement, e-mail/WhatsApp receipt, payment-method breakdown filter.
+
 ## Notes on scope
 This todo tracks the **engineering deliverables** of the PRD (a working Next.js + Supabase codebase
 implementing Phase 1 features, with payment gateways behind a swappable mock interface). Items marked

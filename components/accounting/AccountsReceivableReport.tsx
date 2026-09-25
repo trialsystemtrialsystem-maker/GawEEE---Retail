@@ -21,6 +21,7 @@ interface InvoiceRow {
   customer_name: string
   customer_phone: string | null
   total: number
+  balance: number
   created_at: string
   days_outstanding: number
   aging_bucket: string
@@ -173,7 +174,7 @@ export function AccountsReceivableReport({ outletId }: { outletId?: string }) {
                       {inv.customer_phone && <span className="ml-1 text-gray-400">— {inv.customer_phone}</span>}
                     </td>
                     <td className="px-4 py-2 text-gray-600">{formatDateTime(inv.created_at)}</td>
-                    <td className="px-4 py-2 text-right font-semibold text-gray-900">{formatCurrency(inv.total)}</td>
+                    <td className="px-4 py-2 text-right font-semibold text-gray-900">{formatCurrency(inv.balance)}{inv.balance < inv.total && <span className="block text-xs font-normal text-gray-400">dari {formatCurrency(inv.total)}</span>}</td>
                     <td className="px-4 py-2">
                       <span
                         className="rounded-full px-2 py-0.5 text-xs font-medium"

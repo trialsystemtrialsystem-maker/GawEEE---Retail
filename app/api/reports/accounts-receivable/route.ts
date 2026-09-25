@@ -45,6 +45,13 @@ export async function GET(request: NextRequest) {
   type Row = { id: string; invoice_number: string; customer_name: string | null; customer_phone: string | null; total: number; created_at: string }
   const rows = data as unknown as Row[]
 
+  // Partly collected invoices only owe the balance: subtract settled payments.
+  const paidBy = new Map<string, number>()
+  if (rows.length > 0) {
+    const { data: settled } = await auth.supabase.from('payment_transactions').select('invoice_id, amount').eq('status', 'settled').in('invoice_id', rows.map((r) => r.id))
+    for (const p of settled ?? []) paidBy.set(p.invoice_id, (paidBy.get(p.invoice_id) ?? 0) + p.amount)
+  }
+
   // UTC-safe day-diff — invoices.created_at is a timestamptz, its calendar
   // date is its UTC date (matching how every other report slices it), so
   // diffing against local-timezone midnight (the old .setHours(0,0,0,0))
@@ -60,6 +67,7 @@ export async function GET(request: NextRequest) {
       customer_name: inv.customer_name ?? 'Tanpa nama pelanggan',
       customer_phone: inv.customer_phone,
       total: inv.total,
+      balance: Math.max(0, Math.round((inv.total - (paidBy.get(inv.id) ?? 0)) * 100) / 100),
       created_at: inv.created_at,
       days_outstanding: daysOutstanding,
       aging_bucket: bucketFor(daysOutstanding),
@@ -72,7 +80,7 @@ export async function GET(request: NextRequest) {
     const key = r.customer_phone || `name:${r.customer_name}`
     const entry = byCustomerMap.get(key) ?? { key, name: r.customer_name, phone: r.customer_phone, invoice_count: 0, total_outstanding: 0, max_days_outstanding: 0 }
     entry.invoice_count += 1
-    entry.total_outstanding += r.total
+    entry.total_outstanding += r.balance
     entry.max_days_outstanding = Math.max(entry.max_days_outstanding, r.days_outstanding)
     byCustomerMap.set(key, entry)
   }

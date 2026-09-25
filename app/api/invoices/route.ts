@@ -3,6 +3,7 @@ import { getAuthContext, canAccessOutlet } from '@/lib/utils/auth-context'
 import { validate, createInvoiceSchema } from '@/lib/utils/validation'
 import { handleDatabaseError } from '@/lib/utils/errors'
 import { earnLoyaltyPoints } from '@/lib/utils/loyalty'
+import { resolveDateRange } from '@/lib/utils/dateRange'
 
 // POST /api/invoices — create a POS transaction. See prd.md §4.3.
 // The heavy lifting (stock validation, totals, inventory deduction) happens
@@ -185,58 +186,92 @@ export async function POST(request: NextRequest) {
 }
 
 // GET /api/invoices — list with filters. See prd.md §4.3.
+// GET /api/invoices — filterable, paged invoice list.
+// Filters: start/end (YYYY-MM-DD, UTC-safe) or the older from_date/to_date,
+// search (invoice number / customer name / phone), status (paid | unpaid |
+// pending | partial | voided), cashier_id ('me' allowed), outlet_id, page, limit.
+// The summary is computed over EVERYTHING that matches the filters (not just
+// the current page) and never counts voided invoices as revenue.
 export async function GET(request: NextRequest) {
   const auth = await getAuthContext()
   if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const { searchParams } = request.nextUrl
-  const page = Number(searchParams.get('page') ?? '1')
-  const limit = Math.min(Number(searchParams.get('limit') ?? '50'), 200)
-  const fromDate = searchParams.get('from_date')
-  const toDate = searchParams.get('to_date')
+  const page = Math.max(1, Number(searchParams.get('page') ?? '1') || 1)
+  const limit = Math.min(Math.max(1, Number(searchParams.get('limit') ?? '50') || 50), 200)
+  const hasRange = !!(searchParams.get('start') && searchParams.get('end'))
+  const range = hasRange ? resolveDateRange(searchParams) : null
+  const fromDate = range?.startIso ?? searchParams.get('from_date')
+  const toDate = range?.endIso ?? searchParams.get('to_date')
+  const status = searchParams.get('status')
   const paymentStatus = searchParams.get('payment_status')
   const outletId = searchParams.get('outlet_id')
   const cashierIdParam = searchParams.get('cashier_id')
+  const search = searchParams.get('search')?.trim().replace(/[%,()]/g, '')
 
-  let query = auth.supabase.from('invoices').select('*', { count: 'exact' }).order('created_at', { ascending: false })
-
-  if (auth.role === 'master_admin') {
-    if (outletId) query = query.eq('outlet_id', outletId)
-  } else {
-    query = query.eq('outlet_id', auth.outlet_id!)
-  }
-
-  if (fromDate) query = query.gte('created_at', fromDate)
-  if (toDate) query = query.lte('created_at', toDate)
-  if (paymentStatus) {
-    query = query.eq('payment_status', paymentStatus as 'pending' | 'partial' | 'paid')
-  }
-  // "me" resolves server-side to the caller's own id — used by the Riwayat
-  // Kasir self-service view so a cashier only ever sees their own sales,
-  // without the client needing to know/pass its own user id.
-  if (cashierIdParam) {
-    query = query.eq('cashier_id', cashierIdParam === 'me' ? auth.authUserId : cashierIdParam) // create_invoice() writes cashier_id = p_cashier_id = auth.authUserId (see app/api/invoices POST)
+  type Q = ReturnType<typeof buildBase>
+  function buildBase(select: string, count?: 'exact') {
+    let q = auth!.supabase.from('invoices').select(select, count ? { count } : undefined)
+    if (auth!.role === 'master_admin') {
+      if (outletId) q = q.eq('outlet_id', outletId)
+    } else {
+      q = q.eq('outlet_id', auth!.outlet_id!)
+    }
+    if (fromDate) q = q.gte('created_at', fromDate)
+    if (toDate) q = q.lte('created_at', toDate)
+    if (paymentStatus) q = q.eq('payment_status', paymentStatus as 'pending' | 'partial' | 'paid')
+    if (status === 'voided') q = q.eq('order_status', 'voided')
+    else if (status === 'paid') q = q.eq('payment_status', 'paid').neq('order_status', 'voided')
+    else if (status === 'unpaid') q = q.in('payment_status', ['pending', 'partial']).neq('order_status', 'voided')
+    else if (status === 'pending' || status === 'partial') q = q.eq('payment_status', status).neq('order_status', 'voided')
+    // "me" resolves server-side to the caller's own id — used by the Riwayat
+    // Kasir self-service view so a cashier only ever sees their own sales,
+    // without the client needing to know/pass its own user id.
+    if (cashierIdParam) q = q.eq('cashier_id', cashierIdParam === 'me' ? auth!.authUserId : cashierIdParam) // create_invoice() writes cashier_id = p_cashier_id = auth.authUserId (see POST above)
+    if (search) q = q.or(`invoice_number.ilike.%${search}%,customer_name.ilike.%${search}%,customer_phone.ilike.%${search}%`)
+    return q
   }
 
   const from = (page - 1) * limit
-  const { data, error, count } = await query.range(from, from + limit - 1)
-
+  const { data, error, count } = await (buildBase('*, users!cashier_id(full_name), outlets(name)', 'exact') as Q).order('created_at', { ascending: false }).range(from, from + limit - 1)
   if (error) {
-    const { status, message } = handleDatabaseError(error)
-    return NextResponse.json({ error: message }, { status })
+    const { status: httpStatus, message } = handleDatabaseError(error)
+    return NextResponse.json({ error: message }, { status: httpStatus })
   }
 
-  const invoices = data ?? []
-  const totalRevenue = invoices.reduce((sum, i) => sum + i.total, 0)
-  const totalDiscounts = invoices.reduce((sum, i) => sum + i.discount_amount, 0)
+  // Aggregate over the whole filtered set, paging past PostgREST's 1000-row cap.
+  let revenue = 0
+  let discounts = 0
+  let counted = 0
+  let voided = 0
+  let unpaid = 0
+  for (let offset = 0; offset < 50_000; offset += 1000) {
+    const { data: chunk, error: aggError } = await (buildBase('total, discount_amount, order_status, payment_status') as Q).order('created_at', { ascending: false }).range(offset, offset + 999)
+    if (aggError) break
+    for (const row of (chunk ?? []) as unknown as { total: number; discount_amount: number; order_status: string; payment_status: string }[]) {
+      if (row.order_status === 'voided') {
+        voided += 1
+        continue
+      }
+      revenue += row.total
+      discounts += row.discount_amount
+      counted += 1
+      if (row.payment_status !== 'paid') unpaid += row.total
+    }
+    if (!chunk || chunk.length < 1000) break
+  }
 
+  const invoices = (data ?? []) as unknown as (Record<string, unknown> & { users?: { full_name: string | null } | null; outlets?: { name: string } | null })[]
   return NextResponse.json({
-    invoices,
+    invoices: invoices.map((i) => ({ ...i, cashier_name: (Array.isArray(i.users) ? i.users[0] : i.users)?.full_name ?? null, outlet_name: (Array.isArray(i.outlets) ? i.outlets[0] : i.outlets)?.name ?? null })),
     pagination: { page, limit, total: count ?? 0, pages: Math.ceil((count ?? 0) / limit) },
     summary: {
-      total_revenue: totalRevenue,
-      total_discounts: totalDiscounts,
-      avg_transaction: invoices.length ? totalRevenue / invoices.length : 0,
+      total_revenue: revenue,
+      total_discounts: discounts,
+      avg_transaction: counted ? revenue / counted : 0,
+      transactions: counted,
+      voided,
+      unpaid_total: unpaid,
     },
   })
 }
