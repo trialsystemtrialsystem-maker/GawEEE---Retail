@@ -570,7 +570,7 @@ export type JournalEntryDetail = {
   reference_id: string | null
 }
 
-export type BookingStatus = 'pending' | 'confirmed' | 'in_progress' | 'completed' | 'cancelled'
+export type BookingStatus = 'pending' | 'confirmed' | 'in_progress' | 'completed' | 'cancelled' | 'no_show'
 
 export type Booking = {
   id: string
