@@ -1368,6 +1368,18 @@ export type ProductSerial = {
   created_at: string
 }
 
+export type ProductPriceChange = {
+  id: string
+  product_id: string
+  company_id: string
+  old_purchase_price: number | null
+  new_purchase_price: number | null
+  old_selling_price: number | null
+  new_selling_price: number | null
+  changed_by: string | null
+  changed_at: string
+}
+
 type Table<Row> = { Row: Row; Insert: Partial<Row>; Update: Partial<Row>; Relationships: [] }
 type View<Row> = { Row: Row; Relationships: [] }
 
@@ -1447,6 +1459,7 @@ export type Database = {
       employee_documents: Table<EmployeeDocument>
       performance_reviews: Table<PerformanceReview>
       product_serials: Table<ProductSerial>
+      product_price_changes: Table<ProductPriceChange>
       checklist_items: Table<ChecklistItem>
       checklist_completions: Table<ChecklistCompletion>
       stocktakes: Table<Stocktake>
