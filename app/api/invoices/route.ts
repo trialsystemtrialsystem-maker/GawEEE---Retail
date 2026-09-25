@@ -4,6 +4,7 @@ import { validate, createInvoiceSchema } from '@/lib/utils/validation'
 import { handleDatabaseError } from '@/lib/utils/errors'
 import { earnLoyaltyPoints } from '@/lib/utils/loyalty'
 import { resolveDateRange } from '@/lib/utils/dateRange'
+import { guardInvoiceDiscounts } from '@/lib/server/discountGuard'
 
 // POST /api/invoices — create a POS transaction. See prd.md §4.3.
 // The heavy lifting (stock validation, totals, inventory deduction) happens
@@ -30,11 +31,16 @@ export async function POST(request: NextRequest) {
     promotion_discount_amount,
     loyalty_customer_id,
     redeem_points,
+    redeem_discount_amount,
   } = result.data
 
   if (!canAccessOutlet(auth, outlet_id)) {
     return NextResponse.json({ error: 'Tidak memiliki izin untuk outlet ini' }, { status: 403 })
   }
+
+  // The browser computes every discount; never trust the total it sends.
+  const discountError = await guardInvoiceDiscounts(auth, { outlet_id, items, discount_amount, coupon_code, coupon_discount_amount, promotion_id, promotion_discount_amount, loyalty_customer_id, redeem_points, redeem_discount_amount })
+  if (discountError) return NextResponse.json({ error: discountError }, { status: 400 })
 
   const { data, error } = await auth.supabase
     .rpc('create_invoice', {

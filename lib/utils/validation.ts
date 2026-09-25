@@ -693,6 +693,7 @@ export const companySettingsSchema = z.object({
   tax_rate: z.number().min(0).max(100),
   receipt_header: z.string().trim().max(200).optional(),
   receipt_footer: z.string().trim().max(200).optional(),
+  max_cashier_discount_percent: z.number().min(0).max(100).optional(),
 })
 
 export function validate<T>(schema: z.ZodType<T>, input: unknown) {

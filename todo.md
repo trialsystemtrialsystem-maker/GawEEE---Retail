@@ -1822,6 +1822,15 @@ live-verified/committed/pushed.
 - [x] Audit Log: who did it (user name), filters (action, data type, text, date range), paging, expandable before/after values, CSV export.
 - [ ] Not built: forced password change on first login, 2FA, per-user permission overrides, login history.
 
+## Phase 43 — Discount integrity (POS / POST /api/invoices)
+- [x] The API used to trust the discount total sent by the browser. Now `guardInvoiceDiscounts` checks each claimed component: promo (active,
+      same outlet, date window, value <= what it grants), coupon (active, unexpired), loyalty redemption (needs a customer, balance must cover
+      the points, value <= points x Rp/poin). Total discount can never exceed the gross subtotal (server prices).
+- [x] Discount not explained by promo/coupon/points (bundle price cuts, forged requests) is capped for cashier/staff at
+      `max_cashier_discount_percent` (default 30%, Master Admin > Pengaturan Sistem > Diskon Kasir); managers are bounded only by the subtotal.
+- [x] Redemption with insufficient points is now rejected (previously the discount was granted and the ledger deduction silently skipped).
+- [ ] Not built: per-product minimum margin, manager PIN override on the POS, promo scope / min purchase / usage caps, buy-X-get-Y.
+
 ## Notes on scope
 This todo tracks the **engineering deliverables** of the PRD (a working Next.js + Supabase codebase
 implementing Phase 1 features, with payment gateways behind a swappable mock interface). Items marked

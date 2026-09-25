@@ -13,6 +13,7 @@ interface Form {
   tax_rate: string
   receipt_header: string
   receipt_footer: string
+  max_cashier_discount_percent: string
 }
 
 export function SystemSettingsForm() {
@@ -35,6 +36,7 @@ export function SystemSettingsForm() {
         tax_rate: String(data.tax_rate ?? 10),
         receipt_header: data.receipt_header ?? '',
         receipt_footer: data.receipt_footer ?? '',
+        max_cashier_discount_percent: String(data.max_cashier_discount_percent ?? 30),
       })
     }, 0)
     return () => clearTimeout(timeout)
@@ -54,7 +56,7 @@ export function SystemSettingsForm() {
       const res = await fetch('/api/admin/company-settings', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...form, tax_rate: Number(form.tax_rate) }),
+        body: JSON.stringify({ ...form, tax_rate: Number(form.tax_rate), max_cashier_discount_percent: Number(form.max_cashier_discount_percent) }),
       })
       const data = await res.json()
       if (!res.ok) {
@@ -91,6 +93,22 @@ export function SystemSettingsForm() {
           onChange={(e) => set({ tax_rate: e.target.value })}
         />
         <p className="text-sm text-gray-500">Berlaku otomatis pada transaksi baru berikutnya; transaksi yang sudah tercatat tidak berubah.</p>
+      </Card>
+
+      <Card className="space-y-4">
+        <h2 className="text-lg font-semibold text-gray-900">Diskon Kasir</h2>
+        <Input
+          name="max_cashier_discount_percent"
+          label="Batas diskon di luar promo/kupon/poin (%)"
+          type="number"
+          min="0"
+          max="100"
+          step="1"
+          required
+          value={form.max_cashier_discount_percent}
+          onChange={(e) => set({ max_cashier_discount_percent: e.target.value })}
+        />
+        <p className="text-sm text-gray-500">Diskon yang tidak berasal dari promo, kupon, atau poin (mis. paket bundle) dibatasi sebesar ini untuk kasir/staf. Manager tidak dibatasi persentase, namun tidak boleh melebihi subtotal.</p>
       </Card>
 
       <Card className="space-y-4">
