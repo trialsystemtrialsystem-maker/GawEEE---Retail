@@ -17,15 +17,19 @@ export async function GET(request: NextRequest) {
   const entityType = searchParams.get('entity_type')
   const fromDate = searchParams.get('from_date')
   const toDate = searchParams.get('to_date')
+  const userId = searchParams.get('user_id')
+  const search = searchParams.get('search')?.trim().replace(/[%,()]/g, '')
 
   let query = auth.supabase
     .from('audit_log')
-    .select('*', { count: 'exact' })
+    .select('*, users:user_id(full_name, email)', { count: 'exact' })
     .eq('company_id', auth.company_id)
     .order('created_at', { ascending: false })
 
   if (actionType) query = query.eq('action_type', actionType)
   if (entityType) query = query.eq('entity_type', entityType)
+  if (userId) query = query.eq('user_id', userId)
+  if (search) query = query.or(`reason_for_action.ilike.%${search}%,entity_type.ilike.%${search}%`)
   if (fromDate) query = query.gte('created_at', fromDate)
   if (toDate) query = query.lte('created_at', toDate)
 
@@ -37,7 +41,11 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: message }, { status })
   }
 
-  const logs = data ?? []
+  type Row = { user_id: string; action_type: string; users: { full_name: string | null; email: string } | { full_name: string | null; email: string }[] | null } & Record<string, unknown>
+  const logs = ((data ?? []) as unknown as Row[]).map((l) => {
+    const u = Array.isArray(l.users) ? l.users[0] : l.users
+    return { ...l, users: undefined, user_name: u?.full_name ?? u?.email ?? null }
+  })
   const actionsByType: Record<string, number> = {}
   for (const log of logs) {
     actionsByType[log.action_type] = (actionsByType[log.action_type] ?? 0) + 1

@@ -1810,6 +1810,18 @@ live-verified/committed/pushed.
       widgets too (active-outlet resolver).
 - [ ] Not built: real WhatsApp Business API sending, marketplace API sync, booking calendar grid/deposits, dashboard customisation.
 
+## Phase 42 — Product catalog, users & audit log
+- [x] Produk & Harga (migration 070 applied): search/filter/sort/paging, catalog-health cards (tanpa kategori/supplier, margin <10%, di bawah
+      modal), edit form (category, supplier, prices with live margin), bulk price rule (%, nominal, margin target, exact; rounding; preview is
+      the default and flags below-cost), CSV import matched on SKU (dry-run, all-or-nothing on errors, creates categories), automatic price
+      history via trigger. Fixed: soft-deleted products were still listed; PUT accepted the raw body (could rewrite company_id/deleted_at).
+- [x] Pengguna: the create form had NO outlet field, so every non-owner account was created without an outlet and could open no page — outlet is
+      now required (validated to the company). Edit role/outlet/name, reactivate, reset password (one-time temp password), filters, last login.
+      Guards: owner account can't be demoted/moved, nobody can deactivate themselves or the last active owner; PUT is whitelisted; every change
+      is audit-logged. Reactivating also lifts the auth ban (deactivating already set it).
+- [x] Audit Log: who did it (user name), filters (action, data type, text, date range), paging, expandable before/after values, CSV export.
+- [ ] Not built: forced password change on first login, 2FA, per-user permission overrides, login history.
+
 ## Notes on scope
 This todo tracks the **engineering deliverables** of the PRD (a working Next.js + Supabase codebase
 implementing Phase 1 features, with payment gateways behind a swappable mock interface). Items marked
