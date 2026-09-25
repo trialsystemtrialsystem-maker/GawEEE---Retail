@@ -1792,6 +1792,24 @@ live-verified/committed/pushed.
       Unit-tested with a fake builder; e2e `reports-smoke.spec.ts` hits them all and asserts the books still balance.
 - [ ] Not swept (small/bounded tables): attendance, schedules, staff lists. Worth re-running the probe when adding new aggregating routes.
 
+## Phase 41 — Bookings, Online Orders, WhatsApp, Dashboard
+- [x] Bookings v2: double-booking protection (same staff/facility, overlapping time; back-to-back allowed; cancelled/no-show free the
+      slot; managers may force), reschedule/reassign/edit with re-check, new "Tidak Hadir" status + cancel reason, date-window list
+      (was: everything, capped at 1000), day-grouped agenda with KPIs, "Ingatkan" WhatsApp reminder link. `lib/utils/bookingConflicts.ts`.
+- [x] Online Orders v2 (migration 067): orders were an isolated log — completing one produced no revenue, stock or journal. Now moving to
+      "Diproses" creates a real invoice via `create_invoice()` (product-linked items; ordered price honoured as a discount, never a
+      markup), prepaid orders are settled through the shared `recordInvoicePayment`, COD is collected on completion, cancelling voids the
+      invoice (stock returns). Product picker, payment method/status, ongkir, marketplace ref, courier + resi, per-channel KPIs, WhatsApp
+      status link. Free-text items are flagged "tidak masuk laporan penjualan". Order numbers no longer collide (date + random).
+- [x] WhatsApp (migrations 068, 069): broadcasts used to be marked "sent" without sending anything. They are now a personalised send queue
+      (per-recipient rendered message + click-to-send link, mark sent/skipped, real sent_count), audiences (registered customers, group,
+      recent buyers, lapsed buyers), unknown placeholders refused, customer opt-out excluded, WhatsApp receipt button on invoices.
+      069 adds the missing UPDATE/DELETE policies on `whatsapp_broadcasts`.
+- [x] Dashboard: "Perlu Perhatian" action center (online orders, overdue AR/AP, stock out/low, approvals for PO/leave/expense/kasbon, late POs,
+      pending bookings, expiring staff docs, draft journals) with deep links; owners without a fixed outlet now get the target/low-stock
+      widgets too (active-outlet resolver).
+- [ ] Not built: real WhatsApp Business API sending, marketplace API sync, booking calendar grid/deposits, dashboard customisation.
+
 ## Notes on scope
 This todo tracks the **engineering deliverables** of the PRD (a working Next.js + Supabase codebase
 implementing Phase 1 features, with payment gateways behind a swappable mock interface). Items marked

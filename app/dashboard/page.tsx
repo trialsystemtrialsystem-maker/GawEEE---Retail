@@ -1,4 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
+import { resolveActiveOutletId } from '@/lib/server/activeOutlet'
+import { AttentionCenter } from '@/components/dashboard/AttentionCenter'
 import { TodayOverview } from '@/components/dashboard/TodayOverview'
 import { TargetVsActualReport } from '@/components/dashboard/TargetVsActualReport'
 import { SalesAnalytics } from '@/components/charts/SalesAnalytics'
@@ -12,11 +14,13 @@ export default async function DashboardOverviewPage() {
   } = await supabase.auth.getSession()
   const user = session?.user
 
-  const { data: profile } = await supabase
+  const { data: rawProfile } = await supabase
     .from('users')
     .select('outlet_id, role')
     .eq('id', user!.id)
     .single()
+  // Owners (no fixed outlet) previously saw no target / low-stock widgets at all.
+  const profile = rawProfile ? { ...rawProfile, outlet_id: await resolveActiveOutletId(supabase, rawProfile) } : rawProfile
 
   const { data: lowStock } = profile?.outlet_id
     ? await supabase
@@ -34,6 +38,8 @@ export default async function DashboardOverviewPage() {
           {new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
         </p>
       </div>
+
+      {profile?.outlet_id && <AttentionCenter outletId={profile.outlet_id} />}
 
       <TodayOverview lowStockCount={lowStock?.length ?? 0} />
 
