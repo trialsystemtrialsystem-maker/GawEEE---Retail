@@ -30,7 +30,7 @@ export function useResolvedOutlet(outletIdProp?: string) {
       if (res.ok && data.outlets?.length) {
         // Prefer the caller's own outlet (a master_admin who is also assigned
         // to one) over the alphabetically-first outlet in the company.
-        const own = data.outlets.find((o: { id: string }) => o.id === data.own_outlet_id)
+        const own = data.outlets.find((o: { id: string }) => o.id === (data.active_outlet_id ?? data.own_outlet_id))
         setSelectedOutlet((own ?? data.outlets[0]).id)
       }
       setIsResolving(false)

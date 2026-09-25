@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { DashboardShell } from '@/components/layout/DashboardShell'
+import { resolveActiveOutletId } from '@/lib/server/activeOutlet'
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient()
@@ -38,15 +39,18 @@ export default async function DashboardLayout({ children }: { children: React.Re
     }
   }
 
-  const outlet = profile?.outlet_id
-    ? (await supabase.from('outlets').select('name').eq('id', profile.outlet_id).single()).data
-    : null
+  // An owner is not tied to one outlet: give the shell (and the notification
+  // bell) their chosen/default outlet, and the list for the header switcher.
+  const activeOutletId = profile ? await resolveActiveOutletId(supabase, { outlet_id: profile.outlet_id, role: profile.role }) : null
+  const outlet = activeOutletId ? (await supabase.from('outlets').select('name').eq('id', activeOutletId).single()).data : null
+  const switchable = profile?.role === 'master_admin' ? (await supabase.from('outlets').select('id, name').order('name')).data ?? [] : []
 
   return (
     <DashboardShell
       userName={profile?.full_name ?? undefined}
       outletName={outlet?.name ?? undefined}
-      outletId={profile?.outlet_id ?? undefined}
+      outletId={activeOutletId ?? undefined}
+      switchableOutlets={switchable}
     >
       {children}
     </DashboardShell>

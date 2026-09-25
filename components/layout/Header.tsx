@@ -3,14 +3,17 @@
 import { useRouter } from 'next/navigation'
 import { TopNav } from '@/components/layout/TopNav'
 import { NotificationBell } from '@/components/layout/NotificationBell'
+import { OutletSwitcher } from '@/components/layout/OutletSwitcher'
 
 export function Header({
   userName,
   outletId,
+  switchableOutlets = [],
   onMenuClick,
 }: {
   userName?: string
   outletId?: string
+  switchableOutlets?: { id: string; name: string }[]
   onMenuClick?: () => void
 }) {
   const router = useRouter()
@@ -37,6 +40,7 @@ export function Header({
       </div>
 
       <div className="flex items-center gap-3">
+        <OutletSwitcher outlets={switchableOutlets} activeId={outletId} />
         {outletId && <NotificationBell outletId={outletId} />}
         {userName && (
           <span className="flex items-center gap-2 text-sm text-gray-700">

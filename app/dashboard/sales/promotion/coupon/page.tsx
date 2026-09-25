@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { resolveActiveOutletId } from '@/lib/server/activeOutlet'
 import { Alert } from '@/components/ui/Alert'
 import { CouponManager } from '@/components/sales/CouponManager'
 
@@ -8,7 +9,9 @@ export default async function CouponPage() {
     data: { session },
   } = await supabase.auth.getSession()
   const user = session?.user
-  const { data: profile } = await supabase.from('users').select('outlet_id, role').eq('id', user!.id).single()
+  const { data: rawProfile } = await supabase.from('users').select('outlet_id, role').eq('id', user!.id).single()
+  // Owners (no fixed outlet) get their active outlet instead of a dead end.
+  const profile = rawProfile ? { ...rawProfile, outlet_id: await resolveActiveOutletId(supabase, rawProfile) } : rawProfile
 
   return (
     <div className="space-y-6">

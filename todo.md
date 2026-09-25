@@ -1738,6 +1738,21 @@ live-verified/committed/pushed.
 - [x] Impor Stok (`/dashboard/inventory/import`): paste/upload CSV (SKU, jumlah), mode "stok sebenarnya" or "tambah/kurang", dry-run preview, refuses files with bad rows, one ledger row per product + one journal. Valuation also shows weighted-average purchase cost (from received stock).
 - [ ] Not built: perpetual moving-average costing (COGS still uses the master price), serial numbers, bin/rak locations.
 
+## Phase 36 — Inventory costing/bins/serials, Supplier 360, owner's active outlet
+- [!] Migration `066_inventory_costing_bins_serials.sql` (must be run in Supabase BEFORE deploying this code):
+      `inventory.avg_cost` (perpetual moving average, moved only by priced receipts — purchase/transfer/production),
+      `inventory.bin_location`, `product_serials`; a BEFORE INSERT trigger on `invoice_items` sets COGS to
+      avg_cost × qty when an average exists (create_invoice itself is untouched). Backfills avg_cost from ledger history.
+- [x] Code: stock list shows/edit bin (rak) and uses the moving-average cost for valuation (master-price value kept for
+      comparison); adjust/waste/import journals value at avg cost; Nomor Seri registry (`/dashboard/inventory/serials`).
+      e2e `inventory-costing.spec.ts` verifies receipt→average→sale COGS (run after the migration).
+- [x] Supplier 360 (`/dashboard/suppliers/[id]`): ketepatan kirim, lead time, utang berjalan/lewat tempo, barang & riwayat harga,
+      PO & tagihan; supplier edit is now whitelisted (previously the raw body went to `.update()`).
+- [x] Owner's "Outlet aktif": 49 dashboard pages showed "Pilih outlet terlebih dahulu" to any master_admin without a fixed
+      outlet. `resolveActiveOutletId()` (cookie `gw_outlet` → own outlet → first) now feeds those pages, the notification
+      bell and `useResolvedOutlet`; a header switcher (`POST /api/outlets/active`) lets the owner change it.
+- [ ] Not built: Purchase Order print/detail page and partial-receipt tracking UI; supplier price agreements.
+
 ## Notes on scope
 This todo tracks the **engineering deliverables** of the PRD (a working Next.js + Supabase codebase
 implementing Phase 1 features, with payment gateways behind a swappable mock interface). Items marked

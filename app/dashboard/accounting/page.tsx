@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
+import { resolveActiveOutletId } from '@/lib/server/activeOutlet'
 import { Card } from '@/components/ui/Card'
 import { formatCurrency } from '@/lib/utils/formatting'
 
@@ -20,7 +21,9 @@ export default async function AccountingDashboardPage() {
   } = await supabase.auth.getSession()
   const user = session?.user
 
-  const { data: profile } = await supabase.from('users').select('outlet_id, company_id').eq('id', user!.id).single()
+  const { data: rawProfile } = await supabase.from('users').select('outlet_id, company_id, role').eq('id', user!.id).single()
+  // Owners (no fixed outlet) get their active outlet instead of a dead end.
+  const profile = rawProfile ? { ...rawProfile, outlet_id: await resolveActiveOutletId(supabase, rawProfile) } : rawProfile
 
   // master_admin's own outlet_id is null — fall back to the first outlet in
   // their company rather than blocking them from this page entirely (the

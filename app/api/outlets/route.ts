@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server'
 import { getAuthContext } from '@/lib/utils/auth-context'
 import { handleDatabaseError } from '@/lib/utils/errors'
+import { cookies } from 'next/headers'
+import { ACTIVE_OUTLET_COOKIE } from '@/lib/server/activeOutlet'
 
 // GET /api/outlets — lightweight outlet list for pickers (report "Semua
 // Outlet vs outlet tertentu" selectors, etc.). A master_admin sees every
@@ -23,5 +25,13 @@ export async function GET() {
     return NextResponse.json({ error: message }, { status })
   }
 
-  return NextResponse.json({ outlets: data ?? [], own_outlet_id: auth.outlet_id })
+  // The outlet pages should default to: the owner's chosen one (header
+  // switcher), else their own, else the first; everyone else gets their own.
+  const wanted = (await cookies()).get(ACTIVE_OUTLET_COOKIE)?.value
+  const list = data ?? []
+  const active =
+    auth.role === 'master_admin'
+      ? (list.find((o) => o.id === wanted)?.id ?? list.find((o) => o.id === auth.outlet_id)?.id ?? list[0]?.id ?? null)
+      : auth.outlet_id
+  return NextResponse.json({ outlets: data ?? [], own_outlet_id: auth.outlet_id, active_outlet_id: active })
 }
