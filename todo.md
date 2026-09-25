@@ -1754,6 +1754,13 @@ live-verified/committed/pushed.
 - [x] Purchase Order detail (`/dashboard/suppliers/purchase-orders/[id]`): status stepper, proper receive form (partial qty, batch, expiry, tanggal), riwayat penerimaan from the stock ledger, cetak PO, ajukan/setujui/tolak, batalkan (alasan wajib, only before any receipt). Receive route now refuses non-ordered POs and over-receipt (previously unchecked). e2e `purchase-order-lifecycle.spec.ts`.
 - [ ] Not built: supplier price agreements.
 
+## Phase 37 — Customer 360
+- [x] `/dashboard/sales/customers/[id]`: lifetime spend (net of completed refunds, voided sales excluded), transaksi, rata-rata keranjang,
+      terakhir belanja + biasanya tiap N hari, poin loyalti, piutang belum lunas, segmen (VIP/Setia/Baru/Berisiko pergi/Hilang — explainable
+      rules in `lib/utils/customerInsights.ts`), produk favorit, belanja per bulan, riwayat transaksi & poin; edit data. Invoices have no
+      customer FK, so history is matched on a normalized phone (0812… = +62 812… = 62812…). e2e `customer-360.spec.ts`.
+- [ ] Not built: customer merge/duplicate detection, delete/archive, birthday/anniversary reminders.
+
 ## Notes on scope
 This todo tracks the **engineering deliverables** of the PRD (a working Next.js + Supabase codebase
 implementing Phase 1 features, with payment gateways behind a swappable mock interface). Items marked
