@@ -51,8 +51,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Tidak memiliki izin' }, { status: 403 })
   }
 
-  const totalAmount = result.data.items.reduce((s, i) => s + i.quantity * i.price, 0)
-  const orderNumber = `ONL-${Date.now()}`
+  const totalAmount = result.data.items.reduce((s, i) => s + i.quantity * i.price, 0) + (result.data.shipping_fee ?? 0)
+  // Date + random suffix: two orders logged in the same millisecond used to collide on the unique key.
+  const orderNumber = `ONL-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${Math.floor(Math.random() * 1_000_000).toString().padStart(6, '0')}`
 
   const { data, error } = await auth.supabase
     .from('online_orders')

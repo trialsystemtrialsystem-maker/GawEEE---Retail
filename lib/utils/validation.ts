@@ -631,6 +631,8 @@ const BOOKING_STATUSES = ['pending', 'confirmed', 'in_progress', 'completed', 'c
 export const bookingStatusSchema = z.object({ status: z.enum(BOOKING_STATUSES) })
 
 export const onlineOrderItemSchema = z.object({
+  // Linked to a catalog product => fulfilment creates a real invoice (stock, revenue).
+  product_id: z.string().uuid().optional(),
   name: z.string().min(1),
   quantity: z.number().int().positive(),
   price: z.number().nonnegative(),
@@ -643,6 +645,12 @@ export const createOnlineOrderSchema = z.object({
   customer_phone: z.string().optional(),
   items: z.array(onlineOrderItemSchema).min(1, 'Minimal 1 item'),
   notes: z.string().optional(),
+  payment_method: z.enum(['cash', 'bank_transfer', 'e_wallet', 'cod']).optional(),
+  payment_status: z.enum(['unpaid', 'paid']).optional(),
+  shipping_fee: z.number().min(0).optional(),
+  external_ref: z.string().trim().max(100).optional(),
+  delivery_address: z.string().trim().max(500).optional(),
+  courier: z.string().trim().max(60).optional(),
 })
 
 export type CreateOnlineOrderInput = z.infer<typeof createOnlineOrderSchema>

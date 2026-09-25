@@ -1113,10 +1113,19 @@ export type OnlineOrder = {
   channel: string
   customer_name: string
   customer_phone: string | null
-  items: { name: string; quantity: number; price: number }[]
+  items: { name: string; quantity: number; price: number; product_id?: string }[]
   total_amount: number
   status: OnlineOrderStatus
   notes: string | null
+  invoice_id: string | null
+  payment_method: 'cash' | 'bank_transfer' | 'e_wallet' | 'cod'
+  payment_status: 'unpaid' | 'paid'
+  shipping_fee: number
+  external_ref: string | null
+  delivery_address: string | null
+  courier: string | null
+  tracking_number: string | null
+  cancel_reason: string | null
   created_by: string
   created_at: string
   updated_at: string
