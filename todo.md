@@ -1773,6 +1773,14 @@ live-verified/committed/pushed.
 - [x] e2e `receivable-collection.spec.ts`. `postJournal` gained `allowMultiple` for instalment-style postings.
 - [ ] Not built: loyalty points earned on late settlement, e-mail/WhatsApp receipt, payment-method breakdown filter.
 
+## Phase 39 — PPh Final UMKM
+- [x] Tax Report now also shows PPh Final UMKM (PP 55/2022): 0.5% of monthly gross turnover (before PPN, voided sales excluded),
+      with the Rp 500 juta annual exemption for individual taxpayers (threshold 0 for CV/PT), configurable at
+      `companies.settings.tax` via `PATCH /api/admin/tax-settings` (owner-only "Atur" on the card). `lib/utils/pphFinal.ts` unit-tested;
+      e2e `pph-final.spec.ts`. The PPN monthly report is now paged past PostgREST's 1000-row cap (it under-reported busy years).
+- [ ] Not built: refund netting in the turnover base, e-Faktur export, SPT/billing-code helpers. Known risk to sweep: other report
+      routes that aggregate in JS over a single un-paged query can under-count beyond 1000 rows.
+
 ## Notes on scope
 This todo tracks the **engineering deliverables** of the PRD (a working Next.js + Supabase codebase
 implementing Phase 1 features, with payment gateways behind a swappable mock interface). Items marked
