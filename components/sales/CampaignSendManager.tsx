@@ -73,7 +73,7 @@ export function CampaignSendManager({ outletId }: { outletId: string }) {
         showToast(typeof data.error === 'string' ? data.error : 'Gagal mengirim campaign', 'danger')
         return
       }
-      showToast(`Campaign terkirim ke ${data.broadcast.sent_count} pelanggan`, 'success')
+      showToast(`Antrian campaign dibuat untuk ${data.recipients} pelanggan — kirim dari menu WhatsApp › Broadcast`, 'success')
       setTemplateId('')
       setGroupId('')
       load()

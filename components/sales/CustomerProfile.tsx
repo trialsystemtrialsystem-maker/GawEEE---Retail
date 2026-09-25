@@ -12,7 +12,7 @@ import { formatCurrency, formatDate, formatDateTime } from '@/lib/utils/formatti
 import { useNotificationStore } from '@/store/notificationStore'
 
 interface Profile {
-  customer: { id: string; name: string; phone: string | null; email: string | null; notes: string | null; created_at: string; customer_groups: { name: string } | null; outlets: { name: string } | null }
+  customer: { id: string; name: string; phone: string | null; email: string | null; notes: string | null; whatsapp_opt_out: boolean; created_at: string; customer_groups: { name: string } | null; outlets: { name: string } | null }
   kpi: {
     orders: number
     spend: number
@@ -56,7 +56,7 @@ export function CustomerProfile({ customerId }: { customerId: string }) {
   const [data, setData] = useState<Profile | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [editing, setEditing] = useState(false)
-  const [form, setForm] = useState({ name: '', phone: '', email: '', notes: '' })
+  const [form, setForm] = useState({ name: '', phone: '', email: '', notes: '', whatsapp_opt_out: false })
   const [saving, setSaving] = useState(false)
   const showToast = useNotificationStore((s) => s.show)
 
@@ -102,7 +102,7 @@ export function CustomerProfile({ customerId }: { customerId: string }) {
             {c.name} <span className={`ml-2 rounded-full px-2 py-0.5 text-xs font-medium ${SEGMENT_CLASS[kpi.segment]}`}>{SEGMENT_LABEL[kpi.segment]}</span>
           </h1>
           {!editing && (
-            <Button size="sm" variant="secondary" onClick={() => { setForm({ name: c.name, phone: c.phone ?? '', email: c.email ?? '', notes: c.notes ?? '' }); setEditing(true) }}>
+            <Button size="sm" variant="secondary" onClick={() => { setForm({ name: c.name, phone: c.phone ?? '', email: c.email ?? '', notes: c.notes ?? '', whatsapp_opt_out: c.whatsapp_opt_out }); setEditing(true) }}>
               Ubah Data
             </Button>
           )}
@@ -111,6 +111,7 @@ export function CustomerProfile({ customerId }: { customerId: string }) {
           {[c.phone, c.email, c.customer_groups?.name, c.outlets?.name].filter(Boolean).join(' · ') || 'Belum ada kontak'} · terdaftar {formatDate(c.created_at)}
         </p>
         {c.notes && <p className="mt-1 text-sm text-gray-600">Catatan: {c.notes}</p>}
+        {c.whatsapp_opt_out && <p className="mt-1 text-xs font-medium text-red-600">Tidak menerima pesan promosi WhatsApp</p>}
       </div>
 
       {error && <Alert variant="danger">{error}</Alert>}
@@ -123,6 +124,7 @@ export function CustomerProfile({ customerId }: { customerId: string }) {
             <Input name="c_phone" label="Telepon" value={form.phone} onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))} />
             <Input name="c_email" label="Email" type="email" value={form.email} onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))} />
             <Input name="c_notes" label="Catatan" value={form.notes} onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))} />
+            <label className="flex items-center gap-2 text-sm text-gray-700 sm:col-span-2"><input type="checkbox" checked={form.whatsapp_opt_out} onChange={(e) => setForm((f) => ({ ...f, whatsapp_opt_out: e.target.checked }))} /> Berhenti berlangganan pesan promosi WhatsApp (tidak diikutkan di broadcast)</label>
             <div className="flex gap-2">
               <Button type="submit" isLoading={saving}>Simpan</Button>
               <Button type="button" variant="secondary" onClick={() => setEditing(false)}>Batal</Button>

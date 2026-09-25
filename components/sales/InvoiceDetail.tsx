@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/Button'
 import { Alert } from '@/components/ui/Alert'
 import { Input } from '@/components/ui/Input'
 import { formatCurrency, formatDateTime } from '@/lib/utils/formatting'
+import { whatsappLink } from '@/lib/utils/whatsappTemplate'
 import { useNotificationStore } from '@/store/notificationStore'
 
 interface Invoice {
@@ -14,6 +15,7 @@ interface Invoice {
   outlet_id: string
   invoice_number: string
   customer_name: string | null
+  customer_phone?: string | null
   subtotal: number
   discount_amount: number
   tax_amount: number
@@ -145,6 +147,13 @@ export function InvoiceDetail({ invoiceId, canVoid, canRefund: canRefundPerm }: 
     w.print()
   }
 
+  function waReceiptLink() {
+    if (!invoice) return null
+    const lines = items.map((i) => `${i.quantity}x ${i.products?.name ?? '-'} — ${formatCurrency(i.subtotal)}`).join('\n')
+    const text = `Halo${invoice.customer_name ? ` ${invoice.customer_name}` : ''}, terima kasih sudah berbelanja!\nStruk ${invoice.invoice_number} (${formatDateTime(invoice.created_at)})\n${lines}\nTotal: ${formatCurrency(invoice.total)}${balance > 0 ? `\nSisa tagihan: ${formatCurrency(balance)}` : ''}`
+    return whatsappLink(invoice.customer_phone ?? null, text)
+  }
+
   async function handleRefundSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!invoice) return
@@ -219,6 +228,11 @@ export function InvoiceDetail({ invoiceId, canVoid, canRefund: canRefundPerm }: 
           <Button variant="secondary" size="sm" onClick={printReceipt}>
             Cetak Struk
           </Button>
+          {waReceiptLink() && (
+            <a href={waReceiptLink() as string} target="_blank" rel="noopener noreferrer" className="rounded-md border border-emerald-300 px-3 py-1 text-sm text-emerald-700 hover:bg-emerald-50">
+              Kirim via WhatsApp
+            </a>
+          )}
           {invoice.order_status === 'voided' ? (
             <span className="rounded-full bg-red-100 px-3 py-1 text-sm font-medium text-red-600">Dibatalkan</span>
           ) : (

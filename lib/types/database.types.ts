@@ -833,9 +833,23 @@ export type Customer = {
   notes: string | null
   group_id: string | null
   custom_fields: Record<string, string>
+  whatsapp_opt_out: boolean
   created_by: string
   created_at: string
   updated_at: string
+}
+
+export type WhatsappBroadcastRecipient = {
+  id: string
+  broadcast_id: string
+  outlet_id: string
+  customer_id: string | null
+  name: string
+  phone: string
+  message: string
+  status: 'pending' | 'sent' | 'skipped'
+  sent_at: string | null
+  created_at: string
 }
 
 export type CustomerGroup = {
@@ -1445,6 +1459,7 @@ export type Database = {
       online_orders: Table<OnlineOrder>
       whatsapp_templates: Table<WhatsappTemplate>
       whatsapp_broadcasts: Table<WhatsappBroadcast>
+      whatsapp_broadcast_recipients: Table<WhatsappBroadcastRecipient>
       staff_members: Table<StaffMember>
       attendance: Table<Attendance>
       position_levels: Table<PositionLevel>

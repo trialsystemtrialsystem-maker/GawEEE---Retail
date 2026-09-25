@@ -671,6 +671,15 @@ export const whatsappBroadcastSchema = z.object({
   template_id: z.string().uuid(),
   target_note: z.string().min(1, 'Keterangan target wajib diisi'),
   customer_group_id: z.string().uuid().optional(),
+  // Who receives it. Omitted = the old behaviour (group when customer_group_id is
+  // set, otherwise everyone who ever gave a phone at checkout).
+  audience: z
+    .object({
+      type: z.enum(['customers', 'group', 'recent_buyers', 'lapsed']),
+      group_id: z.string().uuid().optional(),
+      days: z.number().int().min(1).max(365).optional(),
+    })
+    .optional(),
 })
 
 export type WhatsappBroadcastInput = z.infer<typeof whatsappBroadcastSchema>

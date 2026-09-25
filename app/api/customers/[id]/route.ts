@@ -16,6 +16,7 @@ export async function PATCH(request: NextRequest, ctx: RouteContext<'/api/custom
     notes?: string
     group_id?: string | null
     custom_fields?: Record<string, string>
+    whatsapp_opt_out?: boolean
   } = {}
   if (typeof body.name === 'string') patch.name = body.name
   if (typeof body.phone === 'string') patch.phone = body.phone
@@ -23,6 +24,7 @@ export async function PATCH(request: NextRequest, ctx: RouteContext<'/api/custom
   if (typeof body.notes === 'string') patch.notes = body.notes
   if (typeof body.group_id === 'string' || body.group_id === null) patch.group_id = body.group_id
   if (body.custom_fields && typeof body.custom_fields === 'object') patch.custom_fields = body.custom_fields
+  if (typeof body.whatsapp_opt_out === 'boolean') patch.whatsapp_opt_out = body.whatsapp_opt_out
 
   const { data, error } = await auth.supabase.from('customers').update(patch).eq('id', id).select().single()
 
