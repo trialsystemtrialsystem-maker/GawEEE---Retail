@@ -1735,7 +1735,8 @@ live-verified/committed/pushed.
 - [x] Nilai Persediaan & Analisis: value per kategori, ABC, dead/slow stock with tied-up capital.
 - [x] Stok Semua Outlet + saran transfer antar outlet.
 - [x] Adjustments, waste and stock-opname variances now post to the ledger (Dr/Cr Beban Selisih & Kerusakan 5210 / Persediaan 1200).
-- [ ] Not built: moving-average costing (valuation uses the master purchase price), serial numbers, bin/rak locations, stock-in CSV import.
+- [x] Impor Stok (`/dashboard/inventory/import`): paste/upload CSV (SKU, jumlah), mode "stok sebenarnya" or "tambah/kurang", dry-run preview, refuses files with bad rows, one ledger row per product + one journal. Valuation also shows weighted-average purchase cost (from received stock).
+- [ ] Not built: perpetual moving-average costing (COGS still uses the master price), serial numbers, bin/rak locations.
 
 ## Notes on scope
 This todo tracks the **engineering deliverables** of the PRD (a working Next.js + Supabase codebase

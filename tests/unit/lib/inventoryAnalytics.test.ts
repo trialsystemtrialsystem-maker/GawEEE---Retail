@@ -1,4 +1,4 @@
-import { abcClassify, daysOfCover, runningBalances, stockHealth, suggestedReorderQty, suggestTransfers } from '@/lib/utils/inventoryAnalytics'
+import { abcClassify, daysOfCover, runningBalances, stockHealth, suggestedReorderQty, suggestTransfers, weightedAverageCost } from '@/lib/utils/inventoryAnalytics'
 
 describe('daysOfCover', () => {
   it('divides stock by daily pace and is null when nothing sells', () => {
@@ -83,5 +83,15 @@ describe('suggestTransfers', () => {
   })
   it('suggests nothing when nobody is short', () => {
     expect(suggestTransfers([{ outlet_id: 'a', outlet_name: 'A', quantity: 50, reorder_level: 5 }])).toEqual([])
+  })
+})
+
+describe('weightedAverageCost', () => {
+  it('weights each receipt by its quantity', () => {
+    expect(weightedAverageCost([{ quantity_change: 10, unit_cost: 100 }, { quantity_change: 30, unit_cost: 200 }])).toBe(175)
+  })
+  it('ignores outflows and unpriced rows; null when nothing usable', () => {
+    expect(weightedAverageCost([{ quantity_change: -5, unit_cost: 100 }, { quantity_change: 5, unit_cost: null }])).toBeNull()
+    expect(weightedAverageCost([{ quantity_change: 4, unit_cost: 50 }, { quantity_change: -2, unit_cost: 50 }])).toBe(50)
   })
 })

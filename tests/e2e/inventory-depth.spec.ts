@@ -75,3 +75,34 @@ test.describe('Inventory depth', () => {
     }
   })
 })
+
+test('stock import: dry run changes nothing, apply changes and is reversible; bad rows block apply', async ({ page }) => {
+  test.setTimeout(240_000)
+  await login(page, process.env.E2E_TEST_EMAIL || 'demo@gaweee.app', process.env.E2E_TEST_PASSWORD || 'DemoGawEEE2026!')
+  const outletId: string = (await api(page, 'GET', '/api/outlets')).json.own_outlet_id
+  const list = await api(page, 'GET', `/api/inventory/${outletId}`)
+  const item = list.json.inventory.find((i: { quantity_on_hand: number }) => i.quantity_on_hand > 5)
+  const base = { outlet_id: outletId, mode: 'set', reason: 'E2E impor stok' }
+
+  const dry = await api(page, 'POST', '/api/inventory/import', { ...base, dry_run: true, rows: [{ sku: item.sku, quantity: item.quantity_on_hand + 7 }] })
+  expect(dry.status).toBe(200)
+  expect(dry.json.results[0]).toMatchObject({ before: item.quantity_on_hand, after: item.quantity_on_hand + 7, delta: 7, status: 'ok' })
+  const untouched = await api(page, 'GET', `/api/inventory/${outletId}?barcode=${encodeURIComponent(item.barcode ?? '')}`)
+  expect(untouched.status).toBe(200)
+
+  // Unknown SKU blocks the whole import (nothing half-applied).
+  const bad = await api(page, 'POST', '/api/inventory/import', { ...base, dry_run: false, rows: [{ sku: item.sku, quantity: item.quantity_on_hand + 7 }, { sku: 'TIDAK-ADA-XYZ', quantity: 1 }] })
+  expect(bad.status).toBe(400)
+  const stillSame = (await api(page, 'GET', `/api/inventory/${outletId}`)).json.inventory.find((i: { product_id: string }) => i.product_id === item.product_id)
+  expect(stillSame.quantity_on_hand).toBe(item.quantity_on_hand)
+
+  // Apply +7, then set back.
+  expect((await api(page, 'POST', '/api/inventory/import', { ...base, dry_run: false, rows: [{ sku: item.sku, quantity: item.quantity_on_hand + 7 }] })).status).toBe(200)
+  const after = (await api(page, 'GET', `/api/inventory/${outletId}`)).json.inventory.find((i: { product_id: string }) => i.product_id === item.product_id)
+  expect(after.quantity_on_hand).toBe(item.quantity_on_hand + 7)
+  expect((await api(page, 'POST', '/api/inventory/import', { ...base, dry_run: false, rows: [{ sku: item.sku, quantity: item.quantity_on_hand }] })).status).toBe(200)
+
+  // Average purchase cost is exposed with analytics.
+  const analytics = await api(page, 'GET', `/api/inventory/${outletId}?analytics=1`)
+  expect(analytics.json.inventory[0]).toHaveProperty('avg_cost_value')
+})

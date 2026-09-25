@@ -124,3 +124,18 @@ export function suggestTransfers(stocks: OutletStock[]): TransferSuggestion[] {
   }
   return out
 }
+
+/** Weighted-average purchase cost from receipt movements (positive quantity
+ * with a known unit cost). Null when the product was never received with a
+ * price — callers then fall back to the master purchase price. This is an
+ * average of what was actually paid, not a perpetual moving-average ledger. */
+export function weightedAverageCost(receipts: { quantity_change: number; unit_cost: number | null }[]): number | null {
+  let qty = 0
+  let value = 0
+  for (const r of receipts) {
+    if (r.quantity_change <= 0 || r.unit_cost === null || r.unit_cost <= 0) continue
+    qty += r.quantity_change
+    value += r.quantity_change * r.unit_cost
+  }
+  return qty > 0 ? Math.round((value / qty) * 100) / 100 : null
+}

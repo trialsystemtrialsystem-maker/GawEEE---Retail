@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getAuthContext, canAccessOutlet } from '@/lib/utils/auth-context'
 import { handleDatabaseError } from '@/lib/utils/errors'
 import { fetchAllRows } from '@/lib/utils/fetchAll'
-import { abcClassify, daysOfCover, stockHealth, suggestedReorderQty } from '@/lib/utils/inventoryAnalytics'
+import { abcClassify, daysOfCover, stockHealth, suggestedReorderQty, weightedAverageCost } from '@/lib/utils/inventoryAnalytics'
 
 type Row = {
   product_id: string
@@ -98,6 +98,25 @@ export async function GET(request: NextRequest, ctx: RouteContext<'/api/inventor
       if (inv && Date.parse(inv.created_at) >= since30) sold30.set(s.product_id, (sold30.get(s.product_id) ?? 0) + s.quantity)
     }
 
+    // What was actually paid: weighted average over received stock (purchase
+    // movements with a unit cost). Only fetched with analytics.
+    const avgCost = new Map<string, number | null>()
+    if (withAnalytics) {
+      const receipts = await fetchAllRows<{ product_id: string; quantity_change: number; unit_cost: number | null }>((from, to) =>
+        auth.supabase
+          .from('inventory_ledger')
+          .select('product_id, quantity_change, unit_cost')
+          .eq('outlet_id', outletId)
+          .eq('movement_type', 'purchase')
+          .order('created_at')
+          .order('id')
+          .range(from, to) as unknown as PromiseLike<{ data: { product_id: string; quantity_change: number; unit_cost: number | null }[] | null; error: { message: string } | null }>
+      )
+      const grouped = new Map<string, { quantity_change: number; unit_cost: number | null }[]>()
+      for (const r of receipts) grouped.set(r.product_id, [...(grouped.get(r.product_id) ?? []), r])
+      for (const [id, list] of grouped) avgCost.set(id, weightedAverageCost(list))
+    }
+
     const base = rows.map((r) => {
       const p = r.products
       const reorderLevel = r.reorder_level ?? p?.reorder_level ?? 0
@@ -119,6 +138,8 @@ export async function GET(request: NextRequest, ctx: RouteContext<'/api/inventor
         quantity_available: r.quantity_available,
         reorder_level: reorderLevel,
         reorder_quantity: p?.reorder_quantity ?? 0,
+        avg_cost: avgCost.get(r.product_id) ?? null,
+        avg_cost_value: (avgCost.get(r.product_id) ?? p?.purchase_price ?? 0) * r.quantity_on_hand,
         cost_value: (p?.purchase_price ?? 0) * r.quantity_on_hand,
         retail_value: (p?.selling_price ?? 0) * r.quantity_on_hand,
         margin_pct: p && p.selling_price > 0 ? Math.round(((p.selling_price - p.purchase_price) / p.selling_price) * 1000) / 10 : null,
