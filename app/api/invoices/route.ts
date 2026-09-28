@@ -5,6 +5,7 @@ import { handleDatabaseError } from '@/lib/utils/errors'
 import { earnLoyaltyPoints } from '@/lib/utils/loyalty'
 import { resolveDateRange } from '@/lib/utils/dateRange'
 import { guardInvoiceDiscounts } from '@/lib/server/discountGuard'
+import { clientIp } from '@/lib/utils/rateLimit'
 
 // POST /api/invoices — create a POS transaction. See prd.md §4.3.
 // The heavy lifting (stock validation, totals, inventory deduction) happens
@@ -32,6 +33,7 @@ export async function POST(request: NextRequest) {
     loyalty_customer_id,
     redeem_points,
     redeem_discount_amount,
+    manager_override_pin,
   } = result.data
 
   if (!canAccessOutlet(auth, outlet_id)) {
@@ -39,8 +41,21 @@ export async function POST(request: NextRequest) {
   }
 
   // The browser computes every discount; never trust the total it sends.
-  const discountError = await guardInvoiceDiscounts(auth, { outlet_id, items, discount_amount, coupon_code, coupon_discount_amount, promotion_id, promotion_discount_amount, loyalty_customer_id, redeem_points, redeem_discount_amount })
-  if (discountError) return NextResponse.json({ error: discountError }, { status: 400 })
+  const discountCheck = await guardInvoiceDiscounts(auth, {
+    outlet_id,
+    items,
+    discount_amount,
+    coupon_code,
+    coupon_discount_amount,
+    promotion_id,
+    promotion_discount_amount,
+    loyalty_customer_id,
+    redeem_points,
+    redeem_discount_amount,
+    manager_override_pin,
+    client_ip: clientIp(request),
+  })
+  if (discountCheck.error) return NextResponse.json({ error: discountCheck.error }, { status: 400 })
 
   const { data, error } = await auth.supabase
     .rpc('create_invoice', {
@@ -59,6 +74,12 @@ export async function POST(request: NextRequest) {
     const { status, message } = handleDatabaseError(error)
     const isStockError = error.message?.includes('Stok tidak cukup')
     return NextResponse.json({ error: message }, { status: isStockError ? 409 : status })
+  }
+
+  // create_invoice() doesn't take an approver — stamp it after the fact when
+  // a manager's PIN raised the cashier's discount cap for this sale.
+  if (discountCheck.approved_by) {
+    await auth.supabase.from('invoices').update({ discount_approved_by: discountCheck.approved_by }).eq('id', data!.invoice_id)
   }
 
   // Cosmetic-only follow-up (Multi-UOM Phase 11 + Notes Category/Kitchen

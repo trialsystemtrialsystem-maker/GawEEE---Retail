@@ -56,6 +56,7 @@ export const createInvoiceSchema = z.object({
   loyalty_customer_id: z.string().uuid().optional(),
   redeem_points: z.number().int().positive().optional(),
   redeem_discount_amount: z.number().min(0).optional(),
+  manager_override_pin: z.string().trim().regex(/^\d{4,6}$/, 'PIN harus 4-6 digit angka').optional(),
 })
 
 export type CreateInvoiceInput = z.infer<typeof createInvoiceSchema>

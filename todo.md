@@ -1849,6 +1849,16 @@ live-verified/committed/pushed.
 - [x] Pure aggregation (`lib/utils/salesSummary.ts`, unit-tested) shared by nothing else yet — kept separate from the older
       `sales-breakdown` report (still used by the Sales Dashboard grid) rather than risking that widely-used endpoint's shape.
 
+## Phase 46 — POS: manager PIN discount override
+- [x] When a cashier's discount hits the cap from Phase 43, the POS now offers a manager PIN box instead of just failing. `POST
+      /api/manager-approval` checks a manager/master_admin's `staff_members.pin_code` (added in 018 for quick cashier switching, reused here)
+      for that outlet, rate-limited like login. The invoice route (`lib/server/discountGuard.ts`) re-verifies the PIN itself before granting
+      anything — the approval-check response is never trusted on its own — and, once approved, the sale is checked under the manager's own
+      (subtotal-only) cap, not an unlimited bypass.
+- [x] The approving manager is stamped on `invoices.discount_approved_by` (a column that existed since migration 003 but was never written).
+- [ ] Not built: PIN lockout/audit log entry for failed attempts beyond the rate limit, per-product minimum margin guard, promo scope by
+      product/category, buy-X-get-Y.
+
 ## Notes on scope
 This todo tracks the **engineering deliverables** of the PRD (a working Next.js + Supabase codebase
 implementing Phase 1 features, with payment gateways behind a swappable mock interface). Items marked

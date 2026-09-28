@@ -53,6 +53,10 @@ export function POSScreen({ outletId, cashierName }: { outletId: string; cashier
   const [customerLoyaltyBalance, setCustomerLoyaltyBalance] = useState(0)
   const [redeemPointsInput, setRedeemPointsInput] = useState('')
   const [appliedRedemption, setAppliedRedemption] = useState<{ points: number; amount: number } | null>(null)
+  const [showManagerPin, setShowManagerPin] = useState(false)
+  const [managerPin, setManagerPin] = useState('')
+  const [managerPinError, setManagerPinError] = useState<string | null>(null)
+  const [isVerifyingPin, setIsVerifyingPin] = useState(false)
   const showToast = useNotificationStore((s) => s.show)
 
   const items = usePosStore((s) => s.items)
@@ -155,7 +159,7 @@ export function POSScreen({ outletId, cashierName }: { outletId: string; cashier
   const splitPaid = splitLines.reduce((sum, l) => sum + (Number(l.amount) || 0), 0)
   const splitReady = useSplitPayment && splitLines.length > 0 && Math.round(splitPaid) === Math.round(total)
 
-  async function handleCheckout() {
+  async function handleCheckout(overridePin?: string) {
     if (items.length === 0) {
       setError('Keranjang tidak boleh kosong')
       return
@@ -191,11 +195,21 @@ export function POSScreen({ outletId, cashierName }: { outletId: string; cashier
           promotion_discount_amount: appliedPromotion?.amount,
           loyalty_customer_id: appliedRedemption ? customer?.id : undefined,
           redeem_points: appliedRedemption?.points,
+          manager_override_pin: overridePin,
         }),
       })
       const data = await res.json()
       if (!res.ok) {
-        setError(typeof data.error === 'string' ? data.error : 'Gagal membuat invoice')
+        const message = typeof data.error === 'string' ? data.error : 'Gagal membuat invoice'
+        // The cashier's discount cap was exceeded — offer a manager PIN
+        // instead of just failing (lib/server/discountGuard.ts re-verifies
+        // it before granting anything, so this is a real approval gate).
+        if (!overridePin && message.includes('minta persetujuan manager')) {
+          setShowManagerPin(true)
+          setManagerPinError(null)
+          return
+        }
+        setError(message)
         return
       }
 
@@ -258,6 +272,34 @@ export function POSScreen({ outletId, cashierName }: { outletId: string; cashier
     }
   }
 
+  async function submitManagerPin() {
+    if (!managerPin.trim()) return
+    setIsVerifyingPin(true)
+    setManagerPinError(null)
+    try {
+      // A quick up-front check with a clear message before spending a full
+      // checkout attempt — the invoice route below re-verifies the PIN
+      // itself regardless, since this result alone grants nothing.
+      const res = await fetch('/api/manager-approval', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ outlet_id: outletId, pin: managerPin.trim() }),
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        setManagerPinError(typeof data.error === 'string' ? data.error : 'PIN tidak valid')
+        return
+      }
+      showToast(`Disetujui oleh ${data.manager_name}`, 'success')
+      const pin = managerPin.trim()
+      setShowManagerPin(false)
+      setManagerPin('')
+      await handleCheckout(pin)
+    } finally {
+      setIsVerifyingPin(false)
+    }
+  }
+
   async function confirmDigitalPayment() {
     if (!paymentId) return
     await fetch(`/api/payments/${paymentId}/simulate-success`, { method: 'POST' })
@@ -284,6 +326,9 @@ export function POSScreen({ outletId, cashierName }: { outletId: string; cashier
     setAppliedRedemption(null)
     setRedeemPointsInput('')
     setCustomerLoyaltyBalance(0)
+    setShowManagerPin(false)
+    setManagerPin('')
+    setManagerPinError(null)
     setStep('cart')
   }
 
@@ -468,6 +513,42 @@ export function POSScreen({ outletId, cashierName }: { outletId: string; cashier
 
         <div className="space-y-4 self-start rounded-2xl border border-[var(--brand-100)] bg-white p-4 shadow-lg lg:sticky lg:top-4">
           {error && <Alert variant="danger">{error}</Alert>}
+
+          {showManagerPin && (
+            <div className="space-y-2 rounded-xl border border-amber-200 bg-amber-50 p-3">
+              <p className="text-sm font-semibold text-amber-800">🔒 Diskon melebihi batas kasir</p>
+              <p className="text-xs text-amber-700">Minta manager memasukkan PIN untuk menyetujui diskon ini.</p>
+              {managerPinError && <p className="text-xs font-medium text-red-600">{managerPinError}</p>}
+              <div className="flex gap-2">
+                <input
+                  type="password"
+                  inputMode="numeric"
+                  autoFocus
+                  maxLength={6}
+                  value={managerPin}
+                  onChange={(e) => setManagerPin(e.target.value.replace(/\D/g, ''))}
+                  onKeyDown={(e) => e.key === 'Enter' && submitManagerPin()}
+                  placeholder="PIN Manager"
+                  className="w-32 rounded-md border border-amber-300 px-3 py-1.5 text-sm tracking-widest focus:outline-none focus:ring-2 focus:ring-amber-400"
+                />
+                <Button size="sm" isLoading={isVerifyingPin} onClick={submitManagerPin}>
+                  Setujui
+                </Button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowManagerPin(false)
+                    setManagerPin('')
+                    setManagerPinError(null)
+                  }}
+                  className="text-xs font-medium text-gray-500 hover:underline"
+                >
+                  Batal
+                </button>
+              </div>
+            </div>
+          )}
+
           <ShoppingCart outletId={outletId} />
 
           <CustomerPicker outletId={outletId} value={customer} onChange={handleCustomerChange} />
@@ -582,7 +663,7 @@ export function POSScreen({ outletId, cashierName }: { outletId: string; cashier
           <Button
             className={`w-full !shadow-md ${payLater ? '!bg-gradient-to-r !from-amber-600 !to-amber-500' : '!bg-gradient-to-r !from-[var(--brand-600)] !to-[var(--brand-500)]'}`}
             size="lg"
-            onClick={handleCheckout}
+            onClick={() => handleCheckout()}
             isLoading={isSubmitting}
             disabled={items.length === 0 || (!payLater && useSplitPayment && !splitReady)}
           >
