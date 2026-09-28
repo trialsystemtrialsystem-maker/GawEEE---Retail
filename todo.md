@@ -1841,6 +1841,14 @@ live-verified/committed/pushed.
 - [x] POS: promo chips show minimum purchase, refuse promos whose minimum isn't met, hide exhausted/expired ones.
 - [ ] Not built: promo scope by product/category, buy-X-get-Y, per-customer limits, loyalty tiers / points expiry, automatic promo application.
 
+## Phase 45 — Sales Summary report
+- [x] New `GET /api/reports/sales-summary` + `Ringkasan Penjualan` page (Sales > Report): totals (penjualan, transaksi, rata-rata basket,
+      laba kotor when cost data exists, diskon, pajak, margin) each compared against the immediately preceding period of equal length; a
+      trend chart switchable by day/week/month; breakdowns by payment method, category, product, cashier, top customers, and (owner viewing
+      all outlets) by outlet. Every ranking excludes voided invoices; unpaid and voided counts are called out separately. CSV export per table.
+- [x] Pure aggregation (`lib/utils/salesSummary.ts`, unit-tested) shared by nothing else yet — kept separate from the older
+      `sales-breakdown` report (still used by the Sales Dashboard grid) rather than risking that widely-used endpoint's shape.
+
 ## Notes on scope
 This todo tracks the **engineering deliverables** of the PRD (a working Next.js + Supabase codebase
 implementing Phase 1 features, with payment gateways behind a swappable mock interface). Items marked

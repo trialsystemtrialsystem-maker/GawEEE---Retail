@@ -44,6 +44,7 @@ export const PRIMARY_NAV: NavItem[] = [
         label: 'Report',
         icon: '📋',
         items: [
+          { label: 'Ringkasan Penjualan', href: '/dashboard/sales/reports/summary' },
           { label: 'Sales Report', href: '/dashboard/sales' },
           { label: 'Target vs Aktual', href: '/dashboard/sales/reports/target-vs-actual' },
           { label: 'Kitchen Report', href: '/dashboard/sales/reports/kitchen' },
